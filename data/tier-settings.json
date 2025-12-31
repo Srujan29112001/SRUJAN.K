@@ -1,0 +1,22 @@
+{
+  "coffee": {
+    "usd": {
+      "amount": 34,
+      "paymentLink": "https://dashboard.skydo.com/pay/pyl_iCtFo1"
+    },
+    "inr": {
+      "amount": 2000,
+      "paymentLink": ""
+    }
+  },
+  "applause": {
+    "usd": {
+      "amount": 100,
+      "paymentLink": "https://dashboard.skydo.com/pay/pyl_Sj3zHI"
+    },
+    "inr": {
+      "amount": 8500,
+      "paymentLink": ""
+    }
+  }
+}

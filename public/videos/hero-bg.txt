@@ -1,0 +1,1 @@
+Place your generated video file here and name it 'hero-bg.mp4'.

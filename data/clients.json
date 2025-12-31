@@ -1,0 +1,31 @@
+{
+  "clients": [
+    {
+      "id": "2",
+      "email": "ksrujan_be19@thapar.edu",
+      "name": "Srujan (Thapar)",
+      "amount": 2000,
+      "currency": "usd",
+      "paymentLink": "https://dashboard.skydo.com/pay/pyl_KxapH3",
+      "createdAt": "2024-12-28T00:00:00.000Z"
+    },
+    {
+      "id": "3",
+      "email": "kt.srujan@gmail.com",
+      "name": "KT Srujan",
+      "amount": 1500,
+      "currency": "usd",
+      "paymentLink": "https://dashboard.skydo.com/pay/pyl_yp6w8C",
+      "createdAt": "2024-12-28T00:00:00.000Z"
+    },
+    {
+      "id": "4",
+      "email": "srujan@gmail.com",
+      "name": "Srujan",
+      "amount": 10000,
+      "currency": "inr",
+      "paymentLink": "",
+      "createdAt": "2024-12-28T00:00:00.000Z"
+    }
+  ]
+}
