@@ -2,14 +2,24 @@
 const Razorpay = require('razorpay');
 import crypto from 'crypto';
 
-if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-    console.warn('Warning: Razorpay keys are not set. Razorpay payments will not work.');
+// Lazy initialization to prevent build-time crashes
+let razorpayInstance: InstanceType<typeof Razorpay> | null = null;
+
+function getRazorpay() {
+    if (!razorpayInstance) {
+        if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+            console.warn('Warning: Razorpay keys are not set. Razorpay payments will not work.');
+            return null;
+        }
+        razorpayInstance = new Razorpay({
+            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+    }
+    return razorpayInstance;
 }
 
-export const razorpay = new Razorpay({
-    key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
+export const razorpay = { get: getRazorpay };
 
 /**
  * Create a Razorpay Order for INR payment
@@ -32,7 +42,12 @@ export async function createRazorpayOrder({
     // Razorpay expects amount in paise (smallest unit)
     const amountInPaise = Math.round(amount * 100);
 
-    const order = await razorpay.orders.create({
+    const rpInstance = getRazorpay();
+    if (!rpInstance) {
+        throw new Error('Razorpay is not configured');
+    }
+
+    const order = await rpInstance.orders.create({
         amount: amountInPaise,
         currency: currency.toUpperCase(),
         receipt: `receipt_${Date.now()}`,
