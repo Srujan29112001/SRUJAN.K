@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowRight, Coffee, Star, Rocket, Mail, Sparkles } from 'lucide-react';
@@ -56,7 +56,7 @@ const tierContent: Record<PaymentTier, {
     },
 };
 
-export default function SuccessPage() {
+function SuccessPageContent() {
     const searchParams = useSearchParams();
     const [supporterName, setSupporterName] = useState('');
     const [supportAmount, setSupportAmount] = useState('');
@@ -196,5 +196,13 @@ export default function SuccessPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+export default function SuccessPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-bg-base flex items-center justify-center text-white">Loading...</div>}>
+            <SuccessPageContent />
+        </Suspense>
     );
 }
