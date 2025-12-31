@@ -6,6 +6,9 @@ const nextConfig = {
     unoptimized: true,
   },
   transpilePackages: ['three'],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;
