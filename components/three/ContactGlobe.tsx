@@ -4,6 +4,7 @@ import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { useFrame, useThree, useLoader } from '@react-three/fiber';
 import { Float } from '@react-three/drei';
 import * as THREE from 'three';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 
 // Realistic satellite component that orbits along a path
 function OrbitingSatellite({
@@ -230,6 +231,7 @@ export function ContactGlobe() {
   const globeRef = useRef<THREE.Mesh>(null);
   const atmosphereRef = useRef<THREE.Mesh>(null);
   const { gl } = useThree();
+  const isMobile = useIsMobile();
 
   // Load Earth texture
   const earthTexture = useLoader(THREE.TextureLoader, '/images/earth-texture.jpg');
@@ -240,15 +242,17 @@ export function ContactGlobe() {
   const rotationVelocity = useRef({ x: 0, y: 0 });
   const targetRotation = useRef({ x: 0, y: 0 });
 
-  // Mouse event handlers
+  // Mouse event handlers (desktop only)
   const handlePointerDown = useCallback((e: PointerEvent) => {
+    if (isMobile) return; // Disable on mobile
     setIsDragging(true);
     previousMousePos.current = { x: e.clientX, y: e.clientY };
     rotationVelocity.current = { x: 0, y: 0 };
     gl.domElement.style.cursor = 'grabbing';
-  }, [gl]);
+  }, [gl, isMobile]);
 
   const handlePointerMove = useCallback((e: PointerEvent) => {
+    if (isMobile) return; // Disable on mobile
     if (!isDragging || !groupRef.current) return;
 
     const deltaX = e.clientX - previousMousePos.current.x;
@@ -267,14 +271,18 @@ export function ContactGlobe() {
     // Free rotation - no clamping
 
     previousMousePos.current = { x: e.clientX, y: e.clientY };
-  }, [isDragging]);
+  }, [isDragging, isMobile]);
 
   const handlePointerUp = useCallback(() => {
+    if (isMobile) return; // Disable on mobile
     setIsDragging(false);
     gl.domElement.style.cursor = 'grab';
-  }, [gl]);
+  }, [gl, isMobile]);
 
   useEffect(() => {
+    // Skip interaction setup on mobile for better performance
+    if (isMobile) return;
+
     const canvas = gl.domElement;
     canvas.style.cursor = 'grab';
 
@@ -287,7 +295,7 @@ export function ContactGlobe() {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [gl, handlePointerDown, handlePointerMove, handlePointerUp]);
+  }, [gl, handlePointerDown, handlePointerMove, handlePointerUp, isMobile]);
 
   useFrame((state) => {
     if (!groupRef.current || !globeRef.current) return;
