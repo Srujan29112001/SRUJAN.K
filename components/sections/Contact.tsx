@@ -647,11 +647,25 @@ export function Contact() {
               </div>
             </div>
 
-            {/* 3D Globe - Visible on all screen sizes */}
+            {/* 3D Globe - Static image on mobile, interactive 3D on desktop */}
             <div className="relative h-[300px] sm:h-[350px] lg:h-[400px] xl:h-[450px] w-full overflow-hidden rounded-2xl border border-white/5 bg-bg-surface">
-              <Scene cameraPosition={[0, 0, 5.5]}>
-                <ContactGlobe />
-              </Scene>
+              {/* Static image for mobile (< lg) */}
+              <div className="lg:hidden absolute inset-0 flex items-center justify-center">
+                <img
+                  src="/images/earth-texture.jpg"
+                  alt="Earth Globe"
+                  className="w-[250px] h-[250px] sm:w-[300px] sm:h-[300px] object-cover rounded-full opacity-80 shadow-[0_0_60px_20px_rgba(59,130,246,0.3)]"
+                />
+                {/* Overlay glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-t from-bg-surface via-transparent to-transparent pointer-events-none" />
+              </div>
+
+              {/* Interactive 3D globe for desktop (>= lg) */}
+              <div className="hidden lg:block w-full h-full">
+                <Scene cameraPosition={[0, 0, 5.5]}>
+                  <ContactGlobe />
+                </Scene>
+              </div>
             </div>
           </div>
         </div>
