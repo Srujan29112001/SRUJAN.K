@@ -112,6 +112,7 @@ export function About() {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const panelsRef = useRef<HTMLDivElement[]>([]);
+  const mobileCardsRef = useRef<HTMLDivElement[]>([]);
   const isMobile = useIsMobile();
   const scrollTo = useScrollTo();
 
@@ -276,16 +277,85 @@ export function About() {
     return () => ctx.revert();
   }, [isMobile]);
 
-  // Mobile layout - vertical stack
+  // Mobile scroll animations - Simple zoom/fade when scrolling past cards
+  useEffect(() => {
+    if (!isMobile) return;
+
+    let timeoutId: NodeJS.Timeout;
+    const triggers: ScrollTrigger[] = [];
+
+    const setupAnimations = () => {
+      const cards = mobileCardsRef.current.filter(Boolean);
+
+      if (cards.length === 0) return;
+
+      // Ensure all cards start visible
+      cards.forEach((card) => {
+        gsap.set(card, { opacity: 1, scale: 1, filter: 'blur(0px)' });
+      });
+
+      cards.forEach((card, index) => {
+        // Skip the last card - no exit animation needed
+        if (index >= cards.length - 1) return;
+
+        // Scrub animation - zoom and fade when card bottom passes viewport center
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            id: `mobile-card-fade-${index}`,
+            trigger: card,
+            start: 'bottom 50%',
+            end: 'bottom 10%',
+            scrub: 0.3,
+            invalidateOnRefresh: true,
+          },
+        });
+
+        tl.to(card, {
+          scale: 1.15,
+          opacity: 0,
+          filter: 'blur(10px)',
+          ease: 'power2.in',
+        });
+
+        if (tl.scrollTrigger) {
+          triggers.push(tl.scrollTrigger);
+        }
+      });
+    };
+
+    timeoutId = setTimeout(setupAnimations, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+      triggers.forEach(t => t.kill());
+    };
+  }, [isMobile]);
+
+  // Mobile layout - Cards without 3D tilt
   if (isMobile) {
     return (
       <section
         ref={sectionRef}
         id="about"
-        className="relative bg-bg-elevated py-16 sm:py-20"
+        className="relative bg-bg-elevated py-16 sm:py-20 overflow-hidden"
       >
+        {/* Floating particles background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Animated floating orbs */}
+          <div className="absolute top-[10%] left-[10%] w-2 h-2 bg-cyan-400/40 rounded-full animate-float-slow" />
+          <div className="absolute top-[30%] right-[15%] w-3 h-3 bg-purple-400/30 rounded-full animate-float-medium" />
+          <div className="absolute top-[50%] left-[5%] w-1.5 h-1.5 bg-pink-400/40 rounded-full animate-float-fast" />
+          <div className="absolute top-[70%] right-[10%] w-2 h-2 bg-blue-400/30 rounded-full animate-float-slow" />
+          <div className="absolute top-[85%] left-[20%] w-2.5 h-2.5 bg-emerald-400/30 rounded-full animate-float-medium" />
+          <div className="absolute top-[15%] right-[25%] w-1 h-1 bg-amber-400/50 rounded-full animate-float-fast" />
+
+          {/* Large background glows */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-radial from-cyan-500/15 via-transparent to-transparent blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-radial from-purple-500/15 via-transparent to-transparent blur-3xl" />
+        </div>
+
         {/* Section label (HUD Style) */}
-        <div className="mb-10 sm:mb-12 px-4 sm:px-6 text-center">
+        <div className="mb-10 sm:mb-12 px-4 sm:px-6 text-center relative z-10">
           <div className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md">
             <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
               Timeline Analysis
@@ -296,142 +366,256 @@ export function About() {
           </h2>
         </div>
 
-        {/* Vertical panels */}
-        <div className="flex flex-col gap-12 sm:gap-16 md:gap-20 px-4 sm:px-6">
+        {/* Cards */}
+        <div className="flex flex-col gap-10 sm:gap-14 px-4 sm:px-6 relative z-10">
           {storyPanels.map((panel, i) => (
-            <div key={panel.id} className="relative">
-              {/* Number - positioned with higher z-index to prevent overlap */}
-              <span
-                className="absolute -left-1 sm:-left-2 -top-6 sm:-top-8 font-mono text-4xl sm:text-5xl md:text-6xl font-bold opacity-10 z-10"
-                style={{ color: panel.color }}
+            <div
+              key={panel.id}
+              ref={(el) => {
+                if (el) mobileCardsRef.current[i] = el;
+              }}
+              className="relative group mobile-journey-card"
+            >
+              {/* Card container */}
+              <div
+                className="relative rounded-2xl sm:rounded-3xl overflow-hidden transform-gpu"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(20,20,35,0.95) 0%, rgba(10,10,20,0.98) 100%)',
+                  boxShadow: `
+                    0 25px 50px -12px rgba(0,0,0,0.5),
+                    0 0 0 1px ${panel.color}30,
+                    inset 0 1px 0 0 rgba(255,255,255,0.05)
+                  `,
+                }}
               >
-                {panel.number}
-              </span>
+                {/* Animated shimmer border */}
+                <div
+                  className="absolute inset-0 rounded-2xl sm:rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+                  style={{
+                    background: `linear-gradient(90deg, transparent 0%, ${panel.color}40 50%, transparent 100%)`,
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 2s infinite linear',
+                    padding: '1px',
+                    mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    maskComposite: 'xor',
+                    WebkitMaskComposite: 'xor',
+                  }}
+                />
 
-              {/* Image (Mobile) - with top margin to prevent overlap with number */}
-              {panel.image && (
-                <div className="relative mb-6 sm:mb-8 mt-12 sm:mt-14 h-52 sm:h-64 w-full overflow-hidden rounded-xl sm:rounded-2xl border border-white/10">
-                  <Image
-                    src={panel.image}
-                    alt={panel.title}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-bg-elevated via-transparent to-transparent opacity-50" />
+                {/* Number watermark */}
+                <div
+                  className="absolute -top-4 -right-2 font-display text-[6rem] sm:text-[8rem] font-black opacity-[0.03] z-0 select-none"
+                  style={{ color: panel.color }}
+                >
+                  {panel.number}
                 </div>
-              )}
 
-              {/* Title */}
-              <h3 className="mb-2 font-display text-2xl sm:text-3xl font-bold text-white">
-                {panel.title}
-              </h3>
+                {/* Image with parallax-like zoom */}
+                {panel.image && (
+                  <div className="relative h-52 sm:h-64 w-full overflow-hidden">
+                    <Image
+                      src={panel.image}
+                      alt={panel.title}
+                      fill
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    />
+                    {/* Gradient overlays for depth */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a14] via-transparent to-transparent" />
+                    <div
+                      className="absolute inset-0 opacity-40"
+                      style={{
+                        background: `linear-gradient(135deg, ${panel.color}20 0%, transparent 60%)`,
+                      }}
+                    />
 
-              {/* Subtitle */}
-              <p className="mb-3 sm:mb-4 font-mono text-xs sm:text-sm leading-relaxed" style={{ color: panel.color }}>
-                {panel.subtitle}
-              </p>
-
-              {/* Content */}
-              <p className="mb-6 sm:mb-8 text-sm sm:text-base leading-relaxed text-text-secondary">
-                {panel.content}
-              </p>
-
-              {/* Stats */}
-              <div className="flex gap-8 sm:gap-12 mb-6 flex-wrap">
-                {panel.stats.map((stat, j) => (
-                  <div key={j} className="stat">
-                    <span className="block font-display text-2xl sm:text-3xl font-bold text-white">
-                      {stat.value}
-                      {stat.suffix}
-                    </span>
-                    <span className="text-xs sm:text-sm text-text-muted">{stat.label}</span>
+                    {/* Floating number badge */}
+                    <div
+                      className="absolute top-4 left-4 px-3 py-1.5 rounded-full font-mono text-xs font-bold backdrop-blur-md"
+                      style={{
+                        background: `${panel.color}20`,
+                        border: `1px solid ${panel.color}50`,
+                        color: panel.color,
+                        boxShadow: `0 0 20px ${panel.color}30`,
+                      }}
+                    >
+                      {panel.number}
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
 
-              {/* Button */}
-              {panel.button && (
-                <a
-                  href={panel.button.link}
-                  onClick={(e) => {
-                    if (panel.button.link.startsWith('#')) {
-                      e.preventDefault();
-                      setNavigating(true);
+                {/* Content area */}
+                <div className="p-5 sm:p-6 relative z-10">
+                  {/* Title with gradient */}
+                  <h3
+                    className="font-display text-2xl sm:text-3xl font-bold mb-2"
+                    style={{
+                      background: `linear-gradient(135deg, #ffffff 0%, ${panel.color} 100%)`,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                  >
+                    {panel.title}
+                  </h3>
 
-                      // Special handling for testimonials section (same as Navigation.tsx)
-                      if (panel.button.link === '#testimonials-content') {
-                        const testimonialsContent = document.getElementById('testimonials-content');
-                        const testimonialsSection = document.getElementById('testimonials');
+                  {/* Subtitle */}
+                  <p
+                    className="font-mono text-xs sm:text-sm mb-4 opacity-80"
+                    style={{ color: panel.color }}
+                  >
+                    {panel.subtitle}
+                  </p>
 
-                        if (testimonialsContent && testimonialsSection) {
-                          // Check if we're above the testimonials section
-                          const testimonialsTop = testimonialsSection.getBoundingClientRect().top;
+                  {/* Content */}
+                  <p className="text-sm sm:text-base leading-relaxed text-text-secondary/90 mb-5">
+                    {panel.content}
+                  </p>
 
-                          if (testimonialsTop > 0) {
-                            // Force animation layers to completed state
-                            const portalLight = document.querySelector('.portal-light-layer') as HTMLElement;
-                            const portalClouds = document.querySelector('.portal-clouds-layer') as HTMLElement;
-                            const portalBlur = document.querySelector('.portal-blur-layer') as HTMLElement;
-                            const testimonialMarquee = document.querySelector('.testimonial-marquee') as HTMLElement;
+                  {/* Stats with glowing boxes */}
+                  <div className="flex gap-4 sm:gap-6 mb-5 flex-wrap">
+                    {panel.stats.map((stat, j) => (
+                      <div
+                        key={j}
+                        className="relative px-4 py-3 rounded-xl overflow-hidden"
+                        style={{
+                          background: 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${panel.color}30`,
+                        }}
+                      >
+                        {/* Stat glow */}
+                        <div
+                          className="absolute inset-0 opacity-20"
+                          style={{
+                            background: `radial-gradient(circle at center, ${panel.color}40 0%, transparent 70%)`,
+                          }}
+                        />
+                        <span className="relative block font-display text-2xl sm:text-3xl font-bold text-white">
+                          {stat.value}
+                          <span className="font-mono text-lg" style={{ color: panel.color }}>{stat.suffix}</span>
+                        </span>
+                        <span className="relative text-xs text-text-muted">{stat.label}</span>
+                      </div>
+                    ))}
+                  </div>
 
-                            if (portalLight) gsap.set(portalLight, { opacity: 0 });
-                            if (portalClouds) gsap.set(portalClouds, { opacity: 0 });
-                            if (portalBlur) gsap.set(portalBlur, { opacity: 0, backdropFilter: 'blur(0px)' });
+                  {/* Button with glow effect */}
+                  {panel.button && (
+                    <a
+                      href={panel.button.link}
+                      onClick={(e) => {
+                        if (panel.button.link.startsWith('#')) {
+                          e.preventDefault();
+                          setNavigating(true);
 
-                            // Make testimonial marquee visible
-                            if (testimonialMarquee) gsap.set(testimonialMarquee, { opacity: 1, y: 0 });
+                          if (panel.button.link === '#testimonials-content') {
+                            const testimonialsContent = document.getElementById('testimonials-content');
+                            const testimonialsSection = document.getElementById('testimonials');
 
-                            // Calculate scroll position - account for pin-spacer
-                            const pinSpacer = testimonialsSection.parentElement;
-                            const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : testimonialsSection;
+                            if (testimonialsContent && testimonialsSection) {
+                              const testimonialsTop = testimonialsSection.getBoundingClientRect().top;
 
-                            // Scroll to END of pin (after animation completes)
-                            const sectionStart = targetElement.getBoundingClientRect().top + window.scrollY;
-                            const pinEndPosition = sectionStart + 1500; // Match ScrollTrigger end value
+                              if (testimonialsTop > 0) {
+                                const portalLight = document.querySelector('.portal-light-layer') as HTMLElement;
+                                const portalClouds = document.querySelector('.portal-clouds-layer') as HTMLElement;
+                                const portalBlur = document.querySelector('.portal-blur-layer') as HTMLElement;
+                                const testimonialMarquee = document.querySelector('.testimonial-marquee') as HTMLElement;
 
-                            // Use immediate scroll to jump past animation
-                            scrollTo(pinEndPosition, { immediate: true, duration: 0 });
+                                if (portalLight) gsap.set(portalLight, { opacity: 0 });
+                                if (portalClouds) gsap.set(portalClouds, { opacity: 0 });
+                                if (portalBlur) gsap.set(portalBlur, { opacity: 0, backdropFilter: 'blur(0px)' });
+                                if (testimonialMarquee) gsap.set(testimonialMarquee, { opacity: 1, y: 0 });
 
-                            // Refresh ScrollTrigger after scroll
-                            setTimeout(() => {
-                              ScrollTrigger.refresh();
-                            }, 100);
+                                const pinSpacer = testimonialsSection.parentElement;
+                                const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : testimonialsSection;
+                                const sectionStart = targetElement.getBoundingClientRect().top + window.scrollY;
+                                const pinEndPosition = sectionStart + 1500;
+
+                                scrollTo(pinEndPosition, { immediate: true, duration: 0 });
+                                setTimeout(() => ScrollTrigger.refresh(), 100);
+                              } else {
+                                scrollTo(panel.button.link, { offset: -80 });
+                              }
+                            } else {
+                              scrollTo(panel.button.link, { offset: -80 });
+                            }
                           } else {
-                            // Below testimonials - smooth scroll is fine
                             scrollTo(panel.button.link, { offset: -80 });
                           }
-                        } else {
-                          scrollTo(panel.button.link, { offset: -80 });
                         }
-                      } else {
-                        // Other links - normal scroll
-                        scrollTo(panel.button.link, { offset: -80 });
-                      }
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
+                      }}
+                      className="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 overflow-hidden group/btn"
+                      style={{
+                        border: `1px solid ${panel.color}`,
+                        color: panel.color,
+                      }}
+                    >
+                      {/* Button glow on hover */}
+                      <div
+                        className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"
+                        style={{
+                          background: `linear-gradient(135deg, ${panel.color}30 0%, transparent 100%)`,
+                        }}
+                      />
+                      <span className="relative">{panel.button.text}</span>
+                      <svg className="relative w-4 h-4 transition-transform group-hover/btn:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
+
+                {/* Bottom accent line */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-1 opacity-50"
                   style={{
-                    borderColor: panel.color,
-                    color: panel.color,
+                    background: `linear-gradient(90deg, transparent 0%, ${panel.color} 50%, transparent 100%)`,
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = panel.color;
-                    e.currentTarget.style.color = '#000';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = panel.color;
-                  }}
-                >
-                  {panel.button.text}
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </a>
-              )}
+                />
+              </div>
             </div>
           ))}
         </div>
+
+        {/* CSS for animations */}
+        <style jsx>{`
+          @keyframes cardReveal {
+            from {
+              opacity: 0;
+              transform: translateY(60px) rotateX(10deg);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) rotateX(2deg);
+            }
+          }
+          
+          @keyframes shimmer {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+          }
+          
+          @keyframes float-slow {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(-10px) translateX(-5px); }
+            75% { transform: translateY(-25px) translateX(5px); }
+          }
+          
+          @keyframes float-medium {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            33% { transform: translateY(-15px) translateX(-10px); }
+            66% { transform: translateY(-25px) translateX(10px); }
+          }
+          
+          @keyframes float-fast {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+          }
+          
+          .animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
+          .animate-float-medium { animation: float-medium 6s ease-in-out infinite; }
+          .animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
+        `}</style>
       </section>
     );
   }
