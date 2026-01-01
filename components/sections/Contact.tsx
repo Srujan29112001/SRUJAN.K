@@ -647,8 +647,8 @@ export function Contact() {
               </div>
             </div>
 
-            {/* 3D Globe - Hidden on mobile and tablet, visible on desktop only */}
-            <div className="hidden lg:block relative h-[400px] xl:h-[450px] w-full overflow-hidden rounded-2xl border border-white/5 bg-bg-surface">
+            {/* 3D Globe - Visible on all screen sizes */}
+            <div className="relative h-[300px] sm:h-[350px] lg:h-[400px] xl:h-[450px] w-full overflow-hidden rounded-2xl border border-white/5 bg-bg-surface">
               <Scene cameraPosition={[0, 0, 5.5]}>
                 <ContactGlobe />
               </Scene>
