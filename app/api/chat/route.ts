@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiPersona, quickResponses } from '@/data/ai-persona';
 import { getRAGContext, getRAGStatus, initializeRAG } from '@/lib/rag';
+import { addMessageToSession } from '@/app/api/admin/chat-history/route';
 
 // =============================================================================
 // GEMINI API CONFIGURATION WITH MULTI-KEY ROTATION
@@ -107,6 +108,7 @@ interface ChatRequest {
     message: string;
     history?: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>;
     offlineMode?: boolean; // When true, skip Gemini API and use RAG-only fallback
+    sessionId?: string; // Optional session ID for tracking conversations
 }
 
 /**
@@ -228,12 +230,22 @@ async function callGeminiWithKeyRotation(
 export async function POST(request: NextRequest) {
     let message = '';
     let ragContext = '';
+    let sessionId = '';
+    let userAgent = '';
+    let ipAddress = '';
 
     try {
         const body: ChatRequest = await request.json();
         message = body.message;
         const history = body.history || [];
         const offlineMode = body.offlineMode || false; // ASA mode forces offline
+        sessionId = body.sessionId || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Extract user info for logging
+        userAgent = request.headers.get('user-agent') || 'Unknown';
+        ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+            request.headers.get('x-real-ip') ||
+            'Unknown';
 
         if (!message || typeof message !== 'string') {
             return NextResponse.json(
@@ -258,11 +270,21 @@ export async function POST(request: NextRequest) {
         // 🔌 OFFLINE MODE (ASA Mode): Skip Gemini API, use RAG-only fallback
         if (offlineMode) {
             console.log('🔌 Offline mode enabled (ASA ON) - using RAG-only response');
+            const offlineResponse = getFallbackResponse(message, ragContext, 'ASA Mode: Running offline with cached knowledge.');
+
+            // 📝 Log to chat history
+            try {
+                addMessageToSession(sessionId, message, offlineResponse, 'offline', userAgent, ipAddress);
+            } catch (e) {
+                console.error('Failed to log chat history:', e);
+            }
+
             return NextResponse.json({
-                response: getFallbackResponse(message, ragContext, 'ASA Mode: Running offline with cached knowledge.'),
+                response: offlineResponse,
                 source: 'offline',
                 rag: ragContext.length > 0,
                 mode: 'asa-offline',
+                sessionId,
             });
         }
 
@@ -271,10 +293,20 @@ export async function POST(request: NextRequest) {
 
         if (apiKeys.length === 0) {
             // Fallback to local responses if no API keys
+            const localResponse = getFallbackResponse(message, ragContext);
+
+            // 📝 Log to chat history
+            try {
+                addMessageToSession(sessionId, message, localResponse, 'local', userAgent, ipAddress);
+            } catch (e) {
+                console.error('Failed to log chat history:', e);
+            }
+
             return NextResponse.json({
-                response: getFallbackResponse(message, ragContext),
+                response: localResponse,
                 source: 'local',
                 rag: ragContext.length > 0,
+                sessionId,
             });
         }
 
@@ -340,11 +372,21 @@ export async function POST(request: NextRequest) {
                 ? 'AI service is temporarily busy. Showing cached knowledge instead.'
                 : 'AI service unavailable. Showing cached knowledge instead.';
 
+            const fallbackResponse = getFallbackResponse(message, ragContext, userFriendlyError);
+
+            // 📝 Log to chat history
+            try {
+                addMessageToSession(sessionId, message, fallbackResponse, 'local-fallback', userAgent, ipAddress);
+            } catch (e) {
+                console.error('Failed to log chat history:', e);
+            }
+
             return NextResponse.json({
-                response: getFallbackResponse(message, ragContext, userFriendlyError),
+                response: fallbackResponse,
                 source: 'local',
                 apiError: true,
                 rag: ragContext.length > 0,
+                sessionId,
             });
         }
 
@@ -353,11 +395,28 @@ export async function POST(request: NextRequest) {
         const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!aiResponse) {
+            const noResponseFallback = getFallbackResponse(message, ragContext);
+
+            // 📝 Log to chat history
+            try {
+                addMessageToSession(sessionId, message, noResponseFallback, 'local-no-response', userAgent, ipAddress);
+            } catch (e) {
+                console.error('Failed to log chat history:', e);
+            }
+
             return NextResponse.json({
-                response: getFallbackResponse(message, ragContext),
+                response: noResponseFallback,
                 source: 'local',
                 rag: ragContext.length > 0,
+                sessionId,
             });
+        }
+
+        // 📝 Log successful Gemini response to chat history
+        try {
+            addMessageToSession(sessionId, message, aiResponse, 'gemini', userAgent, ipAddress);
+        } catch (e) {
+            console.error('Failed to log chat history:', e);
         }
 
         return NextResponse.json({
@@ -365,16 +424,29 @@ export async function POST(request: NextRequest) {
             source: 'gemini',
             model: GEMINI_MODEL,
             rag: ragContext.length > 0,
+            sessionId,
         });
 
     } catch (error) {
         console.error('Chat API error:', error);
 
+        const errorResponse = getFallbackResponse(message, ragContext, error instanceof Error ? error.message : String(error));
+
+        // 📝 Log error response to chat history
+        try {
+            if (sessionId) {
+                addMessageToSession(sessionId, message, errorResponse, 'error', userAgent, ipAddress);
+            }
+        } catch (e) {
+            console.error('Failed to log chat history:', e);
+        }
+
         return NextResponse.json(
             {
                 error: 'Failed to process message',
-                response: getFallbackResponse(message, ragContext, error instanceof Error ? error.message : String(error)),
+                response: errorResponse,
                 rag: false,
+                sessionId,
             },
             { status: 500 }
         );

@@ -43,11 +43,16 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
     const [specialAction, setSpecialAction] = useState<'backflip' | 'zombie' | 'scared' | 'dizzy' | 'shocked' | 'terrified' | 'chill' | 'shy' | 'excited' | 'looking' | 'walking' | 'shuffle' | 'silly' | 'wave' | 'breakdance' | 'blushing' | 'kissing' | 'smirk' | 'disappointed' | 'surprised' | 'suspicious' | 'okSign' | 'irritated' | 'laughing' | 'thumbsUp' | 'glad' | 'confused' | 'waving' | null>(null);
     const [oocMode, setOocMode] = useState(false);
     const [awrtcMode, setAwrtcMode] = useState(false);
+    const [chatSessionId, setChatSessionId] = useState<string | null>(null);
     const sectionRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    // Initialize session ID from sessionStorage or generate new one
     useEffect(() => {
-        // Animations handled by Framer Motion for reliability
+        const storedSessionId = sessionStorage.getItem('chatSessionId');
+        if (storedSessionId) {
+            setChatSessionId(storedSessionId);
+        }
     }, []);
 
     // Interactive Particle Background
@@ -269,11 +274,19 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 body: JSON.stringify({
                     message: userMessage,
                     offlineMode: oocMode, // When ASA mode is ON, force offline/RAG-only mode
+                    sessionId: chatSessionId || undefined, // Send session ID if available
                 }),
             });
 
             if (response.ok) {
                 const data = await response.json();
+
+                // Store session ID from response for future messages
+                if (data.sessionId && data.sessionId !== chatSessionId) {
+                    setChatSessionId(data.sessionId);
+                    sessionStorage.setItem('chatSessionId', data.sessionId);
+                }
+
                 return data.response;
             }
         } catch {
@@ -282,7 +295,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
 
         // Fallback response (only if API fails completely)
         return `Thanks for your message! To give you the best answer, I'd recommend:\n\n1. Check out the **Project Calculator** below for cost estimates\n2. **Book a consultation** to discuss your specific needs\n3. Or ask me about specific topics like my skills, projects, or approach to problem-solving.\n\nHow can I help you today?`;
-    }, [onEstimateRequest, onBookingRequest, oocMode]);
+    }, [onEstimateRequest, onBookingRequest, oocMode, chatSessionId]);
 
     const handleSendMessage = useCallback(async (content: string) => {
         const lowerContent = content.toLowerCase();

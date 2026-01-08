@@ -106,11 +106,15 @@ export function TerminalChat({
     }, [isSpeaking, onVoiceSpeakingChange]);
 
     // Auto-scroll to bottom (within chat only, not page)
-    useEffect(() => {
+    const scrollToBottom = useCallback(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-    }, [messages]);
+    }, []);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, scrollToBottom]);
 
     // Focus input on mount
     useEffect(() => {
@@ -273,6 +277,7 @@ export function TerminalChat({
                                                 text={message.content}
                                                 onComplete={handleTypingComplete}
                                                 stopTrigger={stopTypingTrigger}
+                                                onTextUpdate={scrollToBottom}
                                             />
                                         ) : (
                                             message.content
@@ -418,11 +423,13 @@ function TypewriterText({
     speed = 20,
     onComplete,
     stopTrigger = 0,
+    onTextUpdate,
 }: {
     text: string;
     speed?: number;
     onComplete?: () => void;
     stopTrigger?: number;
+    onTextUpdate?: () => void;
 }) {
     const [displayedText, setDisplayedText] = useState('');
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -443,8 +450,13 @@ function TypewriterText({
 
         if (currentIndex < text.length) {
             const timeout = setTimeout(() => {
-                setDisplayedText(prev => prev + text[currentIndex]);
+                const nextChar = text[currentIndex];
+                setDisplayedText(prev => prev + nextChar);
                 setCurrentIndex(prev => prev + 1);
+                // Scroll every 10 characters or on newlines for smooth UX
+                if ((currentIndex + 1) % 10 === 0 || nextChar === '\n') {
+                    onTextUpdate?.();
+                }
             }, speed);
 
             return () => clearTimeout(timeout);
