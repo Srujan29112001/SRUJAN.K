@@ -433,19 +433,19 @@ function SkillItem({ skill, color }: { skill: Skill; color: string }) {
       {/* Circular Progress Indicator */}
       <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center">
         {/* Background Circle */}
-        <svg className="w-full h-full -rotate-90">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
           <circle
-            cx="20"
-            cy="20"
+            cx="24"
+            cy="24"
             r={radius}
-            className="stroke-white/10 sm:cx-24 sm:cy-24"
+            className="stroke-white/10"
             strokeWidth="3"
             fill="none"
           />
           {/* Animated Progress Circle */}
           <circle
-            cx="20"
-            cy="20"
+            cx="24"
+            cy="24"
             r={radius}
             stroke={color}
             strokeWidth="3"
@@ -453,10 +453,10 @@ function SkillItem({ skill, color }: { skill: Skill; color: string }) {
             strokeDasharray={circumference}
             strokeDashoffset={isHovered ? offset : circumference} // Animate on hover (or use IntersectionObserver for scroll)
             strokeLinecap="round"
-            className="transition-all duration-1000 ease-out sm:cx-24 sm:cy-24"
+            className="transition-all duration-1000 ease-out"
           />
         </svg>
-        <span className="absolute text-[9px] sm:text-[10px] font-mono font-bold text-white/80">
+        <span className="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[10px] font-mono font-bold text-white/80">
           {skill.proficiency}%
         </span>
       </div>
