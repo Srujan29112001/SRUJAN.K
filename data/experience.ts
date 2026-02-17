@@ -39,7 +39,7 @@ export const experiences: Experience[] = [
     highlights: [
       'Focus on Embedded Systems and AI/ML',
       'Multiple research projects in Robotics and BCI',
-      'Graduated with First Class with Distinction',
+      'Specialized in Robotics & Control Systems',
     ],
     color: '#06B6D4',
     image: '/images/experience/thapar.png',

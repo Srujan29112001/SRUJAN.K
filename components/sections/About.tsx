@@ -27,10 +27,11 @@ const storyPanels = [
     number: '02',
     title: 'The Foundation',
     subtitle: 'Thapar University & Robotics',
-    content: `My journey began in the labs of Thapar University (2019-2023). Late nights soldering circuits, coding embedded systems, and building robots. I specialized in Robotics and Control Systems, graduating with First Class with Distinction. This was where I forged my understanding of hardware-software integration and the physical reality of intelligent systems.`,
+    content: `My journey began in the labs of Thapar University (2019-2023). Late nights soldering circuits, coding embedded systems, and building robots. I specialized in Robotics and Control Systems, building multiple real-world projects in embedded AI and hardware-software integration. This was where I forged my understanding of intelligent systems and the physical reality of machine perception.`,
     stats: [
       { value: 4, suffix: ' Years', label: 'Engineering' },
-      { value: 1, suffix: 'st', label: 'Class Distinction' },
+      { value: 1, suffix: '', label: 'Minor Project' },
+      { value: 1, suffix: '', label: 'Major Project' },
     ],
     color: '#F59E0B', // Amber/Yellow
     image: '/images/experience/thapar.png',
@@ -97,9 +98,9 @@ const storyPanels = [
     number: '07',
     title: 'The Expansion',
     subtitle: 'The Freelance Era (2023-2025)',
-    content: `From Nov 2023 to present, I scaled my impact globally. Working with international and Indian clients, I architected and delivered 6 Enterprise-grade MVP projects—including the Clinical AI Copilot, Finance Analytics Platform, and EIP. I built full-stack AI apps, websites, and complex multi-agent systems, proving that rapid delivery and deep engineering can coexist.`,
+    content: `From Nov 2023 to present, I scaled my impact globally. Working with international and Indian clients, I architected and delivered 9 Enterprise-grade MVP projects—including the Clinical AI Copilot, Finance Analytics Platform, and EIP. I built full-stack AI apps, websites, and complex multi-agent systems, proving that rapid delivery and deep engineering can coexist.`,
     stats: [
-      { value: 6, suffix: '+', label: 'MVP Products' },
+      { value: 9, suffix: '+', label: 'MVP Products' },
       { value: 2, suffix: ' Yrs', label: 'Freelancing' },
     ],
     color: '#EC4899', // Pink
