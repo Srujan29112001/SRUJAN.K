@@ -17,6 +17,7 @@ export interface Project {
   gallery?: ProjectImage[];
   color: string;
   featured: boolean;
+  ongoing?: boolean;
   link?: string;
   github?: string;
   documentation?: string;
@@ -62,6 +63,7 @@ export const projects: Project[] = [
     ],
     color: '#10B981',
     featured: true,
+    ongoing: true,
     year: '2024',
     role: 'Lead Researcher',
     link: 'https://srujan29112001.github.io/AI-SRUJAN/'
@@ -78,6 +80,7 @@ export const projects: Project[] = [
     gallery: [], // Empty gallery to prevent duplicate single image in carousel
     color: '#06B6D4',
     featured: true,
+    ongoing: true,
     year: '2024',
     role: 'Full Stack AI Developer',
     github: 'https://github.com/Srujan29112001/Holistic-Wellness-app',
@@ -95,6 +98,7 @@ export const projects: Project[] = [
     gallery: [], // Prevent duplicate
     color: '#EC4899',
     featured: true,
+    ongoing: true,
     year: '2024',
     role: 'Lead AI Engineer',
     link: '#'
@@ -111,6 +115,7 @@ export const projects: Project[] = [
     gallery: [], // Prevent duplicate
     color: '#6D64A3',
     featured: true,
+    ongoing: true,
     year: '2024',
     role: 'AI Architect',
     github: 'https://github.com/Srujan29112001/Entra',
@@ -128,6 +133,7 @@ export const projects: Project[] = [
     gallery: [], // Prevent duplicate
     color: '#22C55E',
     featured: true,
+    ongoing: true,
     year: '2024',
     role: 'Lead Architect',
     link: '#'
@@ -568,6 +574,7 @@ export const projects: Project[] = [
     ],
     color: '#10B981',
     featured: true,
+    ongoing: true,
     year: '2024',
     github: 'https://github.com/Srujan29112001/ROBOWAREHOUSE',
     link: 'https://srujan29112001.github.io/ROBOTICS-SRUJAN/'
@@ -841,6 +848,7 @@ export const projects: Project[] = [
     gallery: [],
     color: '#6366F1',
     featured: true,
+    ongoing: true,
     year: '2024',
     role: 'Research Engineer',
     link: '#'

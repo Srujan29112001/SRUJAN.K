@@ -114,6 +114,17 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
               </div>
             ))}
 
+            {/* Ongoing Badge */}
+            {project.ongoing && (
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30 flex items-center gap-2 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-red-500/40 rounded-full shadow-[0_0_12px_rgba(239,68,68,0.25)]">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                </span>
+                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-red-400">Ongoing</span>
+              </div>
+            )}
+
             {/* Navigation Arrows */}
             {slides.length > 1 && (
               <>
@@ -291,10 +302,20 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                 )}
                 <div className="flex justify-between items-center">
                   <span className="text-xs sm:text-sm text-white/50">Status</span>
-                  <span className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] sm:text-xs font-medium border border-emerald-500/30">
-                    <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Completed
-                  </span>
+                  {project.ongoing ? (
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] sm:text-xs font-medium border border-red-500/30">
+                      <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-red-500" />
+                      </span>
+                      Ongoing
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] sm:text-xs font-medium border border-emerald-500/30">
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Completed
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

@@ -238,6 +238,17 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                         {/* Overlay Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
 
+                        {/* Ongoing Badge */}
+                        {featuredProject.ongoing && (
+                            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30 flex items-center gap-2 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-red-500/40 rounded-full shadow-[0_0_12px_rgba(239,68,68,0.25)]">
+                                <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                                </span>
+                                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-red-400">Ongoing</span>
+                            </div>
+                        )}
+
                         {/* Hover Hint */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black/60 backdrop-blur-md rounded-full text-white text-xs sm:text-sm border border-white/20">
@@ -323,6 +334,17 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                                             className="object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+
+                                        {/* Ongoing Badge */}
+                                        {project.ongoing && (
+                                            <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 flex items-center gap-1.5 px-2.5 py-1 bg-black/70 backdrop-blur-md border border-red-500/40 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                                                </span>
+                                                <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-red-400">Ongoing</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-grow">
                                         <h3 className="text-lg sm:text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors line-clamp-1">{project.title}</h3>
