@@ -353,7 +353,6 @@ export function Testimonials() {
                   </div>
                   <div className="min-w-0">
                     <h4 className="font-display font-bold text-white text-sm sm:text-base truncate">{t.name}</h4>
-                    <p className="text-xs sm:text-sm font-mono text-text-muted truncate">{t.role}, {t.company}</p>
                   </div>
                 </div>
               </div>

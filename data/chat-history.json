@@ -1,6 +1,42 @@
 {
   "sessions": [
     {
+      "id": "session-1776923325052-1wktp4sh9",
+      "startedAt": "2026-04-23T05:48:47.808Z",
+      "lastMessageAt": "2026-04-23T05:49:06.659Z",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+      "ipAddress": "::1",
+      "messageCount": 4,
+      "messages": [
+        {
+          "id": "1776923327808-user",
+          "role": "user",
+          "content": "hi",
+          "timestamp": "2026-04-23T05:48:47.808Z"
+        },
+        {
+          "id": "1776923327808-assistant",
+          "role": "assistant",
+          "content": "Hello! It's a pleasure to connect. How can I assist you today? I'm here to bridge the worlds of cutting-edge technology and ancient wisdom, so whether your questions are about AI, robotics, or the deeper mechanisms behind intelligence itself, feel free to ask.",
+          "timestamp": "2026-04-23T05:48:47.808Z",
+          "source": "gemini"
+        },
+        {
+          "id": "1776923346659-user",
+          "role": "user",
+          "content": "What projects have you worked on?",
+          "timestamp": "2026-04-23T05:49:06.659Z"
+        },
+        {
+          "id": "1776923346659-assistant",
+          "role": "assistant",
+          "content": "I've had the opportunity to work on a diverse range of projects, spanning from foundational robotics to advanced AI/ML deployments across various domains. I always aim for robust, production-grade solutions, focusing not just on functionality, but on optimal performance and deep understanding of the underlying mechanisms.\n\nHere are some of the key projects I've worked on:\n\n1.  **DRDO-DRDL Internship Project:** I developed and deployed a **YOLOv7-based aerial object detection system** on an NVIDIA Jetson AGX Xavier. This project achieved an 89% mAP, focusing on efficient inference at the edge for defense applications. My approach here was deeply rooted in optimizing the neural network for specific hardware constraints, ensuring real-time performance in critical scenarios.\n2.  **Clinical AI Copilot:** This was a significant project in healthcare AI, where I developed a system for **seizure detection with an impressive 98.75% accuracy** using EEG analysis. My focus was on creating a reliable tool that could assist clinicians, diving deep into signal processing and robust deep learning architectures.\n3.  **Entrepreneurship Intelligence Platform:** I designed and implemented a platform featuring **38 specialized AI agents**. This involved multi-agent systems, each tailored for specific business intelligence tasks, demonstrating my capability in building complex, interconnected AI ecosystems.\n4.  **Space Debris Tracking System:** I developed a system capable of tracking **over 30,000 orbital objects at 60 FPS**. This project involved intricate orbital dynamics, real-time data processing, and visualization, showcasing my expertise in high-performance computing and complex data handling.\n5.  **Smart Dustbin (Engineering Design II Assignment):** This was a foundational project where I designed a \"Smart Dustbin\" using an **Arduino UNO, an HC-SR04 Ultrasonic Sensor, and a Servo Motor**. The core idea was **object detection**: the ultrasonic sensor, placed on the lid, would detect a human hand, triggering the Arduino to open the lid automatically via the servo motor. This project, while seemingly simple, laid the groundwork for my understanding of sensor integration, basic control systems, and the practical application of object detection principles in embedded systems. It's a great example of how understanding fundamental mechanisms is crucial, even for more advanced AI.\n\nAcross these projects, my core approach remains consistent: research extensively, understand the *mechanism* behind every component, test systematically, document rigorously, and always optimize beyond just \"working\" to \"optimal.\" I've completed over 40 such production-grade AI/ML projects, always seeking to bridge the gap between complex theoretical concepts and their practical, impactful applications.",
+          "timestamp": "2026-04-23T05:49:06.659Z",
+          "source": "gemini"
+        }
+      ]
+    },
+    {
       "id": "session-1767855412315-u24ukvh1c",
       "startedAt": "2026-01-08T06:57:00.664Z",
       "lastMessageAt": "2026-01-08T07:02:56.458Z",

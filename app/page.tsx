@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { Preloader } from '@/components/sections/Preloader';
 import { Hero } from '@/components/sections/Hero';
 import { About } from '@/components/sections/About';
@@ -21,15 +21,51 @@ import { ScanlinesOverlay, VignetteOverlay } from '@/components/ui/AnimatedBackg
 // CursorTrail disabled for performance - was causing continuous canvas redraws
 import { MotionProvider } from '@/components/ui/ResponsiveMotion';
 
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'AI' | 'Robotics' | 'Research'>('AI');
   const [isLoading, setIsLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
 
+  // Handle scroll restoration and force top on mount BEFORE render
+  useLayoutEffect(() => {
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    
+    // Clear GSAP scroll memory which often causes the page to jump on refresh
+    gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.clearScrollMemory('manual');
+    
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    scrollToTop();
+    requestAnimationFrame(() => {
+      scrollToTop();
+      requestAnimationFrame(scrollToTop);
+    });
+
+    const scrollChecker = setInterval(() => {
+      if (window.scrollY > 10 && isLoading) {
+        scrollToTop();
+      }
+    }, 50);
+
+    return () => clearInterval(scrollChecker);
+  }, [isLoading]);
+
   useEffect(() => {
     // Prevent scroll during preloader
     if (isLoading) {
       document.body.style.overflow = 'hidden';
+      // Force scroll to top while preloader is active
+      window.scrollTo(0, 0);
     } else {
       document.body.style.overflow = '';
       // Delay content visibility for smoother transition

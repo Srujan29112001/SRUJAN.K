@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { MagneticButton } from '@/components/ui/MagneticButton';
 import { useIsMobile } from '@/hooks/useMediaQuery';
@@ -16,10 +17,19 @@ const ContactGlobe = dynamic(
   () => import('@/components/three/ContactGlobe').then((m) => m.ContactGlobe),
   { ssr: false }
 );
+const HolographicChat = dynamic(
+  () => import('@/components/sections/HolographicChat'),
+  { ssr: false }
+);
+const AppointmentBooking = dynamic(
+  () => import('@/components/sections/AppointmentBooking').then((m) => m.AppointmentBooking),
+  { ssr: false }
+);
 
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const bookingRef = useRef<{ scrollToBooking: () => void }>(null);
   const isMobile = useIsMobile();
   const router = useRouter();
   const [formState, setFormState] = useState({
@@ -184,54 +194,8 @@ export function Contact() {
               <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
             </div>
 
-            {/* Hire Me for Projects Card */}
-            <Link
-              href="/ai-assistant"
-              className="relative z-20 group overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-4 sm:p-5 md:p-6 backdrop-blur-sm transition-all duration-500 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10 block cursor-pointer mb-6 sm:mb-8 active:scale-[0.98]"
-            >
-              {/* Animated gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-              {/* Content */}
-              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                {/* Animated Icon */}
-                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <svg
-                    className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 group-hover:animate-pulse"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
 
-                {/* Text Content */}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-display text-base sm:text-lg font-semibold text-white mb-1">
-                    Hire Me for Projects
-                  </h4>
-                  <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                    Ready to collaborate? Chat with my AI assistant to discuss your project, get a rough estimate, or schedule a meeting.
-                  </p>
-                </div>
-
-                {/* CTA Button Visual */}
-                <div className="flex-shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium text-xs sm:text-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-500/25 group-hover:scale-105">
-                  <span className="text-base sm:text-lg">💬</span>
-                  <span className="hidden xs:inline">Chat with AI</span>
-                  <span className="xs:hidden">Chat</span>
-                </div>
-              </div>
-
-              {/* Decorative corner accent */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-            </Link>
 
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
               {/* Name */}
@@ -655,6 +619,41 @@ export function Contact() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Scroll Down Indicator */}
+      <div className="w-full flex flex-col items-center justify-center pt-8 pb-16 relative z-10">
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="flex flex-col items-center gap-4 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+          onClick={() => document.getElementById('chat')?.scrollIntoView({ behavior: 'smooth' })}
+        >
+          <span className="font-display text-sm sm:text-base text-cyan-400/90 tracking-wider text-center px-4 italic">
+            "But wait... the magic doesn't stop here."
+          </span>
+          <div className="flex flex-col items-center -space-y-2 text-cyan-400/70">
+            <svg className="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            <svg className="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ animationDelay: '0.2s' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* AI Chat Section — Below existing content */}
+      <div className="w-full">
+        <HolographicChat
+          onEstimateRequest={() => router.push('/ai-assistant')}
+          onBookingRequest={() => bookingRef.current?.scrollToBooking()}
+        />
+      </div>
+
+      {/* Appointment Booking Section */}
+      <div className="w-full">
+        <AppointmentBooking ref={bookingRef} />
       </div>
 
       {/* Background decoration */}

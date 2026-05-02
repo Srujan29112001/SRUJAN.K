@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -46,6 +46,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
     const [chatSessionId, setChatSessionId] = useState<string | null>(null);
     const sectionRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [commandCenterOpen, setCommandCenterOpen] = useState(false);
 
     // Initialize session ID from sessionStorage or generate new one
     useEffect(() => {
@@ -84,15 +85,25 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
             vx: number;
             vy: number;
             size: number;
+            baseSize: number;
+            twinkleSpeed: number;
+            twinklePhase: number;
+            brightness: number;
+            isBright: boolean; // Some stars are brighter
 
             constructor() {
                 this.x = Math.random() * width;
                 this.y = Math.random() * height;
-                this.baseVx = (Math.random() - 0.5) * 0.5;
-                this.baseVy = (Math.random() - 0.5) * 0.5;
+                this.baseVx = (Math.random() - 0.5) * 0.3; // Slower for stars
+                this.baseVy = (Math.random() - 0.5) * 0.3;
                 this.vx = this.baseVx;
                 this.vy = this.baseVy;
-                this.size = Math.random() * 1.7 + 0.5;
+                this.isBright = Math.random() > 0.85; // 15% are bright stars
+                this.baseSize = this.isBright ? Math.random() * 2 + 1.5 : Math.random() * 1.5 + 0.3;
+                this.size = this.baseSize;
+                this.twinkleSpeed = Math.random() * 0.05 + 0.02; // Varied twinkle speeds
+                this.twinklePhase = Math.random() * Math.PI * 2; // Random starting phase
+                this.brightness = Math.random() * 0.5 + 0.5;
             }
 
             update() {
@@ -111,6 +122,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 }
 
                 this.vy += scrollVelocity * 0.01;
+
                 this.x += this.vx;
                 this.y += this.vy;
 
@@ -118,12 +130,34 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 if (this.x > width) this.x = 0;
                 if (this.y < 0) this.y = height;
                 if (this.y > height) this.y = 0;
+
+                // Twinkle effect - oscillate size and brightness
+                this.twinklePhase += this.twinkleSpeed;
+                const twinkle = Math.sin(this.twinklePhase) * 0.5 + 0.5; // 0 to 1
+                this.size = this.baseSize * (0.7 + twinkle * 0.6);
+                this.brightness = 0.4 + twinkle * 0.6;
             }
 
             draw() {
+                // Glow effect for bright stars
+                if (this.isBright) {
+                    const gradient = ctx!.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, this.size * 3
+                    );
+                    gradient.addColorStop(0, `rgba(255, 255, 255, ${this.brightness})`);
+                    gradient.addColorStop(0.3, `rgba(255, 255, 255, ${this.brightness * 0.3})`);
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx!.beginPath();
+                    ctx!.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+                    ctx!.fillStyle = gradient;
+                    ctx!.fill();
+                }
+
+                // Star core
                 ctx!.beginPath();
                 ctx!.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx!.fillStyle = 'rgba(6, 182, 212, 0.55)';
+                ctx!.fillStyle = `rgba(255, 255, 255, ${this.brightness})`;
                 ctx!.fill();
             }
         }
@@ -132,7 +166,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
             width = canvas.width = section.offsetWidth;
             height = canvas.height = section.offsetHeight;
             const area = width * height;
-            const particleCount = Math.floor(area / 3000);
+            const particleCount = Math.floor(area / 2500); // More stars
             particles = Array.from({ length: particleCount }, () => new Particle());
         };
 
@@ -633,7 +667,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8, delay: 0.1 }}
-                    className="relative font-display text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 uppercase tracking-tight"
+                    className="relative font-display text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 uppercase tracking-tight"
                     style={{
                         textShadow: '0 0 80px rgba(6, 182, 212, 0.5), 0 0 120px rgba(6, 182, 212, 0.3), 0 0 160px rgba(6, 182, 212, 0.2)'
                     }}
@@ -648,6 +682,9 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                     className="text-base md:text-lg text-white/60 max-w-2xl mx-auto"
                 >
                     I'm an AI representation of Srujan — feel free to discuss projects, explore ideas, or ask me anything you'd like to know.
+                    <span className="block mt-2 text-cyan-400/80 italic text-sm md:text-base">
+                        Rest assured, Srujan personally reviews all interactions to ensure a seamless follow-up.
+                    </span>
                 </motion.p>
             </div>
 
@@ -703,7 +740,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 </motion.div>
             </div>
 
-            {/* Special Actions Guide */}
+            {/* 🎮 Avatar Command Center — Gamified Collapsible */}
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -711,124 +748,131 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 transition={{ delay: 0.6 }}
                 className="max-w-6xl mx-auto mt-12"
             >
-                <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-cyan-500/20 p-6">
-                    <h3 className="text-xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
-                        <span className="text-2xl">✨</span>
-                        Avatar Special Actions
-                        <span className="text-xs font-normal text-gray-400 ml-2">Try these trigger words!</span>
-                    </h3>
-
-                    {/* ASA Usage Instructions */}
-                    <div className="mb-3 p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                        <p className="text-sm text-gray-300">
-                            <span className="text-purple-400 font-semibold">ASA Mode:</span> Click the{' '}
-                            <span className="px-1.5 py-0.5 bg-purple-500/30 text-purple-300 rounded text-xs font-mono">ASA</span>{' '}
-                            button (<span className="text-purple-300">Avatar Special Action</span>) to manually trigger actions.
-                            When <span className="text-purple-300">ASA is ON</span>, type any trigger word below to make the avatar perform that action.
-                        </p>
+                {/* Unlock Button / Header */}
+                <button
+                    onClick={() => setCommandCenterOpen(!commandCenterOpen)}
+                    className="w-full group relative overflow-hidden rounded-2xl border-2 transition-all duration-500"
+                    style={{
+                        borderColor: commandCenterOpen ? 'rgba(6, 182, 212, 0.4)' : 'rgba(168, 85, 247, 0.3)',
+                        background: commandCenterOpen
+                            ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(59, 130, 246, 0.05))'
+                            : 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(236, 72, 153, 0.05))',
+                    }}
+                >
+                    {/* Animated scanning line */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div
+                            className="absolute h-px w-full opacity-40"
+                            style={{
+                                background: 'linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.8), transparent)',
+                                animation: 'scanLine 3s ease-in-out infinite',
+                                top: '50%',
+                            }}
+                        />
                     </div>
 
-                    {/* AWRTC Usage Instructions */}
-                    <div className="mb-4 p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
-                        <p className="text-sm text-gray-300">
-                            <span className="text-cyan-400 font-semibold">AWRTC Mode <span className="text-[10px] opacity-70">(beta version)</span>:</span> Click the{' '}
-                            <span className="px-1.5 py-0.5 bg-cyan-500/30 text-cyan-300 rounded text-xs font-mono">AWRTCβ</span>{' '}
-                            button (<span className="text-cyan-300">Action With Respect To Context</span>) for intelligent mode.
-                            When enabled, the avatar automatically performs contextual actions based on the AI response —
-                            syncing animations, text, and voice for a seamless experience.
-                        </p>
-                        <p className="text-xs text-cyan-400/60 mt-2 italic">
-                            ⚠️ This feature is currently in beta and under active development. Some contextual triggers may not work as expected.
-                            Full functionality and additional action mappings will be expanded in future updates.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Physical Actions */}
-                        <div className="space-y-3 p-4 bg-purple-500/5 rounded-xl border border-purple-500/10">
-                            <h4 className="text-sm font-semibold text-purple-400 uppercase tracking-wider">🎭 Physical Actions</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Backflip:</span> <span className="text-gray-400">backflip, flip</span></div>
-                                <div><span className="text-cyan-300 font-medium">Walking:</span> <span className="text-gray-400">walk, approach, come here, step forward, move closer, coming, strut, stroll</span></div>
-                                <div><span className="text-cyan-300 font-medium">Waving:</span> <span className="text-gray-400">wave, hi, hello, hey there, greet, bye, goodbye, see ya, hands up</span></div>
-                                <div><span className="text-cyan-300 font-medium">Looking:</span> <span className="text-gray-400">look, search, gaze, horizon, distance, far away, where, find, watch, spot, see that</span></div>
+                    <div className="relative z-10 p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4">
+                        {/* Left — Icon + Title */}
+                        <div className="flex items-center gap-3 flex-1">
+                            <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 ${commandCenterOpen ? 'bg-cyan-500/20 border border-cyan-400/30' : 'bg-purple-500/20 border border-purple-400/30'}`}>
+                                <span className="text-2xl">{commandCenterOpen ? '🎮' : '🔒'}</span>
+                                {!commandCenterOpen && (
+                                    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-purple-400 animate-ping" />
+                                )}
+                            </div>
+                            <div className="text-left">
+                                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                    Avatar Command Center
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider ${commandCenterOpen ? 'bg-cyan-400/20 text-cyan-400' : 'bg-purple-400/20 text-purple-400 animate-pulse'}`}>
+                                        {commandCenterOpen ? '✦ UNLOCKED' : '⬡ TAP TO UNLOCK'}
+                                    </span>
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    {commandCenterOpen ? '27 actions loaded • ASA & AWRTC modes available' : 'Discover 27 secret avatar actions & dance moves'}
+                                </p>
                             </div>
                         </div>
 
-                        {/* Dance Moves */}
-                        <div className="space-y-3 p-4 bg-pink-500/5 rounded-xl border border-pink-500/10">
-                            <h4 className="text-sm font-semibold text-pink-400 uppercase tracking-wider">💃 Dance Moves</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Shuffle:</span> <span className="text-gray-400">shuffle, shuffling, melbourne shuffle</span></div>
-                                <div><span className="text-cyan-300 font-medium">Silly (DJ Bravo):</span> <span className="text-gray-400">silly, champion, bravo, goofy, funny dance, clown</span></div>
-                                <div><span className="text-cyan-300 font-medium">Wave Dance:</span> <span className="text-gray-400">wave dance, waving, liquid, popping, robot dance, flow</span></div>
-                                <div><span className="text-cyan-300 font-medium">Breakdance:</span> <span className="text-gray-400">breakdance, break dance, bboy, breaking, windmill, headspin, hip hop dance</span></div>
+                        {/* Right — XP Bar + Chevron */}
+                        <div className="flex items-center gap-4">
+                            <div className="hidden sm:block">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-mono text-[10px] text-gray-500 uppercase">Power Level</span>
+                                    <span className="font-mono text-[10px] text-cyan-400 font-bold">MAX</span>
+                                </div>
+                                <div className="w-32 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full bg-gradient-to-r from-purple-500 via-cyan-400 to-emerald-400" style={{ width: '100%', animation: 'shimmer 2s ease-in-out infinite' }} />
+                                </div>
                             </div>
-                        </div>
-
-                        {/* Emotions */}
-                        <div className="space-y-3 p-4 bg-yellow-500/5 rounded-xl border border-yellow-500/10">
-                            <h4 className="text-sm font-semibold text-yellow-400 uppercase tracking-wider">😊 Emotions</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Excited:</span> <span className="text-gray-400">excited, thrilled, giddy, overjoyed, elated, yay, woohoo, yippee, ecstatic, so happy, cant wait</span></div>
-                                <div><span className="text-cyan-300 font-medium">Shy:</span> <span className="text-gray-400">shy, bashful, timid, embarrassed, awkward, nervous, flustered, humble, modest</span></div>
-                                <div><span className="text-cyan-300 font-medium">Chill:</span> <span className="text-gray-400">chill, relax, happy, lazy, bored, vibe, groove, carefree, laid back, casual</span></div>
-                                <div><span className="text-cyan-300 font-medium">Glad:</span> <span className="text-gray-400">glad, feeling good, content, grateful, thankful, blessed, relieved, peaceful, at ease</span></div>
-                            </div>
-                        </div>
-
-                        {/* Reactions */}
-                        <div className="space-y-3 p-4 bg-green-500/5 rounded-xl border border-green-500/10">
-                            <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wider">😱 Reactions</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Scared:</span> <span className="text-gray-400">scare, boo, freak out, spook, startle</span></div>
-                                <div><span className="text-cyan-300 font-medium">Terrified:</span> <span className="text-gray-400">ghost, haunted, terrified, run away, flee, panic, horror, petrified, terror</span></div>
-                                <div><span className="text-cyan-300 font-medium">Shocked:</span> <span className="text-gray-400">shocked, surprise, omg, wtf, gross, ew, weird, react</span></div>
-                                <div><span className="text-cyan-300 font-medium">Surprised:</span> <span className="text-gray-400">gasp, whoa, wow, no way, really, oh my, unbelievable, amazing, incredible</span></div>
-                            </div>
-                        </div>
-
-                        {/* Expressions */}
-                        <div className="space-y-3 p-4 bg-orange-500/5 rounded-xl border border-orange-500/10">
-                            <h4 className="text-sm font-semibold text-orange-400 uppercase tracking-wider">🤔 Expressions</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Confused:</span> <span className="text-gray-400">confused, puzzled, bewildered, lost, huh, what?, dont understand, perplexed, baffled</span></div>
-                                <div><span className="text-cyan-300 font-medium">Suspicious:</span> <span className="text-gray-400">suspicious, doubt, skeptic, hmm, fishy, shady, sus, trust, lying</span></div>
-                                <div><span className="text-cyan-300 font-medium">Disappointed:</span> <span className="text-gray-400">disappointed, let down, sad, upset, failed, bummed, dejected, disheartened, unhappy</span></div>
-                                <div><span className="text-cyan-300 font-medium">Irritated:</span> <span className="text-gray-400">irritated, annoyed, agitated, frustrated, bothered, fed up, ugh, wicked, ticked off</span></div>
-                            </div>
-                        </div>
-
-                        {/* Positive Gestures */}
-                        <div className="space-y-3 p-4 bg-blue-500/5 rounded-xl border border-blue-500/10">
-                            <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">👍 Gestures</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Thumbs Up:</span> <span className="text-gray-400">thumbs up, like it, love it, approve, 👍, good work, agree, yes!, right on</span></div>
-                                <div><span className="text-cyan-300 font-medium">OK Sign:</span> <span className="text-gray-400">ok, okay, perfect, great job, good job, nice, well done, excellent, 👌</span></div>
-                                <div><span className="text-cyan-300 font-medium">Smirk:</span> <span className="text-gray-400">smirk, pleased, satisfied, proud, nailed it, got it, smug, sly, clever</span></div>
-                                <div><span className="text-cyan-300 font-medium">Laughing:</span> <span className="text-gray-400">lol, lmao, rofl, haha, laugh, hilarious, xd, 😂, dying</span></div>
-                            </div>
-                        </div>
-
-                        {/* Romantic */}
-                        <div className="space-y-3 p-4 bg-red-500/5 rounded-xl border border-red-500/10">
-                            <h4 className="text-sm font-semibold text-red-400 uppercase tracking-wider">💕 Romantic</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Blushing:</span> <span className="text-gray-400">blush, flattered, cute, adorable, aww, flirt, compliment, love you, handsome, beautiful</span></div>
-                                <div><span className="text-cyan-300 font-medium">Kissing:</span> <span className="text-gray-400">kiss, smooch, mwah, peck, muah, xoxo</span></div>
-                            </div>
-                        </div>
-
-                        {/* Wild */}
-                        <div className="space-y-3 p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10">
-                            <h4 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">🤪 Wild</h4>
-                            <div className="space-y-2 text-xs">
-                                <div><span className="text-cyan-300 font-medium">Zombie:</span> <span className="text-gray-400">zombie, angry, scream, rage</span></div>
-                                <div><span className="text-cyan-300 font-medium">Dizzy:</span> <span className="text-gray-400">drunk, dizzy, tipsy, wasted, spinning</span></div>
-                            </div>
+                            <motion.div animate={{ rotate: commandCenterOpen ? 180 : 0 }} transition={{ duration: 0.3 }}>
+                                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                            </motion.div>
                         </div>
                     </div>
-                </div>
+                </button>
+
+                {/* Collapsible Content */}
+                <AnimatePresence>
+                    {commandCenterOpen && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                        >
+                            <div className="pt-4 space-y-4">
+                                {/* Mode Instructions */}
+                                <div className="grid sm:grid-cols-2 gap-3">
+                                    <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                                        <p className="text-sm text-gray-300">
+                                            <span className="text-purple-400 font-semibold">ASA Mode:</span> Click{' '}
+                                            <span className="px-1.5 py-0.5 bg-purple-500/30 text-purple-300 rounded text-xs font-mono">ASA</span>{' '}
+                                            to manually trigger actions. Type any trigger word when ON.
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+                                        <p className="text-sm text-gray-300">
+                                            <span className="text-cyan-400 font-semibold">AWRTC Mode <span className="text-[10px] opacity-70">(beta)</span>:</span> Click{' '}
+                                            <span className="px-1.5 py-0.5 bg-cyan-500/30 text-cyan-300 rounded text-xs font-mono">AWRTCβ</span>{' '}
+                                            for auto contextual actions synced to AI responses.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Actions Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {[
+                                        { title: '🎭 Physical', color: 'purple', items: [['Backflip', 'backflip, flip'], ['Walking', 'walk, approach, come here, strut'], ['Waving', 'wave, hi, hello, greet, bye'], ['Looking', 'look, search, gaze, where, find']] },
+                                        { title: '💃 Dance', color: 'pink', items: [['Shuffle', 'shuffle, melbourne shuffle'], ['Silly', 'silly, champion, bravo, goofy'], ['Wave Dance', 'wave dance, liquid, popping, flow'], ['Breakdance', 'breakdance, bboy, windmill']] },
+                                        { title: '😊 Emotions', color: 'yellow', items: [['Excited', 'excited, thrilled, yay, woohoo'], ['Shy', 'shy, bashful, nervous, humble'], ['Chill', 'chill, relax, vibe, groove'], ['Glad', 'glad, grateful, thankful, blessed']] },
+                                        { title: '😱 Reactions', color: 'green', items: [['Scared', 'scare, boo, freak out, spook'], ['Terrified', 'ghost, haunted, panic, terror'], ['Shocked', 'shocked, omg, wtf, gross'], ['Surprised', 'gasp, whoa, wow, no way']] },
+                                        { title: '🤔 Expressions', color: 'orange', items: [['Confused', 'confused, puzzled, huh, lost'], ['Suspicious', 'suspicious, doubt, hmm, sus'], ['Disappointed', 'sad, upset, let down, bummed'], ['Irritated', 'irritated, annoyed, frustrated, ugh']] },
+                                        { title: '👍 Gestures', color: 'blue', items: [['Thumbs Up', 'thumbs up, like it, approve, 👍'], ['OK Sign', 'ok, perfect, great job, 👌'], ['Smirk', 'smirk, pleased, proud, smug'], ['Laughing', 'lol, lmao, haha, 😂']] },
+                                        { title: '💕 Romantic', color: 'red', items: [['Blushing', 'blush, cute, adorable, flirt'], ['Kissing', 'kiss, smooch, mwah, xoxo']] },
+                                        { title: '🤪 Wild', color: 'emerald', items: [['Zombie', 'zombie, angry, scream, rage'], ['Dizzy', 'drunk, dizzy, tipsy, spinning']] },
+                                    ].map((cat, i) => (
+                                        <motion.div
+                                            key={cat.title}
+                                            initial={{ opacity: 0, y: 15 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className={`space-y-2 p-4 rounded-xl border bg-${cat.color}-500/5 border-${cat.color}-500/10`}
+                                            style={{ background: `rgba(var(--${cat.color}), 0.03)`, borderColor: `rgba(var(--${cat.color}), 0.1)` }}
+                                        >
+                                            <h4 className={`text-xs font-semibold text-${cat.color}-400 uppercase tracking-wider`}>{cat.title}</h4>
+                                            <div className="space-y-1.5 text-xs">
+                                                {cat.items.map(([name, triggers]) => (
+                                                    <div key={name}><span className="text-cyan-300 font-medium">{name}:</span> <span className="text-gray-500">{triggers}</span></div>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.div>
 
             {/* Background decorations */}

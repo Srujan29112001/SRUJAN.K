@@ -186,7 +186,7 @@ export const AppointmentBooking = forwardRef<AppointmentBookingHandle, Appointme
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.1 }}
-                            className="relative font-display text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 uppercase tracking-tight"
+                            className="relative font-display text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 uppercase tracking-tight"
                             style={{
                                 textShadow: '0 0 80px rgba(6, 182, 212, 0.5), 0 0 120px rgba(6, 182, 212, 0.3), 0 0 160px rgba(6, 182, 212, 0.2)'
                             }}
@@ -558,11 +558,6 @@ export const AppointmentBooking = forwardRef<AppointmentBookingHandle, Appointme
                     </motion.div>
                 </div>
 
-                {/* Decorative elements */}
-                <div className="absolute top-10 left-10 font-mono text-xs text-primary/20">
-                    <p>{'// BOOKING MODULE'}</p>
-                    <p>{'// CAL.COM INTEGRATION'}</p>
-                </div>
             </section>
         );
     }

@@ -6,9 +6,7 @@ import { ArrowLeft, X, Menu } from 'lucide-react';
 
 const navItems = [
     { id: 'hero', label: 'Home', href: '#hero' },
-    { id: 'chat', label: 'AI Chat', href: '#chat' },
     { id: 'calculator', label: 'Calculator', href: '#calculator' },
-    { id: 'booking', label: 'Booking', href: '#booking' },
 ];
 
 export function AINavigation() {
