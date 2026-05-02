@@ -57,7 +57,15 @@ export default function Home() {
       }
     }, 50);
 
-    return () => clearInterval(scrollChecker);
+    const handleBeforeUnload = () => {
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(scrollChecker);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [isLoading]);
 
   useEffect(() => {
@@ -67,7 +75,20 @@ export default function Home() {
       // Force scroll to top while preloader is active
       window.scrollTo(0, 0);
     } else {
+      // Force scroll to top right before unlocking
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
       document.body.style.overflow = '';
+
+      // Force scroll to top right after unlocking to combat browser's delayed restoration
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+
       // Delay content visibility for smoother transition
       setTimeout(() => setShowContent(true), 100);
     }

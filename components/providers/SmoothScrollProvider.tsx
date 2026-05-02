@@ -35,6 +35,9 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     // Initialize Lenis
     const lenisInstance = initLenis();
     setLenis(lenisInstance);
+    
+    // Force Lenis to start at the absolute top
+    lenisInstance.scrollTo(0, { immediate: true, duration: 0 });
 
     // Add Lenis class to html element
     document.documentElement.classList.add('lenis');

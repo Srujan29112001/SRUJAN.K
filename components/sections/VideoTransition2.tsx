@@ -199,6 +199,7 @@ export function VideoTransition2() {
 
         let lastProgress = 0;
         let lastScrollY = window.scrollY;
+        let isFirstUpdate = true;
 
         const ctx = gsap.context(() => {
             const tl = gsap.timeline({
@@ -211,16 +212,26 @@ export function VideoTransition2() {
                     anticipatePin: 1,
                     invalidateOnRefresh: true, // Recalculate on refresh
                     onUpdate: (self) => {
+                        if (isFirstUpdate) {
+                            isFirstUpdate = false;
+                            lastScrollY = window.scrollY;
+                            lastProgress = self.progress;
+                            return;
+                        }
+
                         const currentScrollY = window.scrollY;
                         const scrollingDown = currentScrollY > lastScrollY;
                         lastScrollY = currentScrollY;
 
-                        if (scrollingDown && lastProgress < 0.85 && self.progress >= 0.85) {
-                            playVideo('down');
-                        }
+                        // Only trigger if it's a real scroll (not a massive jump on refresh)
+                        if (Math.abs(self.progress - lastProgress) < 0.3) {
+                            if (scrollingDown && lastProgress < 0.85 && self.progress >= 0.85) {
+                                playVideo('down');
+                            }
 
-                        if (!scrollingDown && lastProgress > 0.15 && self.progress <= 0.15) {
-                            playVideo('up');
+                            if (!scrollingDown && lastProgress > 0.15 && self.progress <= 0.15) {
+                                playVideo('up');
+                            }
                         }
 
                         lastProgress = self.progress;
