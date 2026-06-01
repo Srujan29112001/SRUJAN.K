@@ -9,7 +9,8 @@ export interface ChatMessage {
     type: 'user' | 'bot' | 'system';
     content: string;
     timestamp: Date;
-    isTyping?: boolean;
+    isTyping?: boolean;       // legacy: client-side typewriter for non-streamed messages
+    isStreaming?: boolean;    // server-streamed: content grows in real time, render with cursor
     hasBeenSpoken?: boolean;
 }
 
@@ -51,20 +52,23 @@ export function TerminalChat({
 
     const { speak, stop, isSpeaking, isSupported } = useSpeechSynthesis({ rate: 1, pitch: 1 });
 
-    // Check if any message is currently typing and reset stop trigger for new messages
+    // Check if any message is currently typing OR streaming and reset stop trigger for new messages
     useEffect(() => {
-        const typingMessage = messages.find(m => m.isTyping);
-        if (typingMessage) {
-            // Only set typing active if this is a NEW message (different ID) 
+        const liveMessage = messages.find(m => m.isTyping || m.isStreaming);
+        if (liveMessage) {
+            // Only set typing active if this is a NEW message (different ID)
             // This prevents re-enabling typing after STOP was pressed
-            if (typingMessage.id !== lastTypingMessageId) {
+            if (liveMessage.id !== lastTypingMessageId) {
                 setIsTypingActive(true);
-                setLastTypingMessageId(typingMessage.id);
+                setLastTypingMessageId(liveMessage.id);
                 setStopTypingTrigger(0); // Reset so new message gets full typing animation
             }
             // If same message, don't re-enable isTypingActive (respects STOP button)
+        } else {
+            // No live message — clear typing state so the header shows "ready"
+            if (isTypingActive) setIsTypingActive(false);
         }
-    }, [messages, lastTypingMessageId]);
+    }, [messages, lastTypingMessageId, isTypingActive]);
 
     // Handle typing complete
     const handleTypingComplete = useCallback(() => {
@@ -115,6 +119,12 @@ export function TerminalChat({
     useEffect(() => {
         scrollToBottom();
     }, [messages, scrollToBottom]);
+
+    // Also scroll when the last message's content changes during streaming
+    const lastContent = messages[messages.length - 1]?.content;
+    useEffect(() => {
+        scrollToBottom();
+    }, [lastContent, scrollToBottom]);
 
     // Focus input on mount
     useEffect(() => {
@@ -272,7 +282,14 @@ export function TerminalChat({
                                         <span>{formatTime(message.timestamp)}</span>
                                     </div>
                                     <div className="text-text-secondary whitespace-pre-wrap">
-                                        {message.isTyping ? (
+                                        {message.isStreaming ? (
+                                            // Server-streamed: just render content + live cursor.
+                                            // Content is updated in parent state as deltas arrive.
+                                            <>
+                                                {message.content}
+                                                <span className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-0.5 align-middle" />
+                                            </>
+                                        ) : message.isTyping ? (
                                             <TypewriterText
                                                 text={message.content}
                                                 onComplete={handleTypingComplete}

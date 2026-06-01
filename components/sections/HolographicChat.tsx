@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { TerminalChat, ChatMessage } from '@/components/ui/TerminalChat';
-import { quickResponses } from '@/data/ai-persona';
 
 // Dynamic import for GIF-based avatar
 const AnimatedGifAvatar = dynamic(
@@ -285,50 +284,137 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
         return null; // No specific action detected
     }, []);
 
-    const generateResponse = useCallback(async (userMessage: string): Promise<string> => {
-        const lowerMessage = userMessage.toLowerCase();
-
-        // ONLY intercept UI-related actions (scrolling to sections)
-        // Everything else goes to the API for RAG-powered responses
-        if (lowerMessage.includes('estimate') || lowerMessage.includes('cost') || lowerMessage.includes('price') || lowerMessage.includes('budget')) {
+    /**
+     * Stream a response from /api/chat?stream=1 (SSE) and reveal it at typewriter
+     * pace into `botMessageId`. Resolves when the full text has been REVEALED to
+     * the user (not just received from the network), so the avatar stays in sync.
+     *
+     * Architecture:
+     *   - Network buffer: `fullText` grows as SSE deltas arrive (fast, network-bound).
+     *   - Display buffer: a ticker advances `displayedLength` at ~20ms/char, slicing
+     *     `fullText` for the visible message content.
+     *   - First visible char → flip thinking→speaking on avatar.
+     *   - All visible + network done → flip speaking off, clear isStreaming, resolve.
+     *
+     * SSE events: meta, chunk, done, error.
+     */
+    const streamResponse = useCallback(async (userMessage: string, botMessageId: string): Promise<string> => {
+        const lower = userMessage.toLowerCase();
+        if (lower.includes('estimate') || lower.includes('cost') || lower.includes('price') || lower.includes('budget')) {
             onEstimateRequest?.();
-            // Still call API for a rich response, but also trigger UI action
         }
-
-        if (lowerMessage.includes('book') || lowerMessage.includes('meet') || lowerMessage.includes('call') || lowerMessage.includes('schedule') || lowerMessage.includes('consultation')) {
+        if (lower.includes('book') || lower.includes('meet') || lower.includes('schedule') || lower.includes('consultation')) {
             onBookingRequest?.();
-            // Still call API for a rich response, but also trigger UI action
         }
 
-        // ALL queries go to the API for RAG-powered responses
+        let response: Response;
         try {
-            const response = await fetch('/api/chat', {
+            response = await fetch('/api/chat?stream=1', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
                 body: JSON.stringify({
                     message: userMessage,
-                    offlineMode: oocMode, // When ASA mode is ON, force offline/RAG-only mode
-                    sessionId: chatSessionId || undefined, // Send session ID if available
+                    offlineMode: oocMode,
+                    sessionId: chatSessionId || undefined,
                 }),
             });
-
-            if (response.ok) {
-                const data = await response.json();
-
-                // Store session ID from response for future messages
-                if (data.sessionId && data.sessionId !== chatSessionId) {
-                    setChatSessionId(data.sessionId);
-                    sessionStorage.setItem('chatSessionId', data.sessionId);
-                }
-
-                return data.response;
-            }
         } catch {
-            // API not available, use fallback
+            return "Couldn't reach the server. Try again in a moment.";
         }
 
-        // Fallback response (only if API fails completely)
-        return `Thanks for your message! To give you the best answer, I'd recommend:\n\n1. Check out the **Project Calculator** below for cost estimates\n2. **Book a consultation** to discuss your specific needs\n3. Or ask me about specific topics like my skills, projects, or approach to problem-solving.\n\nHow can I help you today?`;
+        if (!response.ok || !response.body) {
+            try {
+                const data = await response.json();
+                return data.response || "Hit an error reaching the AI service.";
+            } catch {
+                return "Hit an error reaching the AI service.";
+            }
+        }
+
+        return new Promise<string>((resolve) => {
+            let fullText = '';
+            let displayedLength = 0;
+            let networkDone = false;
+            let firstCharShown = false;
+
+            // Display pace: ~20ms per char with 2 chars per tick = ~100 chars/sec.
+            // Matches the original typewriter feel that the avatar GIFs were tuned to.
+            const TICK_MS = 20;
+            const CHARS_PER_TICK = 2;
+
+            const ticker = setInterval(() => {
+                if (displayedLength < fullText.length) {
+                    displayedLength = Math.min(displayedLength + CHARS_PER_TICK, fullText.length);
+                    const visible = fullText.slice(0, displayedLength);
+                    setMessages(prev =>
+                        prev.map(m => m.id === botMessageId ? { ...m, content: visible } : m)
+                    );
+                    if (!firstCharShown) {
+                        firstCharShown = true;
+                        setIsLoading(false);
+                        setIsThinking(false);
+                        setIsSpeaking(true); // avatar starts talking exactly when user sees first char
+                    }
+                } else if (networkDone) {
+                    // All received text has been revealed — wind down
+                    clearInterval(ticker);
+                    setMessages(prev =>
+                        prev.map(m =>
+                            m.id === botMessageId
+                                ? { ...m, isStreaming: false, content: fullText }
+                                : m,
+                        ),
+                    );
+                    setIsSpeaking(false);
+                    resolve(fullText);
+                }
+                // else: caught up but stream still flowing — keep avatar speaking, idle this tick
+            }, TICK_MS);
+
+            // SSE reader runs concurrently — fills fullText as deltas arrive.
+            (async () => {
+                const reader = response.body!.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        // Normalise CRLF → LF so SSE event splitting works regardless of line endings
+                        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+
+                        const events = buffer.split('\n\n');
+                        buffer = events.pop() || '';
+
+                        for (const ev of events) {
+                            const lines = ev.split('\n');
+                            const eventLine = lines.find(l => l.startsWith('event:'))?.slice(6).trim();
+                            const dataLine = lines.find(l => l.startsWith('data:'))?.slice(5).trim();
+                            if (!eventLine || !dataLine) continue;
+
+                            try {
+                                const data = JSON.parse(dataLine);
+                                if (eventLine === 'meta') {
+                                    if (data.sessionId && data.sessionId !== chatSessionId) {
+                                        setChatSessionId(data.sessionId);
+                                        sessionStorage.setItem('chatSessionId', data.sessionId);
+                                    }
+                                } else if (eventLine === 'chunk' && typeof data.delta === 'string') {
+                                    fullText += data.delta;
+                                } else if (eventLine === 'error') {
+                                    fullText += `\n\n_(error: ${data.message || 'unknown'})_`;
+                                }
+                            } catch { /* skip malformed event */ }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Stream read error:', e);
+                    if (!fullText) fullText = "Connection dropped mid-response. Try again.";
+                } finally {
+                    networkDone = true;
+                }
+            })();
+        });
     }, [onEstimateRequest, onBookingRequest, oocMode, chatSessionId]);
 
     const handleSendMessage = useCallback(async (content: string) => {
@@ -582,51 +668,35 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
         };
         setMessages(prev => [...prev, userMessage]);
 
-        // Show loading
+        // Avatar enters thinking pose while waiting for the first token.
+        // streamResponse's ticker flips thinking→speaking on first visible char,
+        // and speaking→idle when the typewriter finishes draining the buffer.
         setIsLoading(true);
         setIsThinking(true);
+        setIsSpeaking(false);
 
-        // Simulate processing time
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1500));
-
-        // Generate response
-        const responseText = await generateResponse(content);
-
-        // AWRTC: Detect and trigger contextual action based on response
-        if (awrtcMode) {
-            const contextAction = detectContextAction(responseText);
-            if (contextAction) {
-                setSpecialAction(contextAction);
-            }
-        }
-
-        // Add bot response
+        // Push an empty bot message that the ticker will fill at typewriter pace
+        const botMessageId = (Date.now() + 1).toString();
         const botMessage: ChatMessage = {
-            id: (Date.now() + 1).toString(),
+            id: botMessageId,
             type: 'bot',
-            content: responseText,
+            content: '',
             timestamp: new Date(),
-            isTyping: true,
+            isStreaming: true,
         };
-
         setMessages(prev => [...prev, botMessage]);
-        setIsLoading(false);
-        setIsThinking(false);
-        setIsSpeaking(true); // Start speaking animation
 
-        // After typing animation, mark as complete and stop speaking
-        // Using a generous buffer to ensure this fires after TypewriterText completes
-        // The typewriter runs at 20ms per character, so we add extra buffer for safety
-        const typingDuration = responseText.length * 25 + 1000; // More generous timing
-        setTimeout(() => {
-            setMessages(prev =>
-                prev.map(msg =>
-                    msg.id === botMessage.id ? { ...msg, isTyping: false } : msg
-                )
-            );
-            setIsSpeaking(false); // Stop speaking animation
-        }, typingDuration);
-    }, [generateResponse, oocMode, awrtcMode, detectContextAction]);
+        // streamResponse resolves when the full text has been REVEALED to the user
+        // (not just received from the network), keeping avatar GIFs in sync with
+        // what's actually appearing on screen.
+        const finalText = await streamResponse(content, botMessageId);
+
+        // AWRTC: pick a contextual avatar action from the final response
+        if (awrtcMode) {
+            const contextAction = detectContextAction(finalText);
+            if (contextAction) setSpecialAction(contextAction);
+        }
+    }, [streamResponse, oocMode, awrtcMode, detectContextAction]);
 
     const quickPrompts = [
         "What projects have you worked on?",
@@ -647,17 +717,21 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
             {/* Vignette Overlay */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,0,0.5)_100%)] pointer-events-none z-[2]" />
 
-            {/* Section header */}
-            <div className="max-w-6xl mx-auto mb-12 text-center relative z-10">
-                {/* Section badge - boxed style */}
+            {/* Section header — matches the canonical pattern used by Skills, Projects,
+                 Testimonials, Contact, etc. Pill badge + large display title + secondary subtitle. */}
+            <div className="max-w-6xl mx-auto mb-12 sm:mb-16 md:mb-20 text-center relative z-10">
+                {/* Blue glow behind (mix-blend-screen so it brightens, not muddies) */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
+
+                {/* Section badge - pill style */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6 }}
-                    className="inline-block mb-8"
+                    className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md"
                 >
-                    <span className="px-4 py-2 border border-cyan-400/50 rounded font-mono text-xs text-cyan-400 uppercase tracking-[0.3em]">
+                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
                         AI Chat
                     </span>
                 </motion.div>
@@ -667,23 +741,20 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.8, delay: 0.1 }}
-                    className="relative font-display text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 uppercase tracking-tight"
-                    style={{
-                        textShadow: '0 0 80px rgba(6, 182, 212, 0.5), 0 0 120px rgba(6, 182, 212, 0.3), 0 0 160px rgba(6, 182, 212, 0.2)'
-                    }}
+                    className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight px-2"
                 >
-                    Have a Conversation
+                    HAVE A CONVERSATION
                 </motion.h2>
                 <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6, delay: 0.2 }}
-                    className="text-base md:text-lg text-white/60 max-w-2xl mx-auto"
+                    className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4"
                 >
-                    I'm an AI representation of Srujan — feel free to discuss projects, explore ideas, or ask me anything you'd like to know.
-                    <span className="block mt-2 text-cyan-400/80 italic text-sm md:text-base">
-                        Rest assured, Srujan personally reviews all interactions to ensure a seamless follow-up.
+                    I&apos;m an AI representation of Srujan — discuss projects, explore ideas, or ask me anything.
+                    <span className="block mt-2 text-cyan-400/80 italic text-xs sm:text-sm">
+                        Srujan personally reviews all interactions to ensure a seamless follow-up.
                     </span>
                 </motion.p>
             </div>

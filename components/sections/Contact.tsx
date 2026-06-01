@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
@@ -17,10 +16,6 @@ const ContactGlobe = dynamic(
   () => import('@/components/three/ContactGlobe').then((m) => m.ContactGlobe),
   { ssr: false }
 );
-const HolographicChat = dynamic(
-  () => import('@/components/sections/HolographicChat'),
-  { ssr: false }
-);
 const AppointmentBooking = dynamic(
   () => import('@/components/sections/AppointmentBooking').then((m) => m.AppointmentBooking),
   { ssr: false }
@@ -31,7 +26,6 @@ export function Contact() {
   const formRef = useRef<HTMLFormElement>(null);
   const bookingRef = useRef<{ scrollToBooking: () => void }>(null);
   const isMobile = useIsMobile();
-  const router = useRouter();
   const [formState, setFormState] = useState({
     name: '',
     email: '',
@@ -641,14 +635,6 @@ export function Contact() {
             </svg>
           </div>
         </motion.div>
-      </div>
-
-      {/* AI Chat Section — Below existing content */}
-      <div className="w-full">
-        <HolographicChat
-          onEstimateRequest={() => router.push('/ai-assistant')}
-          onBookingRequest={() => bookingRef.current?.scrollToBooking()}
-        />
       </div>
 
       {/* Appointment Booking Section */}

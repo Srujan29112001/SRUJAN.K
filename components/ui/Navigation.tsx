@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useScrollTo } from '@/hooks/useLenis';
@@ -16,6 +15,8 @@ const navLinks = [
   { label: 'Projects', href: '#projects' },
   { label: 'Blog', href: '#blog' },
   { label: 'Testimonials', href: '#testimonials-content' },
+  // AI Chat sits between Testimonials and Contact in the page flow
+  { label: 'AI Chat', href: '#chat' },
   { label: "Let's Connect", href: '#contact' },
 ];
 
@@ -390,10 +391,11 @@ export function Navigation() {
             ))}
           </div>
 
-          {/* CTA Button - AI Assistant */}
+          {/* CTA Button — jumps to booking section (Schedule a meeting) */}
           <div className="hidden md:block">
-            <Link
-              href="/ai-assistant"
+            <a
+              href="#booking"
+              onClick={(e) => handleNavClick(e, '#booking')}
               className="group relative inline-flex items-center gap-2 px-4 py-2 overflow-hidden rounded-full border border-cyan-500/40 bg-cyan-500/10 font-mono text-[10px] uppercase tracking-wider text-cyan-400 transition-all duration-300 hover:border-cyan-400 hover:bg-cyan-500/20 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
             >
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
@@ -401,7 +403,7 @@ export function Navigation() {
               <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
-            </Link>
+            </a>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -473,9 +475,9 @@ export function Navigation() {
             </a>
           ))}
 
-          <Link
-            href="/ai-assistant"
-            onClick={() => setIsMenuOpen(false)}
+          <a
+            href="#booking"
+            onClick={(e) => handleNavClick(e, '#booking')}
             className={cn(
               'mt-4 inline-flex items-center gap-2 px-6 py-3 rounded-full border border-cyan-500/50 bg-cyan-500/10 font-mono text-sm uppercase tracking-wider text-cyan-400 transition-all duration-300 hover:bg-cyan-500/20',
               isMenuOpen
@@ -491,7 +493,7 @@ export function Navigation() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
-          </Link>
+          </a>
 
           {/* Current role display on mobile */}
           <div className="mt-8 text-center">

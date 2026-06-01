@@ -30,6 +30,12 @@ yarn-error.log*
 # Vercel
 .vercel
 
+# Runtime chat logs (ephemeral; written by /api/chat at runtime)
+data/chat-history.json
+
+# Local Claude Code session settings
+.claude/settings.local.json
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

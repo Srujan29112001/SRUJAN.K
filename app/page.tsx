@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useLayoutEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Preloader } from '@/components/sections/Preloader';
 import { Hero } from '@/components/sections/Hero';
 import { About } from '@/components/sections/About';
@@ -14,6 +15,13 @@ import { VideoTransition2 } from '@/components/sections/VideoTransition2';
 import { Testimonials } from '@/components/sections/Testimonials';
 import { Contact } from '@/components/sections/Contact';
 import { Footer } from '@/components/sections/Footer';
+
+// AI Chat lives outside Contact so it can be its own #chat section, swappable
+// with Contact in page order, and reachable from the navbar.
+const HolographicChat = dynamic(
+  () => import('@/components/sections/HolographicChat'),
+  { ssr: false }
+);
 import { CustomCursor } from '@/components/ui/CustomCursor';
 import { Navigation } from '@/components/ui/Navigation';
 import { ScrollProgress } from '@/components/ui/ScrollProgress';
@@ -133,6 +141,19 @@ export default function Home() {
         <Blog />
         <WormholeTransition />
         <Testimonials />
+        {/* AI Chat moved ABOVE Contact ("Get in Touch") per design — chat is the
+            first thing visitors see in the connect block, then the form/booking below */}
+        <HolographicChat
+          onEstimateRequest={() => {
+            // The "estimate / cost" prompt should take the user to the booking
+            // section so they can schedule a call. AI assistant page is for
+            // detailed quotation work, reached separately from the support page.
+            document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          onBookingRequest={() => {
+            document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        />
         <Contact />
         <Footer />
       </main>

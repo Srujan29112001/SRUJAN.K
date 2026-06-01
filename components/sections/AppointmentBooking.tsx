@@ -161,22 +161,26 @@ export const AppointmentBooking = forwardRef<AppointmentBookingHandle, Appointme
                 />
 
                 <div className="max-w-6xl mx-auto relative z-10">
-                    {/* Header */}
+                    {/* Header — matches canonical pattern (Contact/Skills/Projects/etc.):
+                         pill badge + large display title + secondary subtitle + blue glow halo */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-center mb-16 booking-content"
+                        className="text-center mb-12 sm:mb-16 md:mb-20 booking-content relative"
                     >
-                        {/* Section badge - boxed style */}
+                        {/* Blue glow behind */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
+
+                        {/* Section badge - pill style */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6 }}
-                            className="inline-block mb-8"
+                            className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md"
                         >
-                            <span className="px-4 py-2 border border-cyan-400/50 rounded font-mono text-xs text-cyan-400 uppercase tracking-[0.3em]">
+                            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
                                 Schedule a Meeting
                             </span>
                         </motion.div>
@@ -186,19 +190,16 @@ export const AppointmentBooking = forwardRef<AppointmentBookingHandle, Appointme
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.1 }}
-                            className="relative font-display text-3xl md:text-4xl lg:text-5xl font-black text-white mb-6 uppercase tracking-tight"
-                            style={{
-                                textShadow: '0 0 80px rgba(6, 182, 212, 0.5), 0 0 120px rgba(6, 182, 212, 0.3), 0 0 160px rgba(6, 182, 212, 0.2)'
-                            }}
+                            className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight px-2"
                         >
-                            Get in Touch
+                            GET IN TOUCH
                         </motion.h2>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6, delay: 0.2 }}
-                            className="text-base md:text-lg text-white/60 max-w-2xl mx-auto"
+                            className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4"
                         >
                             Ready to bring your project to life? Schedule a call to discuss your ideas.
                         </motion.p>

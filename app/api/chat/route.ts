@@ -1,95 +1,92 @@
 /**
  * =============================================================================
- * CHAT API WITH RAG INTEGRATION
+ * CHAT API — RAG + STREAMING + MULTI-TURN MEMORY
  * =============================================================================
  *
- * This API endpoint now uses Retrieval-Augmented Generation!
- *
  * Flow:
- * 1. Receive user message
- * 2. Retrieve relevant context from knowledge base (RAG)
- * 3. Inject context into system prompt
- * 4. Send to Gemini LLM (with retry logic for rate limits)
- * 5. Return grounded response
+ *   1. Receive user message + sessionId
+ *   2. Retrieve relevant context from knowledge base (RAG)
+ *   3. Load prior turns for sessionId (multi-turn memory)
+ *   4. Stream Gemini response via SSE  (?stream=1)  — primary path
+ *      OR return JSON               (offlineMode / non-stream clients)
+ *   5. Persist the full assistant reply to chat-history once stream completes
  * =============================================================================
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { aiPersona, quickResponses } from '@/data/ai-persona';
 import { getRAGContext, getRAGStatus, initializeRAG } from '@/lib/rag';
-import { addMessageToSession } from '@/app/api/admin/chat-history/route';
+import { addMessageToSession, getChatHistory } from '@/app/api/admin/chat-history/route';
 
 // =============================================================================
-// GEMINI API CONFIGURATION WITH MULTI-KEY ROTATION
+// CONFIG
 // =============================================================================
-// Model options (in order of preference for free tier):
-// - gemini-2.0-flash: 15 RPM free tier, very fast
-// - gemini-1.5-flash: 15 RPM free tier, good balance
-// - gemini-2.5-flash: 20 RPM but can hit limits quickly
-//
-// For production with paid tier, gemini-2.5-flash or gemini-1.5-pro recommended
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-// Get all API keys (supports multiple keys for rotation)
+// Optional fallback chain — only used if you EXPLICITLY set GEMINI_MODEL_FALLBACKS
+// (comma-separated). Without it, requests stay on the configured model and just
+// retry on transient 503s. This avoids auto-falling back to models the keys may
+// not have access to under free tier.
+//
+// Example: GEMINI_MODEL_FALLBACKS=gemini-2.5-flash-lite,gemini-1.5-flash
+const MODEL_FALLBACK_CHAIN: string[] = (() => {
+    const fromEnv = (process.env.GEMINI_MODEL_FALLBACKS || '')
+        .split(',').map(s => s.trim()).filter(Boolean);
+    return [GEMINI_MODEL, ...fromEnv].filter((m, i, a) => a.indexOf(m) === i);
+})();
+
+// On a transient 503 ("model overloaded") we retry the SAME model this many times
+// before failing. Each retry waits 1.5s.
+const SAME_MODEL_503_RETRIES = 2;
+
+const generateUrl = (model: string) =>
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+const streamUrl = (model: string) =>
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent`;
+
+// How many prior message *pairs* to replay back to the model
+const HISTORY_TURN_PAIRS = 4; // last 4 user/assistant pairs ≈ 8 messages
+// Per-message cap when loading history (chars). Prevents long bot replies from
+// bloating request bodies and burning input-token quota.
+const HISTORY_MESSAGE_MAX_CHARS = 800;
+
 function getApiKeys(): string[] {
-    // First check for multiple keys
     const multipleKeys = process.env.GEMINI_API_KEYS;
     if (multipleKeys) {
         return multipleKeys.split(',').map(k => k.trim()).filter(k => k.length > 0);
     }
-    // Fall back to single key
     const singleKey = process.env.GEMINI_API_KEY;
     return singleKey ? [singleKey] : [];
 }
 
-// Track rate-limited keys with cooldown timestamps
 interface KeyStatus {
-    rateLimitedUntil: number; // timestamp when key becomes available again
+    rateLimitedUntil: number;
     failureCount: number;
 }
 const keyStatusMap = new Map<string, KeyStatus>();
 
-// Rate limiting configuration
-const MAX_RETRIES_PER_KEY = 1; // Try once per key before moving to next
-const KEY_COOLDOWN_MS = 60000; // 60 second cooldown when rate limited
-const INITIAL_RETRY_DELAY_MS = 2000; // Start with 2 seconds
-
-// Simple in-memory rate limiter (per-instance, resets on restart)
+const KEY_COOLDOWN_MS = 60000;
+const INITIAL_RETRY_DELAY_MS = 2000;
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL_MS = 2000; // 2 seconds between requests (more aggressive with rotation)
+const MIN_REQUEST_INTERVAL_MS = 2000;
 
-// Get next available API key (skipping rate-limited ones)
 function getNextAvailableKey(): { key: string; index: number } | null {
     const keys = getApiKeys();
     const now = Date.now();
-
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
         const status = keyStatusMap.get(key);
-
-        // Check if key is available (not rate limited or cooldown expired)
-        if (!status || status.rateLimitedUntil < now) {
-            return { key, index: i };
-        }
+        if (!status || status.rateLimitedUntil < now) return { key, index: i };
     }
-
-    // All keys are rate limited - find the one that will be available soonest
-    let soonestKey: { key: string; index: number; availableAt: number } | null = null;
+    let soonest: { key: string; index: number; availableAt: number } | null = null;
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        const status = keyStatusMap.get(key);
-        const availableAt = status?.rateLimitedUntil || 0;
-
-        if (!soonestKey || availableAt < soonestKey.availableAt) {
-            soonestKey = { key, index: i, availableAt };
-        }
+        const availableAt = keyStatusMap.get(key)?.rateLimitedUntil || 0;
+        if (!soonest || availableAt < soonest.availableAt) soonest = { key, index: i, availableAt };
     }
-
-    return soonestKey ? { key: soonestKey.key, index: soonestKey.index } : null;
+    return soonest ? { key: soonest.key, index: soonest.index } : null;
 }
 
-// Mark a key as rate limited
 function markKeyRateLimited(key: string, retryAfterMs?: number) {
     const cooldown = retryAfterMs || KEY_COOLDOWN_MS;
     const status = keyStatusMap.get(key) || { rateLimitedUntil: 0, failureCount: 0 };
@@ -99,135 +96,403 @@ function markKeyRateLimited(key: string, retryAfterMs?: number) {
     console.log(`🔑 Key ...${key.slice(-4)} rate limited for ${cooldown}ms (failures: ${status.failureCount})`);
 }
 
-// Reset key status on success
-function markKeySuccess(key: string) {
-    keyStatusMap.delete(key);
-}
+function markKeySuccess(key: string) { keyStatusMap.delete(key); }
 
 interface ChatRequest {
     message: string;
     history?: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>;
-    offlineMode?: boolean; // When true, skip Gemini API and use RAG-only fallback
-    sessionId?: string; // Optional session ID for tracking conversations
+    offlineMode?: boolean;
+    sessionId?: string;
 }
 
-/**
- * Helper to wait for a specified time
- */
 function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * Extract retry delay from Gemini error response
- */
 function extractRetryDelay(errorMessage: string): number {
-    // Look for patterns like "retry in 2.915062078s" or "retry after 3 seconds"
     const match = errorMessage.match(/retry\s+(?:in|after)\s+([\d.]+)\s*s/i);
-    if (match) {
-        return Math.ceil(parseFloat(match[1]) * 1000) + 500; // Add 500ms buffer
-    }
+    if (match) return Math.ceil(parseFloat(match[1]) * 1000) + 500;
     return INITIAL_RETRY_DELAY_MS;
 }
 
-/**
- * Call Gemini API with automatic key rotation on rate limit errors
- * Tries all available keys before giving up
- */
-async function callGeminiWithKeyRotation(
-    requestBody: object
-): Promise<{ success: boolean; data?: unknown; error?: string; keyUsed?: string }> {
-    const keys = getApiKeys();
+// =============================================================================
+// MULTI-TURN MEMORY — load prior turns for this session from chat-history.json
+// =============================================================================
+function loadPriorTurns(sessionId: string): Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> {
+    if (!sessionId) return [];
+    try {
+        const data = getChatHistory();
+        const session = data.sessions.find(s => s.id === sessionId);
+        if (!session || session.messages.length === 0) return [];
 
-    if (keys.length === 0) {
-        return { success: false, error: 'No API keys configured' };
+        // Take the last (HISTORY_TURN_PAIRS * 2) messages, oldest-first
+        const recent = session.messages.slice(-HISTORY_TURN_PAIRS * 2);
+
+        // Convert to Gemini format, truncating long messages to stay within token budget
+        return recent.map(m => {
+            const content = m.content.length > HISTORY_MESSAGE_MAX_CHARS
+                ? m.content.slice(0, HISTORY_MESSAGE_MAX_CHARS) + '…'
+                : m.content;
+            return {
+                role: m.role === 'assistant' ? 'model' as const : 'user' as const,
+                parts: [{ text: content }],
+            };
+        });
+    } catch (e) {
+        console.error('Failed to load prior turns:', e);
+        return [];
     }
+}
+
+// =============================================================================
+// PROMPT BUILDER
+// =============================================================================
+function buildSystemPrompt(ragContext: string): string {
+    if (ragContext && ragContext.length > 0) {
+        return `${aiPersona.systemPrompt}
+
+---
+Relevant memory from your portfolio for this question:
+
+${ragContext}
+---`;
+    }
+    // No RAG hits — tell the model honestly so it doesn't fabricate
+    return `${aiPersona.systemPrompt}
+
+---
+Note: nothing specific in your portfolio knowledge base matches this question. If it's about your work, say plainly that you haven't done that specifically and offer the closest related thing if any. If it's small talk or off-topic, just respond naturally as yourself.
+---`;
+}
+
+function buildContents(
+    systemPrompt: string,
+    history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>,
+    userMessage: string,
+) {
+    return [
+        // Persona / context as a synthetic first turn
+        { role: 'user', parts: [{ text: systemPrompt }] },
+        { role: 'model', parts: [{ text: 'Got it.' }] },
+        // Real conversation history
+        ...history,
+        // Current message
+        { role: 'user', parts: [{ text: userMessage }] },
+    ];
+}
+
+const generationConfig = {
+    temperature: 0.85, // a touch warmer for conversational feel
+    topK: 40,
+    topP: 0.95,
+    maxOutputTokens: 1024,
+};
+
+const safetySettings = [
+    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
+
+function isModelOverloaded(status: number): boolean {
+    return status === 503 || status === 502 || status === 500;
+}
+
+// =============================================================================
+// NON-STREAM CALL
+// Strategy: try the configured model, retry SAME model on 503, only walk the
+// fallback chain if user explicitly configured one via GEMINI_MODEL_FALLBACKS.
+// =============================================================================
+async function callGeminiOnce(
+    requestBody: object,
+): Promise<{ success: boolean; data?: unknown; error?: string; keyUsed?: string; modelUsed?: string }> {
+    const keys = getApiKeys();
+    if (keys.length === 0) return { success: false, error: 'No API keys configured' };
 
     let lastError = '';
-    const triedKeys = new Set<string>();
 
-    // Try up to keys.length * 2 times (allow retrying keys after cooldown)
-    // With 12 keys, this gives 24 attempts max
-    const maxAttempts = Math.min(keys.length * 2, 24);
+    for (const model of MODEL_FALLBACK_CHAIN) {
+        const triedKeys = new Set<string>();
+        const maxAttempts = Math.min(keys.length * 2, 24);
+        let consecutive503 = 0;
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const keyInfo = getNextAvailableKey();
-        if (!keyInfo) {
-            // No keys available, wait a bit and try again
-            await sleep(INITIAL_RETRY_DELAY_MS);
-            continue;
-        }
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const keyInfo = getNextAvailableKey();
+            if (!keyInfo) { await sleep(INITIAL_RETRY_DELAY_MS); continue; }
+            const { key, index } = keyInfo;
 
-        const { key, index } = keyInfo;
+            const since = Date.now() - lastRequestTime;
+            if (since < MIN_REQUEST_INTERVAL_MS) await sleep(MIN_REQUEST_INTERVAL_MS - since);
+            lastRequestTime = Date.now();
 
-        // Rate limiting: ensure minimum interval between requests
-        const now = Date.now();
-        const timeSinceLastRequest = now - lastRequestTime;
-        if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
-            await sleep(MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest);
-        }
-        lastRequestTime = Date.now();
-
-        console.log(`🔑 Trying key ${index + 1}/${keys.length} (...${key.slice(-4)})`);
-
-        try {
-            const response = await fetch(`${GEMINI_API_URL}?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                markKeySuccess(key);
-                console.log(`✅ Success with key ${index + 1} (...${key.slice(-4)})`);
-                return { success: true, data, keyUsed: `key${index + 1}` };
+            console.log(`🔑 [${model}] key ${index + 1}/${keys.length} (...${key.slice(-4)})`);
+            try {
+                const response = await fetch(`${generateUrl(model)}?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    markKeySuccess(key);
+                    return { success: true, data, keyUsed: `key${index + 1}`, modelUsed: model };
+                }
+                if (response.status === 429) {
+                    const errData = await response.json().catch(() => ({}));
+                    const errMsg = errData.error?.message || 'Rate limit exceeded';
+                    lastError = errMsg;
+                    markKeyRateLimited(key, extractRetryDelay(errMsg));
+                    triedKeys.add(key);
+                    if (triedKeys.size < keys.length) continue;
+                    await sleep(INITIAL_RETRY_DELAY_MS);
+                    continue;
+                }
+                if (isModelOverloaded(response.status)) {
+                    const rawBody = await response.text().catch(() => '');
+                    consecutive503++;
+                    lastError = `${model} ${response.status}: ${rawBody.slice(0, 200)}`;
+                    if (consecutive503 <= SAME_MODEL_503_RETRIES) {
+                        console.warn(`⚠️ [${model}] ${response.status} (try ${consecutive503}/${SAME_MODEL_503_RETRIES}) — retrying same model after backoff`);
+                        await sleep(1500 * consecutive503); // 1.5s, 3s
+                        continue;
+                    }
+                    // Same model wouldn't recover — break to try next model in chain (only if user configured one)
+                    console.warn(`⚠️ [${model}] persistent 503 after ${consecutive503} tries — moving on`);
+                    break;
+                }
+                const rawBody = await response.text().catch(() => '<unreadable>');
+                let parsedMsg = rawBody;
+                try { parsedMsg = JSON.parse(rawBody)?.error?.message || rawBody; } catch {}
+                return { success: false, error: `Gemini ${response.status}: ${parsedMsg}` };
+            } catch (e) {
+                lastError = e instanceof Error ? e.message : 'Network error';
+                console.error(`❌ [${model}] network error on key ${index + 1}:`, lastError);
             }
+        }
+    }
+    return { success: false, error: lastError || 'Gemini request failed' };
+}
 
-            // Handle rate limit errors (429)
-            if (response.status === 429) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMsg = errorData.error?.message || 'Rate limit exceeded';
-                lastError = errorMsg;
+// =============================================================================
+// STREAMING CALL — returns a ReadableStream<string> of text deltas
+// Strategy: try the configured model, retry SAME model on 503, only walk the
+// fallback chain if user explicitly configured one via GEMINI_MODEL_FALLBACKS.
+// =============================================================================
+async function callGeminiStream(requestBody: object): Promise<
+    | { success: true; stream: ReadableStream<string>; keyUsed: string; modelUsed: string }
+    | { success: false; error: string }
+> {
+    const keys = getApiKeys();
+    if (keys.length === 0) return { success: false, error: 'No API keys configured' };
 
-                // Extract retry delay from error message
-                const retryDelay = extractRetryDelay(errorMsg);
-                markKeyRateLimited(key, retryDelay);
+    let lastError = '';
 
-                triedKeys.add(key);
+    for (const model of MODEL_FALLBACK_CHAIN) {
+        const triedKeys = new Set<string>();
+        const maxAttempts = Math.min(keys.length * 2, 24);
+        let consecutive503 = 0;
 
-                // If we haven't tried all keys yet, continue to next key immediately
-                if (triedKeys.size < keys.length) {
-                    console.log(`🔄 Switching to next available key...`);
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const keyInfo = getNextAvailableKey();
+            if (!keyInfo) { await sleep(INITIAL_RETRY_DELAY_MS); continue; }
+            const { key, index } = keyInfo;
+
+            const since = Date.now() - lastRequestTime;
+            if (since < MIN_REQUEST_INTERVAL_MS) await sleep(MIN_REQUEST_INTERVAL_MS - since);
+            lastRequestTime = Date.now();
+
+            console.log(`🔑 [stream:${model}] key ${index + 1}/${keys.length} (...${key.slice(-4)})`);
+            try {
+                const response = await fetch(`${streamUrl(model)}?alt=sse&key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (response.ok && response.body) {
+                    markKeySuccess(key);
+                    console.log(`✅ [stream:${model}] OK with key ${index + 1}`);
+                    const stream = parseGeminiSSE(response.body);
+                    return { success: true, stream, keyUsed: `key${index + 1}`, modelUsed: model };
+                }
+
+                if (response.status === 429) {
+                    const errData = await response.json().catch(() => ({}));
+                    const errMsg = errData.error?.message || 'Rate limit exceeded';
+                    console.warn(`⚠️ [stream:${model}] key ${index + 1} hit 429: ${errMsg}`);
+                    lastError = errMsg;
+                    markKeyRateLimited(key, extractRetryDelay(errMsg));
+                    triedKeys.add(key);
+                    if (triedKeys.size < keys.length) continue;
+                    await sleep(INITIAL_RETRY_DELAY_MS);
                     continue;
                 }
 
-                // All keys tried, wait before retrying
-                console.log(`⏳ All ${keys.length} keys rate limited. Waiting ${INITIAL_RETRY_DELAY_MS}ms...`);
-                await sleep(INITIAL_RETRY_DELAY_MS);
-                continue;
-            }
+                if (isModelOverloaded(response.status)) {
+                    const rawBody = await response.text().catch(() => '');
+                    consecutive503++;
+                    lastError = `${model} ${response.status}: ${rawBody.slice(0, 200)}`;
+                    if (consecutive503 <= SAME_MODEL_503_RETRIES) {
+                        console.warn(`⚠️ [stream:${model}] ${response.status} (try ${consecutive503}/${SAME_MODEL_503_RETRIES}) — retrying same model after backoff`);
+                        await sleep(1500 * consecutive503);
+                        continue;
+                    }
+                    console.warn(`⚠️ [stream:${model}] persistent 503 — moving on`);
+                    break;
+                }
 
-            // Other errors - don't retry with different keys
-            const errorData = await response.json().catch(() => ({ error: response.statusText }));
-            return {
-                success: false,
-                error: errorData.error?.message || errorData.error || response.statusText,
-            };
-        } catch (fetchError) {
-            lastError = fetchError instanceof Error ? fetchError.message : 'Network error';
-            console.error(`Network error with key ${index + 1}:`, lastError);
-            markKeyRateLimited(key, INITIAL_RETRY_DELAY_MS * 2); // Short cooldown for network errors
+                const rawBody = await response.text().catch(() => '<unreadable>');
+                console.error(`❌ [stream:${model}] ${response.status} ${response.statusText}: ${rawBody.slice(0, 500)}`);
+                let parsedMsg = rawBody;
+                try { parsedMsg = JSON.parse(rawBody)?.error?.message || rawBody; } catch {}
+                return { success: false, error: `Gemini ${response.status}: ${parsedMsg}` };
+            } catch (e) {
+                lastError = e instanceof Error ? e.message : 'Network error';
+                console.error(`❌ [stream:${model}] network error on key ${index + 1}:`, lastError);
+            }
         }
     }
-
-    return {
-        success: false,
-        error: `All ${keys.length} API keys exhausted. ${lastError}`,
-    };
+    return { success: false, error: lastError || 'Gemini stream request failed' };
 }
 
+/**
+ * Convert Gemini's SSE stream into a stream of text deltas.
+ * Each SSE event has shape:  data: {"candidates":[{"content":{"parts":[{"text":"..."}]}}]}
+ */
+function parseGeminiSSE(body: ReadableStream<Uint8Array>): ReadableStream<string> {
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let eventCount = 0;
+    let textChunkCount = 0;
+
+    const processBuffer = (controller: ReadableStreamDefaultController<string>, flushIncomplete = false) => {
+        // Gemini SSE may use \r\n\r\n (CRLF) on some networks/proxies; normalise first
+        // so the split below works regardless of line ending style.
+        const normalised = buffer.replace(/\r\n/g, '\n');
+        const events = normalised.split('\n\n');
+        if (!flushIncomplete) buffer = events.pop() || '';
+        else buffer = '';
+
+        for (const event of events) {
+            if (!event.trim()) continue;
+            eventCount++;
+            const line = event.split('\n').find(l => l.startsWith('data:'));
+            if (!line) {
+                console.warn(`[parseGeminiSSE] event #${eventCount} has no data: line:`, event.slice(0, 200));
+                continue;
+            }
+            const json = line.slice(5).trim();
+            if (!json || json === '[DONE]') continue;
+            try {
+                const parsed = JSON.parse(json) as {
+                    candidates?: Array<{
+                        content?: { parts?: Array<{ text?: string }> };
+                        finishReason?: string;
+                        safetyRatings?: unknown;
+                    }>;
+                    promptFeedback?: { blockReason?: string };
+                };
+
+                if (parsed.promptFeedback?.blockReason) {
+                    console.warn(`[parseGeminiSSE] prompt blocked: ${parsed.promptFeedback.blockReason}`);
+                    controller.enqueue(`(I can't respond to that — flagged by safety filter: ${parsed.promptFeedback.blockReason})`);
+                    continue;
+                }
+
+                const cand = parsed.candidates?.[0];
+                const text = cand?.content?.parts?.[0]?.text;
+                if (text) {
+                    textChunkCount++;
+                    controller.enqueue(text);
+                } else if (cand?.finishReason && cand.finishReason !== 'STOP') {
+                    console.warn(`[parseGeminiSSE] finishReason: ${cand.finishReason}`, cand.safetyRatings);
+                }
+            } catch (e) {
+                console.warn('[parseGeminiSSE] JSON parse fail:', json.slice(0, 200), e);
+            }
+        }
+    };
+
+    return new ReadableStream<string>({
+        async start(controller) {
+            const reader = body.getReader();
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    processBuffer(controller);
+                }
+                // Flush any trailing event that didn't end with \n\n
+                if (buffer.trim()) processBuffer(controller, true);
+                console.log(`[parseGeminiSSE] done — ${eventCount} events, ${textChunkCount} text chunks`);
+                controller.close();
+            } catch (e) {
+                console.error('[parseGeminiSSE] reader error:', e);
+                controller.error(e);
+            }
+        },
+    });
+}
+
+// =============================================================================
+// OFFLINE FALLBACK — used when no API keys / API down / offlineMode flag
+//
+// PRIVACY: never dump raw RAG context here. The knowledge base contains personal
+// info (email, phone, address) that should ONLY be exposed via LLM-mediated answers
+// where the persona prompt controls what gets shared. Without the LLM as a filter,
+// we keep responses short and direct the user to retry.
+// =============================================================================
+function classifyError(details?: string): {
+    userMessage: string;
+    showError: boolean;
+} {
+    if (!details) return { userMessage: '', showError: false };
+    const d = details.toLowerCase();
+    if (d.includes('quota') || d.includes('exceeded')) {
+        return { userMessage: 'daily quota reached — try again tomorrow or check API billing', showError: true };
+    }
+    if (d.includes('overloaded') || d.includes('high demand') || d.includes('503')) {
+        return { userMessage: 'AI is overloaded right now — give it a minute and retry', showError: true };
+    }
+    if (d.includes('asa mode')) {
+        return { userMessage: 'ASA offline mode', showError: false };
+    }
+    if (d.includes('no api key')) {
+        return { userMessage: 'no API key configured', showError: true };
+    }
+    return { userMessage: 'AI service temporarily unavailable', showError: true };
+}
+
+function getOfflineResponse(message: string, _ragContext: string, errorDetails?: string): string {
+    void _ragContext; // intentionally unused — see PRIVACY note above
+    const { userMessage, showError } = classifyError(errorDetails);
+    const errorTag = showError ? `\n\n_(${userMessage})_` : '';
+
+    const lower = message.toLowerCase().trim();
+    if (/^(hi|hello|hey|yo)\b/.test(lower)) {
+        return quickResponses.greeting[Math.floor(Math.random() * quickResponses.greeting.length)] + errorTag;
+    }
+    if (lower.includes('book') || lower.includes('call') || lower.includes('meet') || lower.includes('schedule')) {
+        return quickResponses.booking + errorTag;
+    }
+    if (lower.includes('cost') || lower.includes('price') || lower.includes('estimate') || lower.includes('budget')) {
+        return quickResponses.projectInquiry + errorTag;
+    }
+    if (showError) {
+        return `Can't reach the AI right now. ${userMessage.charAt(0).toUpperCase() + userMessage.slice(1)}. Try again in a moment.`;
+    }
+    return `I'm temporarily offline. Try asking again in a moment — or use the booking widget below if you want to reach me directly.${errorTag}`;
+}
+
+// =============================================================================
+// HANDLER
+// =============================================================================
 export async function POST(request: NextRequest) {
+    const wantsStream = request.nextUrl.searchParams.get('stream') === '1'
+        || request.headers.get('accept')?.includes('text/event-stream');
+
     let message = '';
     let ragContext = '';
     let sessionId = '';
@@ -237,188 +502,108 @@ export async function POST(request: NextRequest) {
     try {
         const body: ChatRequest = await request.json();
         message = body.message;
-        const history = body.history || [];
-        const offlineMode = body.offlineMode || false; // ASA mode forces offline
+        const offlineMode = body.offlineMode || false;
         sessionId = body.sessionId || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-        // Extract user info for logging
         userAgent = request.headers.get('user-agent') || 'Unknown';
-        ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-            request.headers.get('x-real-ip') ||
-            'Unknown';
+        ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+            || request.headers.get('x-real-ip')
+            || 'Unknown';
 
         if (!message || typeof message !== 'string') {
-            return NextResponse.json(
-                { error: 'Message is required' },
-                { status: 400 }
+            return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+        }
+
+        // 🔍 RAG retrieval
+        try {
+            await initializeRAG();
+            ragContext = await getRAGContext(message, 5);
+            console.log(`📚 RAG context length: ${ragContext.length} chars`);
+        } catch (e) {
+            console.error('RAG retrieval failed:', e);
+        }
+
+        // 🧠 Multi-turn memory (server-side load by sessionId)
+        const priorTurns = loadPriorTurns(sessionId);
+        if (priorTurns.length > 0) console.log(`💬 Loaded ${priorTurns.length} prior turns for ${sessionId.slice(-8)}`);
+
+        const systemPrompt = buildSystemPrompt(ragContext);
+        const requestBody = {
+            contents: buildContents(systemPrompt, priorTurns, message),
+            generationConfig,
+            safetySettings,
+        };
+
+        const apiKeys = getApiKeys();
+
+        // ============ OFFLINE / NO-KEY PATH ============
+        if (offlineMode || apiKeys.length === 0) {
+            const offline = getOfflineResponse(
+                message,
+                ragContext,
+                offlineMode ? 'ASA mode' : 'no API key configured',
+            );
+            try { addMessageToSession(sessionId, message, offline, offlineMode ? 'offline' : 'local', userAgent, ipAddress); } catch {}
+            if (wantsStream) return streamPlainText(offline, sessionId, ragContext.length > 0, 'offline');
+            return NextResponse.json({
+                response: offline,
+                source: offlineMode ? 'offline' : 'local',
+                rag: ragContext.length > 0,
+                mode: offlineMode ? 'asa-offline' : undefined,
+                sessionId,
+            });
+        }
+
+        // ============ STREAMING PATH ============
+        if (wantsStream) {
+            const result = await callGeminiStream(requestBody);
+            if (!result.success) {
+                console.error(`❌ Stream call failed: ${result.error}`);
+                // In dev, surface the actual error so it's debuggable from the UI
+                const errDetail = process.env.NODE_ENV !== 'production'
+                    ? result.error
+                    : 'AI service temporarily busy';
+                const fallback = getOfflineResponse(message, ragContext, errDetail);
+                try { addMessageToSession(sessionId, message, fallback, 'local-fallback', userAgent, ipAddress); } catch {}
+                return streamPlainText(fallback, sessionId, ragContext.length > 0, 'local-fallback');
+            }
+
+            // Wrap Gemini's text-delta stream in our SSE protocol and persist on completion
+            return new Response(
+                wrapAsClientSSE(result.stream, async (full: string) => {
+                    try { addMessageToSession(sessionId, message, full, 'gemini', userAgent, ipAddress); } catch (e) { console.error('persist failed', e); }
+                }, sessionId, ragContext.length > 0),
+                {
+                    headers: {
+                        'Content-Type': 'text/event-stream; charset=utf-8',
+                        'Cache-Control': 'no-cache, no-transform',
+                        'Connection': 'keep-alive',
+                        'X-Accel-Buffering': 'no',
+                    },
+                },
             );
         }
 
-        // 🔍 RETRIEVE RELEVANT CONTEXT (RAG) - Always do this first
-        try {
-            // Initialize RAG system (loads from cache if available)
-            await initializeRAG();
-
-            // Get relevant context for this query
-            ragContext = await getRAGContext(message, 5);
-            console.log(`📚 RAG context length: ${ragContext.length} chars`);
-        } catch (error) {
-            console.error('RAG retrieval failed:', error);
-            // Continue without RAG context
-        }
-
-        // 🔌 OFFLINE MODE (ASA Mode): Skip Gemini API, use RAG-only fallback
-        if (offlineMode) {
-            console.log('🔌 Offline mode enabled (ASA ON) - using RAG-only response');
-            const offlineResponse = getFallbackResponse(message, ragContext, 'ASA Mode: Running offline with cached knowledge.');
-
-            // 📝 Log to chat history
-            try {
-                addMessageToSession(sessionId, message, offlineResponse, 'offline', userAgent, ipAddress);
-            } catch (e) {
-                console.error('Failed to log chat history:', e);
-            }
-
-            return NextResponse.json({
-                response: offlineResponse,
-                source: 'offline',
-                rag: ragContext.length > 0,
-                mode: 'asa-offline',
-                sessionId,
-            });
-        }
-
-        // Check for API keys
-        const apiKeys = getApiKeys();
-
-        if (apiKeys.length === 0) {
-            // Fallback to local responses if no API keys
-            const localResponse = getFallbackResponse(message, ragContext);
-
-            // 📝 Log to chat history
-            try {
-                addMessageToSession(sessionId, message, localResponse, 'local', userAgent, ipAddress);
-            } catch (e) {
-                console.error('Failed to log chat history:', e);
-            }
-
-            return NextResponse.json({
-                response: localResponse,
-                source: 'local',
-                rag: ragContext.length > 0,
-                sessionId,
-            });
-        }
-
-        console.log(`🔐 ${apiKeys.length} API key(s) available for rotation`);
-
-        // 🤖 BUILD ENHANCED SYSTEM PROMPT
-        const systemPrompt = ragContext
-            ? `${aiPersona.systemPrompt}\n\n${ragContext}`
-            : aiPersona.systemPrompt;
-
-        // Build request body for Gemini
-        const requestBody = {
-            contents: [
-                // System instruction with optional RAG context
-                {
-                    role: 'user',
-                    parts: [{ text: `SYSTEM INSTRUCTIONS:\n${systemPrompt}\n\nNow respond to messages as Srujan AI.` }],
-                },
-                {
-                    role: 'model',
-                    parts: [{ text: 'Understood. I am Srujan AI, ready to assist visitors and represent K Srujan professionally. I will use the provided context to give accurate, specific answers.' }],
-                },
-                // Previous conversation history
-                ...history,
-                // Current message
-                {
-                    role: 'user',
-                    parts: [{ text: message }],
-                },
-            ],
-            generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 1024,
-            },
-            safetySettings: [
-                {
-                    category: 'HARM_CATEGORY_HARASSMENT',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-                {
-                    category: 'HARM_CATEGORY_HATE_SPEECH',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-                {
-                    category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-                {
-                    category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-                },
-            ],
-        };
-
-        // 🚀 Call Gemini API with automatic key rotation on rate limits
-        const result = await callGeminiWithKeyRotation(requestBody);
-
+        // ============ NON-STREAM JSON PATH (back-compat) ============
+        const result = await callGeminiOnce(requestBody);
         if (!result.success) {
-            // All retries failed - use fallback but with cleaner error message
-            const userFriendlyError = result.error?.includes('quota')
-                ? 'AI service is temporarily busy. Showing cached knowledge instead.'
-                : 'AI service unavailable. Showing cached knowledge instead.';
-
-            const fallbackResponse = getFallbackResponse(message, ragContext, userFriendlyError);
-
-            // 📝 Log to chat history
-            try {
-                addMessageToSession(sessionId, message, fallbackResponse, 'local-fallback', userAgent, ipAddress);
-            } catch (e) {
-                console.error('Failed to log chat history:', e);
-            }
-
+            const fallback = getOfflineResponse(message, ragContext, 'AI service temporarily busy');
+            try { addMessageToSession(sessionId, message, fallback, 'local-fallback', userAgent, ipAddress); } catch {}
             return NextResponse.json({
-                response: fallbackResponse,
+                response: fallback,
                 source: 'local',
                 apiError: true,
                 rag: ragContext.length > 0,
                 sessionId,
             });
         }
-
-        // Extract the response text
         const data = result.data as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
         const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
         if (!aiResponse) {
-            const noResponseFallback = getFallbackResponse(message, ragContext);
-
-            // 📝 Log to chat history
-            try {
-                addMessageToSession(sessionId, message, noResponseFallback, 'local-no-response', userAgent, ipAddress);
-            } catch (e) {
-                console.error('Failed to log chat history:', e);
-            }
-
-            return NextResponse.json({
-                response: noResponseFallback,
-                source: 'local',
-                rag: ragContext.length > 0,
-                sessionId,
-            });
+            const fb = getOfflineResponse(message, ragContext);
+            try { addMessageToSession(sessionId, message, fb, 'local-no-response', userAgent, ipAddress); } catch {}
+            return NextResponse.json({ response: fb, source: 'local', rag: ragContext.length > 0, sessionId });
         }
-
-        // 📝 Log successful Gemini response to chat history
-        try {
-            addMessageToSession(sessionId, message, aiResponse, 'gemini', userAgent, ipAddress);
-        } catch (e) {
-            console.error('Failed to log chat history:', e);
-        }
-
+        try { addMessageToSession(sessionId, message, aiResponse, 'gemini', userAgent, ipAddress); } catch (e) { console.error(e); }
         return NextResponse.json({
             response: aiResponse,
             source: 'gemini',
@@ -426,163 +611,96 @@ export async function POST(request: NextRequest) {
             rag: ragContext.length > 0,
             sessionId,
         });
-
     } catch (error) {
         console.error('Chat API error:', error);
-
-        const errorResponse = getFallbackResponse(message, ragContext, error instanceof Error ? error.message : String(error));
-
-        // 📝 Log error response to chat history
-        try {
-            if (sessionId) {
-                addMessageToSession(sessionId, message, errorResponse, 'error', userAgent, ipAddress);
-            }
-        } catch (e) {
-            console.error('Failed to log chat history:', e);
-        }
-
+        const fb = getOfflineResponse(message, ragContext, error instanceof Error ? error.message : String(error));
+        try { if (sessionId) addMessageToSession(sessionId, message, fb, 'error', userAgent, ipAddress); } catch {}
+        if (wantsStream) return streamPlainText(fb, sessionId, false, 'error');
         return NextResponse.json(
-            {
-                error: 'Failed to process message',
-                response: errorResponse,
-                rag: false,
-                sessionId,
-            },
-            { status: 500 }
+            { error: 'Failed to process message', response: fb, rag: false, sessionId },
+            { status: 500 },
         );
     }
 }
 
-// Fallback response generator when API is not available
-function getFallbackResponse(message: string, context?: string, errorDetails?: string): string {
-    const lowerMessage = message.toLowerCase();
-    const errorInfo = errorDetails ? `\n\n(⚠️ Offline Mode: ${errorDetails})` : '';
+// =============================================================================
+// SSE PROTOCOL HELPERS (server → client)
+// Events:
+//   meta  → { sessionId, rag, source }            sent first
+//   chunk → { delta }                              sent per token group
+//   done  → { sessionId }                          sent at end
+//   error → { message }                            sent on failure
+// =============================================================================
 
-    // PRIORITY 1: If we have RAG context, ALWAYS use it first
-    // This ensures the rich knowledge base data is shown even when Gemini is offline
-    if (context && context.length > 100) {
-        // Extract the content between the header and footer
-        const contentMatch = context.match(/={32}\n([\s\S]*?)\n={32}/);
-        const mainContent = contentMatch ? contentMatch[1] : context;
-
-        // Parse individual sources for better formatting
-        const sourceBlocks = mainContent.split(/\n\n---\n\n/);
-        const formattedSources: string[] = [];
-
-        for (const block of sourceBlocks.slice(0, 3)) { // Limit to 3 sources
-            const titleMatch = block.match(/\[Source \d+: ([^\]]+)\]/);
-            const title = titleMatch ? titleMatch[1] : 'Knowledge Base';
-
-            // Extract content after the title line
-            const contentStart = block.indexOf('\n');
-            if (contentStart !== -1) {
-                const sourceContent = block.substring(contentStart + 1).trim();
-                // Truncate if too long
-                const truncated = sourceContent.length > 600
-                    ? sourceContent.substring(0, 600) + '...'
-                    : sourceContent;
-                formattedSources.push(`**${title}**\n${truncated}`);
-            }
-        }
-
-        if (formattedSources.length > 0) {
-            return `I'm currently running in offline mode, but I found this relevant information from my knowledge base:\n\n${formattedSources.join('\n\n---\n\n')}${errorInfo}`;
-        }
-
-        // Fallback: Just show raw context if parsing fails
-        const truncatedContext = mainContent.length > 1500
-            ? mainContent.substring(0, 1500) + '...'
-            : mainContent;
-        return `I'm in offline mode, but here's what I found:\n\n${truncatedContext}${errorInfo}`;
-    }
-
-    // PRIORITY 2: Keyword-based quick responses (only when no RAG context available)
-
-    // Greetings
-    if (lowerMessage.match(/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)/)) {
-        return quickResponses.greeting[Math.floor(Math.random() * quickResponses.greeting.length)];
-    }
-
-    // About - Only trigger if we didn't find specific context above
-    if (lowerMessage.includes('about') || lowerMessage.includes('who are you') || lowerMessage.includes('tell me about')) {
-        return quickResponses.aboutSrujan;
-    }
-
-    // Skills & Expertise
-    if (lowerMessage.includes('skill') || lowerMessage.includes('expertise') || lowerMessage.includes('tech') || lowerMessage.includes('what can you do')) {
-        return quickResponses.expertise;
-    }
-
-    // Work approach
-    if (lowerMessage.includes('how') && (lowerMessage.includes('work') || lowerMessage.includes('approach') || lowerMessage.includes('solve'))) {
-        return quickResponses.howIWork;
-    }
-
-    // Projects
-    if (lowerMessage.includes('project') || lowerMessage.includes('portfolio') || lowerMessage.includes('work')) {
-        return "I've worked on various exciting projects across AI/ML, robotics, and web development. Check out the main portfolio for detailed case studies, or ask me about specific types of projects you're interested in!";
-    }
-
-    // Freelance/Experience (specific to freelancing questions)
-    if (lowerMessage.includes('freelanc') || (lowerMessage.includes('experience') && !lowerMessage.includes('user experience'))) {
-        return `Since June 2023, I've been doing specialized freelance engineering alongside intensive consciousness research at Isha Foundation. Key clients include:
-
-• **FinTech Innovations (USA)** - Built a Finance Copilot, a scalable intelligence layer for traders
-• **MediCare AI** - Delivered a Clinical AI Copilot with 95% accuracy, HIPAA-compliant with GraphRAG
-• **AeroSpace DY** - Created a full 3D orbital tracking system
-
-This period wasn't a gap - it was 10-12 hour workdays building complex systems while exploring consciousness. My rates range from $50-120/hour depending on the domain (AI/ML, Computer Vision, Robotics, Web Dev).
-
-Would you like specific details about my freelance rates or a particular project?`;
-    }
-
-    // Estimate/Cost
-    if (lowerMessage.includes('estimate') || lowerMessage.includes('cost') || lowerMessage.includes('price') || lowerMessage.includes('budget') || lowerMessage.includes('quote')) {
-        return quickResponses.projectInquiry;
-    }
-
-    // Booking
-    if (lowerMessage.includes('book') || lowerMessage.includes('meet') || lowerMessage.includes('call') || lowerMessage.includes('schedule') || lowerMessage.includes('consultation')) {
-        return quickResponses.booking;
-    }
-
-    // AI/ML specific
-    if (lowerMessage.includes('ai') || lowerMessage.includes('machine learning') || lowerMessage.includes('deep learning') || lowerMessage.includes('neural')) {
-        return "AI and Machine Learning are my primary areas of expertise! I work with computer vision, NLP, and deep learning frameworks like PyTorch. Whether it's building custom models, deploying ML pipelines, or integrating AI into existing systems - I love tackling these challenges. What specific AI/ML project do you have in mind?";
-    }
-
-    // Robotics specific
-    if (lowerMessage.includes('robot') || lowerMessage.includes('ros') || lowerMessage.includes('autonomous')) {
-        return "Robotics is one of my passions! I work with ROS2 for autonomous systems, sensor fusion, and robot perception. From indoor navigation to manipulation tasks, I enjoy bringing robots to life. What kind of robotics project are you thinking about?";
-    }
-
-    // Contact
-    if (lowerMessage.includes('contact') || lowerMessage.includes('reach') || lowerMessage.includes('email')) {
-        return "You can reach Srujan at contact@srujan.dev for serious inquiries. For a quicker response on project discussions, I recommend booking a call through the booking section below. You can also connect on LinkedIn, Twitter, or GitHub!";
-    }
-
-    // Thank you
-    if (lowerMessage.includes('thank') || lowerMessage.includes('thanks')) {
-        return "You're welcome! Feel free to ask if you have any more questions. If you're ready to discuss a project, I can help you estimate costs or book a consultation. 🚀";
-    }
-
-    // Default fallback
-    return `Thanks for your message! I'm an AI assistant representing K Srujan. While I don't have a specific answer for that, I can help you with:
-
-• **Learning about my work** - Ask about projects, skills, or expertise
-• **Getting project estimates** - Use the calculator below or ask me
-• **Booking a consultation** - I'll help you schedule a call
-• **Understanding my approach** - Ask how I solve problems
-
-What would you like to explore?`;
+function sseEvent(event: string, data: unknown): string {
+    return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-// Health check with RAG status
+/** Wrap Gemini's text-delta stream as our client-facing SSE protocol. */
+function wrapAsClientSSE(
+    geminiStream: ReadableStream<string>,
+    onComplete: (full: string) => Promise<void>,
+    sessionId: string,
+    rag: boolean,
+): ReadableStream<Uint8Array> {
+    const encoder = new TextEncoder();
+    let full = '';
+
+    return new ReadableStream<Uint8Array>({
+        async start(controller) {
+            controller.enqueue(encoder.encode(sseEvent('meta', { sessionId, rag, source: 'gemini' })));
+            const reader = geminiStream.getReader();
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    full += value;
+                    controller.enqueue(encoder.encode(sseEvent('chunk', { delta: value })));
+                }
+            } catch (e) {
+                controller.enqueue(encoder.encode(sseEvent('error', { message: e instanceof Error ? e.message : 'stream error' })));
+            } finally {
+                try { await onComplete(full); } catch (e) { console.error('onComplete failed', e); }
+                controller.enqueue(encoder.encode(sseEvent('done', { sessionId })));
+                controller.close();
+            }
+        },
+    });
+}
+
+/** Stream a pre-computed full string as if it were a real model stream (for offline / fallback). */
+function streamPlainText(text: string, sessionId: string, rag: boolean, source: string): Response {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+            controller.enqueue(encoder.encode(sseEvent('meta', { sessionId, rag, source })));
+            // Chunk into ~25-char pieces so the UI feels alive even for cached responses
+            const chunkSize = 25;
+            for (let i = 0; i < text.length; i += chunkSize) {
+                controller.enqueue(encoder.encode(sseEvent('chunk', { delta: text.slice(i, i + chunkSize) })));
+                await sleep(15);
+            }
+            controller.enqueue(encoder.encode(sseEvent('done', { sessionId })));
+            controller.close();
+        },
+    });
+    return new Response(stream, {
+        headers: {
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+        },
+    });
+}
+
+// =============================================================================
+// HEALTH CHECK
+// =============================================================================
 export async function GET() {
     const apiKeys = getApiKeys();
     const ragStatus = getRAGStatus();
 
-    // Get status of each key
     const keyStatuses = apiKeys.map((key, i) => {
         const status = keyStatusMap.get(key);
         const isAvailable = !status || status.rateLimitedUntil < Date.now();
@@ -598,21 +716,18 @@ export async function GET() {
         status: 'ok',
         mode: apiKeys.length > 0 ? 'gemini' : 'fallback',
         model: GEMINI_MODEL,
-        apiKeys: {
-            count: apiKeys.length,
-            statuses: keyStatuses,
-        },
+        modelFallbackChain: MODEL_FALLBACK_CHAIN,
+        streaming: true,
+        memory: { historyTurnPairs: HISTORY_TURN_PAIRS },
+        apiKeys: { count: apiKeys.length, statuses: keyStatuses },
         rateLimit: {
             minIntervalMs: MIN_REQUEST_INTERVAL_MS,
             keyCooldownMs: KEY_COOLDOWN_MS,
             effectiveRPM: Math.floor(60000 / MIN_REQUEST_INTERVAL_MS) * apiKeys.length,
         },
-        rag: {
-            enabled: ragStatus.initialized,
-            documentCount: ragStatus.documentCount,
-        },
+        rag: { enabled: ragStatus.initialized, documentCount: ragStatus.documentCount },
         message: apiKeys.length > 0
-            ? `Gemini API (${GEMINI_MODEL}) with ${apiKeys.length} key(s). RAG: ${ragStatus.documentCount} documents. Effective RPM: ~${Math.floor(60000 / MIN_REQUEST_INTERVAL_MS) * apiKeys.length}`
+            ? `Gemini (${GEMINI_MODEL} + ${MODEL_FALLBACK_CHAIN.length - 1} fallbacks) with ${apiKeys.length} key(s). RAG: ${ragStatus.documentCount} docs. Streaming + memory enabled.`
             : 'Running in fallback mode. Add API keys in admin settings.',
     });
 }

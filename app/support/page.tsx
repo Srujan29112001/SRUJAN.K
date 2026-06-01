@@ -789,8 +789,25 @@ export default function SupportPage() {
                                 </button>
 
                                 <p className="text-center text-[10px] sm:text-xs text-text-muted mt-3 sm:mt-4">
-                                    Not a verified partner? <Link href="/ai-assistant" className="text-cyan-400 hover:underline active:text-cyan-300">Contact Srujan</Link> to collaborate.
+                                    Not a verified partner? <Link href="/#contact" className="text-cyan-400 hover:underline active:text-cyan-300">Contact Srujan</Link> to collaborate.
                                 </p>
+
+                                {/* Quotation CTA — for new (unverified) prospects who want a project estimate
+                                    before reaching out. Routes to the AI assistant page where the calculator lives. */}
+                                <div className="mt-4 sm:mt-5 pt-4 sm:pt-5 border-t border-white/10">
+                                    <p className="text-center text-[10px] sm:text-xs text-text-muted mb-2 sm:mb-3">
+                                        Want a quick project estimate first? Get an instant AI-powered quote tailored to your scope.
+                                    </p>
+                                    <Link
+                                        href="/ai-assistant"
+                                        className="flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 text-sm sm:text-base rounded-lg sm:rounded-xl border border-cyan-500/40 bg-cyan-500/5 text-cyan-400 font-semibold transition-all hover:bg-cyan-500/10 hover:border-cyan-400 active:scale-95"
+                                    >
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                        </svg>
+                                        Get a Quotation
+                                    </Link>
+                                </div>
                             </>
                         )}
                     </div>
