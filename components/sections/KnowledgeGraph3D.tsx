@@ -19,22 +19,24 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 interface GNode {
     id: string;
     label: string;
-    type: 'project' | 'tech' | 'category';
+    type: 'project' | 'tech' | 'category' | 'doc';
     color: string;
     size: number;
+    hub?: string;
     detail?: {
         description: string;
-        tech: string[];
+        tech?: string[];
         year?: string;
         metric?: string;
-        featured: boolean;
-        ongoing: boolean;
-        links: Array<{ label: string; url: string }>;
+        featured?: boolean;
+        ongoing?: boolean;
+        links?: Array<{ label: string; url: string }>;
+        kind?: string;
     };
 }
 
 interface GEdge { source: string; target: string }
-interface QueryMatch { id: string; title: string; relevance: number }
+interface QueryMatch { id: string; title: string; relevance: number; kind?: string }
 
 // ---------------------------------------------------------------------------
 // Force-simulated node cloud (runs inside the R3F canvas)
@@ -58,9 +60,9 @@ function GraphScene({
         const pos = new Float32Array(nodes.length * 3);
         const vel = new Float32Array(nodes.length * 3);
         const indexById = new Map(nodes.map((n, i) => [n.id, i]));
-        // seed: categories near center, tech mid shell, projects outer shell
+        // seed: SRUJAN at the core, hubs inner shell, tech mid, members outer
         nodes.forEach((n, i) => {
-            const r = n.type === 'category' ? 3 : n.type === 'tech' ? 9 : 15;
+            const r = n.id === 'center' ? 0.1 : n.type === 'category' ? 6 : n.type === 'tech' ? 10 : 16;
             const theta = (i * 2.399963) % (Math.PI * 2); // golden angle
             const phi = Math.acos(1 - 2 * ((i + 0.5) / nodes.length));
             pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
@@ -127,13 +129,14 @@ function GraphScene({
             for (let i = 0; i < n; i++) {
                 const node = nodes[i];
                 const lit = highlights.has(node.id);
+                const dimmable = node.type === 'project' || node.type === 'doc';
                 const scale = (node.size / 9) * (hovered === i ? 1.5 : 1) * (lit ? 1.35 : 1);
                 dummy.position.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
                 dummy.scale.setScalar(scale);
                 dummy.updateMatrix();
                 mesh.setMatrixAt(i, dummy.matrix);
                 const color = lit ? litColor
-                    : hasHighlights && node.type === 'project' ? dimColor
+                    : hasHighlights && dimmable ? dimColor
                     : baseColors[i];
                 mesh.setColorAt(i, color);
             }
@@ -179,7 +182,7 @@ function GraphScene({
                 onClick={(e) => {
                     e.stopPropagation();
                     const node = e.instanceId !== undefined ? nodes[e.instanceId] : null;
-                    onSelect(node && node.type === 'project' ? node : null);
+                    onSelect(node && node.detail ? node : null);
                 }}
             >
                 <sphereGeometry args={[0.55, 20, 20]} />
@@ -225,11 +228,11 @@ export function KnowledgeGraph3D() {
     const isMobile = useIsMobile();
     const [nodes, setNodes] = useState<GNode[]>([]);
     const [edges, setEdges] = useState<GEdge[]>([]);
-    const [stats, setStats] = useState<{ projects: number; techHubs: number } | null>(null);
+    const [stats, setStats] = useState<{ projects: number; techHubs: number; knowledgeDocs: number } | null>(null);
     const [selected, setSelected] = useState<GNode | null>(null);
     const [query, setQuery] = useState('');
     const [isQuerying, setIsQuerying] = useState(false);
-    const [queryResult, setQueryResult] = useState<{ matches: QueryMatch[]; coveragePct: number; missingSkills: string[] } | null>(null);
+    const [queryResult, setQueryResult] = useState<{ matches: QueryMatch[] } | null>(null);
     const [highlights, setHighlights] = useState<Map<string, number>>(new Map());
 
     useEffect(() => {
@@ -312,8 +315,8 @@ export function KnowledgeGraph3D() {
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4"
                 >
-                    Every project I&apos;ve shipped, clustered by domain and shared tech — the same map my
-                    AI agents search. Drag to orbit, click a node, or test a job query against it.
+                    Everything my AI twin knows — projects, skills, journey, writing, interests, even
+                    life beyond the code — orbiting one mind. Drag to explore, click any node, or ask it a question.
                 </motion.p>
             </div>
 
@@ -328,7 +331,7 @@ export function KnowledgeGraph3D() {
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') runQuery(); }}
-                            placeholder='Try "computer vision YOLO edge deployment" — see what lights up'
+                            placeholder='Try "computer vision YOLO" or "meditation philosophy" — see what lights up'
                             className="flex-1 bg-transparent py-3 text-sm text-white outline-none placeholder:text-text-muted/50"
                         />
                         {queryResult && (
@@ -369,13 +372,23 @@ export function KnowledgeGraph3D() {
                             </div>
                         )}
                         {stats && (
-                            <div className="absolute bottom-3 left-3 flex gap-2 font-mono text-[10px] pointer-events-none">
-                                <span className="px-2 py-1 rounded bg-black/70 border border-white/10 text-text-muted">{stats.projects} projects</span>
-                                <span className="px-2 py-1 rounded bg-black/70 border border-white/10 text-text-muted">{stats.techHubs} tech hubs</span>
+                            <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5 font-mono text-[10px] pointer-events-none">
+                                <span className="px-2 py-1 rounded bg-black/70 border border-white/10 text-text-muted">
+                                    {stats.projects} projects · {stats.knowledgeDocs} life &amp; mind docs
+                                </span>
                                 <span className="px-2 py-1 rounded bg-black/70 border border-white/10">
-                                    <span className="text-blue-400">● AI</span>{' '}
-                                    <span className="text-amber-400">● Robotics</span>{' '}
-                                    <span className="text-primary-light">● Research</span>
+                                    <span style={{ color: '#3B82F6' }}>● AI</span>{' '}
+                                    <span style={{ color: '#F59E0B' }}>● Robotics</span>{' '}
+                                    <span style={{ color: '#8B7EC8' }}>● Research</span>{' '}
+                                    <span style={{ color: '#06B6D4' }}>● tech</span>{' '}
+                                    <span style={{ color: '#10B981' }}>● skills</span>
+                                </span>
+                                <span className="px-2 py-1 rounded bg-black/70 border border-white/10">
+                                    <span style={{ color: '#F472B6' }}>● journey</span>{' '}
+                                    <span style={{ color: '#818CF8' }}>● writing</span>{' '}
+                                    <span style={{ color: '#E879F9' }}>● life</span>{' '}
+                                    <span style={{ color: '#FB7185' }}>● interests</span>{' '}
+                                    <span style={{ color: '#FACC15' }}>● clients</span>
                                 </span>
                             </div>
                         )}
@@ -390,18 +403,21 @@ export function KnowledgeGraph3D() {
                                     <button onClick={() => setSelected(null)} className="p-1 text-text-muted hover:text-white flex-shrink-0" aria-label="Close details">✕</button>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5 mb-3">
+                                    {selected.detail.kind && selected.detail.kind !== 'project' && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono border border-white/15 text-text-secondary">{selected.detail.kind}</span>
+                                    )}
                                     {selected.detail.featured && <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/15 text-cyan-400">featured</span>}
                                     {selected.detail.ongoing && <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-red-500/15 text-red-400">ongoing</span>}
                                     {selected.detail.year && <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-text-muted">{selected.detail.year}</span>}
                                     {selected.detail.metric && <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-text-muted">{selected.detail.metric}</span>}
                                 </div>
-                                <p className="text-xs text-text-secondary leading-relaxed mb-3">{selected.detail.description}</p>
+                                <p className="text-xs text-text-secondary leading-relaxed mb-3 max-h-44 overflow-y-auto pr-1">{selected.detail.description}</p>
                                 <div className="flex flex-wrap gap-1 mb-3">
-                                    {selected.detail.tech.slice(0, 8).map(t => (
+                                    {(selected.detail.tech || []).slice(0, 8).map(t => (
                                         <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-bg-surface border border-white/10 text-text-muted">{t}</span>
                                     ))}
                                 </div>
-                                {selected.detail.links.map(l => (
+                                {(selected.detail.links || []).map(l => (
                                     <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer"
                                         className="inline-block mr-3 text-xs font-mono text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
                                         {l.label} ↗
@@ -422,7 +438,7 @@ export function KnowledgeGraph3D() {
                         {queryResult && (
                             <div className="bg-bg-base/80 border border-emerald-500/25 rounded-2xl p-5">
                                 <h3 className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-3">
-                                    {queryResult.matches.length} matches · {queryResult.coveragePct}% skill coverage
+                                    {queryResult.matches.length} matches across work &amp; life
                                 </h3>
                                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                                     {queryResult.matches.map(m => (
@@ -432,11 +448,9 @@ export function KnowledgeGraph3D() {
                                         </div>
                                     ))}
                                 </div>
-                                {queryResult.missingSkills.length > 0 && (
-                                    <p className="mt-3 pt-2 border-t border-white/5 text-[11px] text-amber-400/80">
-                                        Not covered: {queryResult.missingSkills.join(', ')}
-                                    </p>
-                                )}
+                                <p className="mt-3 pt-2 border-t border-white/5 text-[10px] text-text-muted">
+                                    Exactly what my AI chat retrieves for this question.
+                                </p>
                             </div>
                         )}
                     </div>

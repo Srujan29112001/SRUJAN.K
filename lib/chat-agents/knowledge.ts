@@ -107,6 +107,15 @@ async function vectorSearch(message: string, topK: number): Promise<KnowledgeHit
     }));
 }
 
+/**
+ * Public deterministic search over the full knowledge base — used by the
+ * 3D knowledge graph's query light-up so it matches EXACTLY what the chat
+ * agent would retrieve. No embeddings, no keys, instant.
+ */
+export function searchKnowledgePublic(query: string, topK = 12): KnowledgeHit[] {
+    return deterministicSearch(query, topK);
+}
+
 export interface KnowledgeResult {
     hits: KnowledgeHit[];
     /** formatted block for the system prompt ('' when nothing relevant) */
