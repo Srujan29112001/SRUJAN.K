@@ -69,7 +69,7 @@ export async function assessFit(
     intake: JobIntake,
     retrieval: RetrievalResult,
     prefs: ResumePreferences,
-): Promise<{ fit: FitResult; usedLLM: boolean }> {
+): Promise<{ fit: FitResult; usedLLM: boolean; llm?: string }> {
     const { score, alignedRole, alignedDomain, flaggedNonNegotiables } = deterministicScore(intake, retrieval, prefs);
     const verdict = verdictFor(score);
 
@@ -105,7 +105,7 @@ export async function assessFit(
 
     // LLM narrative pass — score and verdict stay deterministic
     try {
-        const { data } = await generateJSON<{ reasons?: string[]; concerns?: string[]; alignmentNotes?: string[] }>({
+        const { data, provider, model } = await generateJSON<{ reasons?: string[]; concerns?: string[]; alignmentNotes?: string[] }>({
             system: 'You write honest, concise fit assessments for a candidate. Ground every statement in the provided data only. Never inflate; never invent skills or experience.',
             prompt: `A recruiter is evaluating Srujan (AI/ML engineer) for this role. The fit score was computed as ${score}/100 ("${verdict}").
 
@@ -138,6 +138,7 @@ Return JSON:
                     ? data.alignmentNotes : deterministic.alignmentNotes).slice(0, 3).map(String),
             },
             usedLLM: true,
+            llm: `${provider}:${model}`,
         };
     } catch (e) {
         console.warn('Fit LLM failed, using deterministic narrative:', e instanceof Error ? e.message : e);

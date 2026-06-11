@@ -98,12 +98,12 @@ function deterministicIntake(input: IntakeInput): JobIntake {
     };
 }
 
-export async function parseIntake(input: IntakeInput): Promise<{ intake: JobIntake; usedLLM: boolean }> {
+export async function parseIntake(input: IntakeInput): Promise<{ intake: JobIntake; usedLLM: boolean; llm?: string }> {
     const fallback = deterministicIntake(input);
     if (!hasAnyProvider()) return { intake: fallback, usedLLM: false };
 
     try {
-        const { data } = await generateJSON<Partial<JobIntake>>({
+        const { data, provider, model } = await generateJSON<Partial<JobIntake>>({
             system: 'You parse job descriptions into structured JSON. Extract only what the text actually says — never invent.',
             prompt: `Parse this job opportunity.
 
@@ -150,6 +150,7 @@ Return JSON with exactly these keys:
                 ])).slice(0, 5),
             },
             usedLLM: true,
+            llm: `${provider}:${model}`,
         };
     } catch (e) {
         console.warn('Intake LLM failed, using deterministic parse:', e instanceof Error ? e.message : e);

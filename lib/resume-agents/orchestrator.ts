@@ -28,13 +28,13 @@ export async function runResumePipeline(input: IntakeInput): Promise<ResumePipel
     const prefs = getResumePreferences();
 
     // 1) Parse the job
-    const { intake, usedLLM: intakeLLM } = await parseIntake(input);
+    const { intake, usedLLM: intakeLLM, llm: intakeLlm } = await parseIntake(input);
 
     // 2) Scan the portfolio (deterministic — always real projects)
     const retrieval = retrieve(intake, prefs);
 
     // 3) Score the fit
-    const { fit, usedLLM: fitLLM } = await assessFit(intake, retrieval, prefs);
+    const { fit, usedLLM: fitLLM, llm: fitLlm } = await assessFit(intake, retrieval, prefs);
 
     // 4) Gate
     const gated = fit.score < prefs.minFitScore;
@@ -42,10 +42,12 @@ export async function runResumePipeline(input: IntakeInput): Promise<ResumePipel
     // 5) Tailor (only when the gate passes)
     let resume;
     let tailorLLM = false;
+    let tailorLlm: string | undefined;
     if (!gated) {
         const out = await tailorResume(intake, retrieval, prefs);
         resume = out.resume;
         tailorLLM = out.usedLLM;
+        tailorLlm = out.llm;
     }
 
     const fileName = `Srujan - ${sanitizeNamePart(intake.company)} - ${sanitizeNamePart(intake.role)}`;
@@ -54,6 +56,10 @@ export async function runResumePipeline(input: IntakeInput): Promise<ResumePipel
     return {
         ok: true,
         engine: anyLLM ? 'llm' : 'deterministic',
+        // Which provider ACTUALLY generated (tailor is the authoritative stage).
+        // This is the ground truth — if a top-priority provider failed and the
+        // pipeline fell back, it shows here.
+        providerUsed: tailorLlm || fitLlm || intakeLlm,
         intake,
         retrieval,
         fit,

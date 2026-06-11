@@ -317,7 +317,7 @@ export function ResumeGate() {
                                             {result.intake.role} <span className="text-text-muted font-normal">at</span> {result.intake.company}
                                         </h3>
                                         <p className="mt-1 text-xs text-text-muted font-mono">
-                                            {result.retrieval.coveragePct}% skill coverage · {result.retrieval.matches.length} relevant projects · engine: {result.engine}
+                                            {result.retrieval.coveragePct}% skill coverage · {result.retrieval.matches.length} relevant projects · engine: {result.providerUsed || result.engine}
                                         </p>
                                     </div>
                                 </div>
