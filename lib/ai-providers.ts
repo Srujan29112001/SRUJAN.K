@@ -106,13 +106,22 @@ export interface ProviderConfig {
     enabled: boolean;
     model: string;
     keys: string[];
-    /** where the keys came from, for the admin UI */
+    /** where the active keys came from, for the admin UI */
     keySources: { admin: number; env: number };
+    /** env keys exist but may be excluded via useEnvKeys=false */
+    envAvailable: number;
+    useEnvKeys: boolean;
 }
 
 export interface AIProvidersFile {
     order?: string[];
-    providers?: Partial<Record<ProviderId, { enabled?: boolean; model?: string; keys?: string[] }>>;
+    providers?: Partial<Record<ProviderId, {
+        enabled?: boolean;
+        model?: string;
+        keys?: string[];
+        /** false → ignore environment-variable keys for this provider */
+        useEnvKeys?: boolean;
+    }>>;
 }
 
 const CONFIG_FILE = path.join(process.cwd(), 'data', 'ai-providers.json');
@@ -141,7 +150,9 @@ export function getProviderConfig(id: ProviderId): ProviderConfig {
     const spec = SPECS[id];
     const file = readConfigFile();
     const fileCfg = file.providers?.[id] || {};
-    const fromEnv = envKeys(spec.envPrefix);
+    const envAvailable = envKeys(spec.envPrefix);
+    const useEnvKeys = fileCfg.useEnvKeys !== false; // included unless explicitly excluded
+    const fromEnv = useEnvKeys ? envAvailable : [];
     const fromAdmin = (fileCfg.keys || []).map(k => k.trim()).filter(Boolean);
     // admin keys first (explicit intent), env keys appended, deduped
     const keys = Array.from(new Set([...fromAdmin, ...fromEnv]));
@@ -150,6 +161,8 @@ export function getProviderConfig(id: ProviderId): ProviderConfig {
         model: fileCfg.model || process.env[`${spec.envPrefix}_MODEL`] || spec.defaultModel,
         keys,
         keySources: { admin: fromAdmin.length, env: fromEnv.length },
+        envAvailable: envAvailable.length,
+        useEnvKeys,
     };
 }
 
@@ -175,7 +188,11 @@ export function getProvidersStatus() {
             model: cfg.model,
             keyCount: cfg.keys.length,
             keySources: cfg.keySources,
-            maskedKeys: cfg.keys.map(k => `...${k.slice(-4)}`),
+            envAvailable: cfg.envAvailable,
+            useEnvKeys: cfg.useEnvKeys,
+            // mask only the ADMIN-entered keys for the textarea; env keys are
+            // controlled by the separate toggle, not the textarea
+            maskedKeys: cfg.keys.slice(0, cfg.keySources.admin).map(k => `...${k.slice(-4)}`),
             ready: cfg.enabled && cfg.keys.length > 0,
         };
     });
@@ -401,12 +418,28 @@ export async function generateJSON<T>(req: LLMRequest): Promise<{ data: T; provi
     }
 }
 
-/** One-shot connectivity test for the admin UI. */
-export async function testProvider(id: ProviderId): Promise<{ ok: boolean; detail: string; latencyMs?: number }> {
+/**
+ * One-shot connectivity test for the admin UI.
+ * Pass opts.key/opts.model to test UNSAVED values straight from the form —
+ * otherwise the stored config is used.
+ */
+export async function testProvider(
+    id: ProviderId,
+    opts?: { key?: string; model?: string },
+): Promise<{ ok: boolean; detail: string; latencyMs?: number }> {
     const cfg = getProviderConfig(id);
-    if (cfg.keys.length === 0) return { ok: false, detail: 'No API keys configured' };
+    if (!opts?.key && cfg.keys.length === 0) {
+        return { ok: false, detail: 'No API keys configured (paste a key, then Test — saving is not required)' };
+    }
     const start = Date.now();
-    const out = await callProvider(id, { prompt: 'Reply with the single word: ok', maxTokens: 8, temperature: 0 });
-    if (out.ok) return { ok: true, detail: `${cfg.model} responded`, latencyMs: Date.now() - start };
+    const out = await callProvider(id, {
+        prompt: 'Reply with the single word: ok',
+        maxTokens: 1000,
+        temperature: 0,
+        ...(opts?.key ? { overrideKey: opts.key } : {}),
+        ...(opts?.model ? { overrideModel: opts.model } : {}),
+    });
+    const model = opts?.model || cfg.model;
+    if (out.ok) return { ok: true, detail: `${model} responded`, latencyMs: Date.now() - start };
     return { ok: false, detail: out.error };
 }

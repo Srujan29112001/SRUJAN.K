@@ -15,6 +15,8 @@ interface ProviderStatus {
     model: string;
     keyCount: number;
     keySources: { admin: number; env: number };
+    envAvailable: number;
+    useEnvKeys: boolean;
     maskedKeys: string[];
     ready: boolean;
 }
@@ -23,6 +25,7 @@ interface ProviderEdit {
     enabled: boolean;
     model: string;
     keysRaw: string;
+    useEnvKeys: boolean;
 }
 
 export default function AdminAIProvidersPage() {
@@ -59,6 +62,7 @@ export default function AdminAIProvidersPage() {
                         enabled: p.enabled,
                         model: p.model,
                         keysRaw: p.maskedKeys.join('\n'),
+                        useEnvKeys: p.useEnvKeys,
                     };
                 }
                 setStatuses(map);
@@ -104,7 +108,7 @@ export default function AdminAIProvidersPage() {
                 return;
             }
             if (res.ok) {
-                setSaveMessage({ ok: true, text: 'Provider config saved. Env-var keys always remain active as fallback. On Vercel, set keys via environment variables for durability.' });
+                setSaveMessage({ ok: true, text: 'Provider config saved.' });
                 await loadProviders();
             } else {
                 const data = await res.json().catch(() => ({}));
@@ -122,10 +126,16 @@ export default function AdminAIProvidersPage() {
         setTesting(id);
         setTestResults(prev => ({ ...prev, [id]: undefined as never }));
         try {
+            // Send the CURRENT form values so unsaved keys can be tested directly
+            const edit = edits[id];
             const res = await fetch('/api/admin/ai-providers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ provider: id }),
+                body: JSON.stringify({
+                    provider: id,
+                    keysRaw: edit?.keysRaw || '',
+                    model: edit?.model || '',
+                }),
             });
             const data = await res.json();
             setTestResults(prev => ({ ...prev, [id]: data }));
@@ -191,11 +201,16 @@ export default function AdminAIProvidersPage() {
             <main className="relative max-w-4xl mx-auto px-6 py-8 space-y-6">
                 <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/15">
                     <p className="text-xs text-text-secondary leading-relaxed">
-                        The resume engine (and future AI features) walks providers <span className="text-white font-medium">top to bottom</span> until
-                        one succeeds — failed/rate-limited keys rotate automatically. Keys entered here are stored in{' '}
-                        <span className="font-mono text-cyan-400">data/ai-providers.json</span> (gitignored). Keys from environment
-                        variables (<span className="font-mono text-cyan-400">OPENAI_API_KEYS</span>, <span className="font-mono text-cyan-400">GROQ_API_KEYS</span>, …)
-                        are merged in automatically and survive deployments.
+                        These keys power the <span className="text-white font-medium">Resume Engine only</span> (the AI Chat runs on each
+                        visitor&apos;s own key). Providers are tried <span className="text-white font-medium">top to bottom</span> until one
+                        succeeds — reorder with the arrows. To stop a provider being used: untick{' '}
+                        <span className="text-white font-medium">Enabled</span>, or untick its{' '}
+                        <span className="text-white font-medium">env keys</span> checkbox if its keys come from environment variables.
+                        <span className="block mt-1.5 text-amber-400/80">
+                            On Vercel the filesystem is read-only — keys saved here work locally; for production set
+                            env vars (<span className="font-mono">GROQ_API_KEYS</span>, …) in the Vercel dashboard. The{' '}
+                            <span className="font-mono">Test</span> button tests whatever is typed in the box, no save needed.
+                        </span>
                     </p>
                 </div>
 
@@ -245,9 +260,6 @@ export default function AdminAIProvidersPage() {
                                 <div>
                                     <label className="block text-xs font-medium text-text-muted mb-2">
                                         API keys (one per line; masked lines keep the stored key)
-                                        {status.keySources.env > 0 && (
-                                            <span className="ml-2 text-cyan-400/70">+{status.keySources.env} from env</span>
-                                        )}
                                     </label>
                                     <textarea
                                         value={edit.keysRaw}
@@ -256,6 +268,22 @@ export default function AdminAIProvidersPage() {
                                         placeholder="sk-…"
                                         className="w-full px-4 py-2.5 text-xs rounded-xl border border-white/10 bg-bg-base text-white focus:border-cyan-500 transition-all font-mono"
                                     />
+                                    {status.envAvailable > 0 && (
+                                        <label className="mt-2 flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={edit.useEnvKeys}
+                                                onChange={e => setEdits(prev => ({ ...prev, [id]: { ...prev[id], useEnvKeys: e.target.checked } }))}
+                                                className="accent-cyan-500"
+                                            />
+                                            <span className="text-[11px] text-cyan-400/80 font-mono">
+                                                use {status.envAvailable} key{status.envAvailable === 1 ? '' : 's'} from environment variables
+                                            </span>
+                                            {!edit.useEnvKeys && (
+                                                <span className="text-[11px] text-amber-400/80 font-mono">— excluded (this provider only uses keys typed above)</span>
+                                            )}
+                                        </label>
+                                    )}
                                 </div>
                             </div>
 

@@ -13,11 +13,7 @@ import {
     DollarSign,
     AlertCircle,
     CheckCircle,
-    Bot,
-    Key,
-    Eye,
-    EyeOff,
-    RefreshCw
+    Bot
 } from 'lucide-react';
 
 interface TierCurrency {
@@ -35,21 +31,11 @@ interface AllSettings {
     applause: TierSettings;
 }
 
-interface AISettings {
-    geminiApiKeys: string[];
-    geminiApiKeyCount: number;
-    geminiModel: string;
-}
-
 export default function AdminSettingsPage() {
     const router = useRouter();
     const [settings, setSettings] = useState<AllSettings | null>(null);
-    const [aiSettings, setAISettings] = useState<AISettings | null>(null);
-    const [apiKeyInputs, setApiKeyInputs] = useState<string[]>(Array(12).fill('')); // 12 API key slots
-    const [showApiKeys, setShowApiKeys] = useState<boolean[]>(Array(12).fill(false));
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [isSavingAI, setIsSavingAI] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
@@ -63,19 +49,6 @@ export default function AdminSettingsPage() {
             if (settingsResponse.ok) {
                 const data = await settingsResponse.json();
                 setSettings(data);
-            }
-
-            // Load AI settings
-            const aiSettingsResponse = await fetch('/api/admin/ai-settings');
-            if (aiSettingsResponse.ok) {
-                const data = await aiSettingsResponse.json();
-                setAISettings(data);
-                // Initialize input fields with masked keys (or empty for new slots)
-                const inputs = Array(12).fill('');
-                data.geminiApiKeys.forEach((key: string, i: number) => {
-                    if (i < 12) inputs[i] = key;
-                });
-                setApiKeyInputs(inputs);
             }
         } catch (error) {
             console.error('Failed to load settings:', error);
@@ -115,69 +88,6 @@ export default function AdminSettingsPage() {
         }
     };
 
-    const handleSaveAISettings = async () => {
-        if (!aiSettings) return;
-
-        setIsSavingAI(true);
-        setMessage(null);
-
-        try {
-            // Filter out empty keys but keep masked ones (they'll be resolved server-side)
-            const keysToSave = apiKeyInputs.filter(k => k.trim().length > 0);
-
-            const response = await fetch('/api/admin/ai-settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    geminiApiKeys: keysToSave,
-                    geminiModel: aiSettings.geminiModel,
-                }),
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                setMessage({ type: 'success', text: result.message || 'AI settings saved!' });
-                // Reload AI settings to get updated masked keys
-                const aiSettingsResponse = await fetch('/api/admin/ai-settings');
-                if (aiSettingsResponse.ok) {
-                    const data = await aiSettingsResponse.json();
-                    setAISettings(data);
-                    // Update input fields with new masked keys
-                    const inputs = Array(12).fill('');
-                    data.geminiApiKeys.forEach((key: string, i: number) => {
-                        if (i < 12) inputs[i] = key;
-                    });
-                    setApiKeyInputs(inputs);
-                }
-                setTimeout(() => setMessage(null), 5000);
-            } else {
-                setMessage({ type: 'error', text: 'Failed to save AI settings' });
-            }
-        } catch {
-            setMessage({ type: 'error', text: 'Failed to save AI settings' });
-        } finally {
-            setIsSavingAI(false);
-        }
-    };
-
-    const updateApiKeyInput = (index: number, value: string) => {
-        const newInputs = [...apiKeyInputs];
-        newInputs[index] = value;
-        setApiKeyInputs(newInputs);
-    };
-
-    const toggleShowApiKey = (index: number) => {
-        const newShow = [...showApiKeys];
-        newShow[index] = !newShow[index];
-        setShowApiKeys(newShow);
-    };
-
-    const clearApiKey = (index: number) => {
-        const newInputs = [...apiKeyInputs];
-        newInputs[index] = '';
-        setApiKeyInputs(newInputs);
-    };
 
     const updateTierSetting = (
         tier: 'coffee' | 'applause',
@@ -282,127 +192,28 @@ export default function AdminSettingsPage() {
                     Configure pricing and payment links for Coffee and Applause tiers. Changes take effect immediately.
                 </p>
 
-                {/* AI Configuration Section */}
-                {aiSettings && (
-                    <div className="bg-bg-elevated rounded-2xl border border-white/10 p-6 mb-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                                <Bot className="w-5 h-5 text-blue-400" />
-                            </div>
-                            <div>
-                                <h2 className="font-display text-lg font-bold text-white">
-                                    AI Chatbot Configuration
-                                </h2>
-                                <p className="text-sm text-text-muted">Manage Gemini API key and model settings</p>
-                            </div>
+                {/* AI key management moved — pointer card */}
+                <div className="bg-bg-elevated rounded-2xl border border-white/10 p-6 mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                            <Bot className="w-5 h-5 text-blue-400" />
                         </div>
-
-                        <div className="space-y-6">
-                            {/* Multiple API Keys */}
-                            <div className="p-4 rounded-xl bg-bg-surface border border-white/5">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2 text-purple-400">
-                                        <Key className="w-4 h-4" />
-                                        <span className="font-medium">Gemini API Keys</span>
-                                        {aiSettings.geminiApiKeyCount > 0 && (
-                                            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400">
-                                                {aiSettings.geminiApiKeyCount} key{aiSettings.geminiApiKeyCount > 1 ? 's' : ''} configured
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <p className="text-xs text-text-muted mb-4">
-                                    Add multiple API keys for automatic rotation when rate limits are hit. Keys are used in order.
-                                </p>
-
-                                {/* API Key Inputs */}
-                                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                                    {Array.from({ length: 12 }, (_, index) => (
-                                        <div key={index} className="flex items-center gap-2">
-                                            <span className="text-xs text-text-muted w-6">{index + 1}.</span>
-                                            <div className="relative flex-1">
-                                                <input
-                                                    type={showApiKeys[index] ? 'text' : 'password'}
-                                                    value={apiKeyInputs[index]}
-                                                    onChange={(e) => updateApiKeyInput(index, e.target.value)}
-                                                    placeholder={`API Key ${index + 1} (AIzaSy...)`}
-                                                    className="w-full px-3 py-2 pr-20 rounded-lg border border-white/10 bg-bg-base text-white font-mono text-sm"
-                                                />
-                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleShowApiKey(index)}
-                                                        className="p-1 text-text-muted hover:text-white transition-colors"
-                                                    >
-                                                        {showApiKeys[index] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                    </button>
-                                                    {apiKeyInputs[index] && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => clearApiKey(index)}
-                                                            className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                                                            title="Clear this key"
-                                                        >
-                                                            <AlertCircle className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <p className="mt-3 text-xs text-amber-400/80">
-                                    Leave empty to remove a key. Masked keys (showing ••••) will be preserved unless cleared.
-                                </p>
-                            </div>
-
-                            {/* Model Selection */}
-                            <div className="p-4 rounded-xl bg-bg-surface border border-white/5">
-                                <div className="flex items-center gap-2 text-cyan-400 mb-4">
-                                    <RefreshCw className="w-4 h-4" />
-                                    <span className="font-medium">Model Name</span>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs text-text-muted mb-1">
-                                        Gemini Model ID
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={aiSettings.geminiModel}
-                                        onChange={(e) => setAISettings({ ...aiSettings, geminiModel: e.target.value })}
-                                        placeholder="gemini-2.0-flash"
-                                        className="w-full px-3 py-2 rounded-lg border border-white/10 bg-bg-base text-white font-mono text-sm"
-                                    />
-                                    <p className="mt-2 text-xs text-text-muted">
-                                        Examples: gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro, gemini-2.5-flash
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Save AI Settings Button */}
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={handleSaveAISettings}
-                                    disabled={isSavingAI}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold transition-all hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50"
-                                >
-                                    <Save className="w-5 h-5" />
-                                    {isSavingAI ? 'Saving...' : 'Save AI Settings'}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Warning Note */}
-                        <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                            <p className="text-xs text-amber-400">
-                                <strong>Note:</strong> After changing the API key or model, you may need to restart the development server for changes to take effect in the current session.
+                        <div className="flex-1">
+                            <h2 className="font-display text-lg font-bold text-white">AI Configuration has moved</h2>
+                            <p className="text-sm text-text-muted">
+                                The AI Chat now runs on each visitor&apos;s own API key (the 🔑 panel in the chat).
+                                Your keys power only the Resume Engine — manage them in{' '}
+                                <Link href="/admin/ai-providers" className="text-cyan-400 hover:underline">AI Providers</Link>.
                             </p>
                         </div>
+                        <Link
+                            href="/admin/ai-providers"
+                            className="flex-shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                        >
+                            Open AI Providers →
+                        </Link>
                     </div>
-                )}
+                </div>
 
                 {settings && (
                     <div className="space-y-8">

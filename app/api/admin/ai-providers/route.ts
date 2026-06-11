@@ -29,7 +29,24 @@ export async function GET() {
 
 interface PutBody {
     order?: string[];
-    providers?: Partial<Record<ProviderId, { enabled?: boolean; model?: string; keysRaw?: string }>>;
+    providers?: Partial<Record<ProviderId, { enabled?: boolean; model?: string; keysRaw?: string; useEnvKeys?: boolean }>>;
+}
+
+/** Resolve a raw textarea key list against stored keys (mask-aware). */
+function resolveKeys(id: ProviderId, keysRaw: string): string[] {
+    const currentKeys = getProviderConfig(id).keys;
+    return keysRaw
+        .split(/[\n,]/)
+        .map(k => k.trim())
+        .filter(Boolean)
+        .map(k => {
+            if (k.includes('••') || k.startsWith('...')) {
+                const tail = k.slice(-4);
+                return currentKeys.find(real => real.endsWith(tail)) || '';
+            }
+            return k;
+        })
+        .filter(Boolean);
 }
 
 // PUT - save provider config. Masked keys ("...abcd") are preserved from the
@@ -51,38 +68,34 @@ export async function PUT(request: Request) {
             const incoming = body.providers?.[id];
             if (!incoming) continue;
 
-            const cfg = getProviderConfig(id);
-            const currentKeys = cfg.keys; // effective (admin+env), used to resolve masks
             const envKeySet = new Set(
                 (process.env[`${id.toUpperCase()}_API_KEYS`] || process.env[`${id.toUpperCase()}_API_KEY`] || '')
                     .split(',').map(k => k.trim()).filter(Boolean),
             );
-            const rawList = (incoming.keysRaw || '')
-                .split(/[\n,]/)
-                .map(k => k.trim())
-                .filter(Boolean);
 
-            // Mask-merge: a masked entry keeps the stored key it masks
-            const resolved = rawList.map(k => {
-                if (k.includes('••') || k.startsWith('...')) {
-                    const tail = k.slice(-4);
-                    const match = currentKeys.find(real => real.endsWith(tail));
-                    return match || '';
-                }
-                return k;
-            }).filter(Boolean)
-                // Never persist env-sourced keys to the JSON file — they are merged
-                // back in at read time and should live only in the environment.
-                .filter(k => !envKeySet.has(k));
+            // Mask-merge, then never persist env-sourced keys to the JSON file —
+            // they are merged back at read time and live only in the environment.
+            const resolved = resolveKeys(id, incoming.keysRaw || '').filter(k => !envKeySet.has(k));
 
             next.providers![id] = {
                 enabled: incoming.enabled !== false,
+                useEnvKeys: incoming.useEnvKeys !== false,
                 ...(incoming.model ? { model: String(incoming.model).slice(0, 80) } : {}),
                 keys: Array.from(new Set(resolved)),
             };
         }
 
-        writeConfigFile(next);
+        try {
+            writeConfigFile(next);
+        } catch (writeErr) {
+            // Vercel serverless: project filesystem is read-only
+            console.error('Provider config write failed:', writeErr);
+            return NextResponse.json({
+                error: 'Could not persist config — this host has a read-only filesystem (Vercel). '
+                    + 'Set keys via environment variables (e.g. GROQ_API_KEYS) in the Vercel dashboard, '
+                    + 'or save from a local dev session and commit. The env-key toggles also need env-side changes here.',
+            }, { status: 500 });
+        }
         return NextResponse.json({ success: true, providers: getProvidersStatus() });
     } catch (e) {
         console.error('Failed to save AI providers:', e);
@@ -90,19 +103,25 @@ export async function PUT(request: Request) {
     }
 }
 
-// POST - test one provider's connectivity: { provider: "groq" }
+// POST - test a provider's connectivity. Accepts the CURRENT form values so
+// admins can test keys before saving: { provider, keysRaw?, model? }
 export async function POST(request: Request) {
     if (!(await isAuthenticated())) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const body = await request.json() as { provider?: string };
+        const body = await request.json() as { provider?: string; keysRaw?: string; model?: string };
         const id = body.provider as ProviderId;
         if (!PROVIDER_IDS.includes(id)) {
             return NextResponse.json({ error: 'Unknown provider' }, { status: 400 });
         }
-        const result = await testProvider(id);
+        // Use the first key from the form (mask-resolved) when provided
+        const formKeys = body.keysRaw ? resolveKeys(id, body.keysRaw) : [];
+        const result = await testProvider(id, {
+            ...(formKeys[0] ? { key: formKeys[0] } : {}),
+            ...(body.model ? { model: String(body.model).slice(0, 80) } : {}),
+        });
         return NextResponse.json(result);
     } catch (e) {
         return NextResponse.json(
