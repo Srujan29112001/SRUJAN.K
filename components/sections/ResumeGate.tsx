@@ -38,6 +38,14 @@ export function ResumeGate() {
     const [resumeHtml, setResumeHtml] = useState<string | null>(null);
     const [byok, setByok] = useState<ByokConfig | null>(null);
     const blobUrlRef = useRef<string | null>(null);
+    // Owner mode (password-gated): bypasses the fit gate + generates outreach kit
+    const [ownerAuthed, setOwnerAuthed] = useState(false);
+    const [ownerMode, setOwnerMode] = useState(false);
+    const [ownerPanelOpen, setOwnerPanelOpen] = useState(false);
+    const [ownerPassword, setOwnerPassword] = useState('');
+    const [ownerAuthError, setOwnerAuthError] = useState<string | null>(null);
+    const [ownerAuthBusy, setOwnerAuthBusy] = useState(false);
+    const [copied, setCopied] = useState<string | null>(null);
 
     // The resume engine runs on the SAME key the visitor set in the chat's 🔑
     // panel. Re-read it whenever this tab regains focus so changes apply.
@@ -50,6 +58,45 @@ export function ResumeGate() {
             window.removeEventListener('focus', refresh);
             document.removeEventListener('visibilitychange', refresh);
         };
+    }, []);
+
+    // Already logged in as admin? Owner mode unlocks without re-entering the password.
+    useEffect(() => {
+        fetch('/api/admin/auth')
+            .then(res => { if (res.ok) setOwnerAuthed(true); })
+            .catch(() => { /* stays locked */ });
+    }, []);
+
+    const handleOwnerUnlock = useCallback(async () => {
+        if (!ownerPassword.trim() || ownerAuthBusy) return;
+        setOwnerAuthBusy(true);
+        setOwnerAuthError(null);
+        try {
+            const res = await fetch('/api/admin/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: ownerPassword }),
+            });
+            if (res.ok) {
+                setOwnerAuthed(true);
+                setOwnerMode(true);
+                setOwnerPassword('');
+            } else {
+                setOwnerAuthError('Wrong password.');
+            }
+        } catch {
+            setOwnerAuthError('Could not reach the server.');
+        } finally {
+            setOwnerAuthBusy(false);
+        }
+    }, [ownerPassword, ownerAuthBusy]);
+
+    const handleCopy = useCallback(async (label: string, text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(label);
+            setTimeout(() => setCopied(null), 1500);
+        } catch { /* clipboard blocked */ }
     }, []);
 
     // Cycle the stage label while the pipeline runs
@@ -82,7 +129,11 @@ export function ResumeGate() {
             const res = await fetch('/api/resume/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ role, company, requirements, ...(liveByok ? { byok: liveByok } : {}) }),
+                body: JSON.stringify({
+                    role, company, requirements,
+                    ...(liveByok ? { byok: liveByok } : {}),
+                    ...(ownerMode && ownerAuthed ? { ownerMode: true } : {}),
+                }),
             });
             const data: ApiResponse = await res.json();
             if (!res.ok || !data.result) {
@@ -96,7 +147,7 @@ export function ResumeGate() {
         } finally {
             setIsRunning(false);
         }
-    }, [role, company, requirements, isRunning]);
+    }, [role, company, requirements, isRunning, ownerMode, ownerAuthed]);
 
     const handleDownload = useCallback(() => {
         if (!resumeHtml) return;
@@ -279,6 +330,57 @@ export function ResumeGate() {
                             <p className="text-center font-mono text-[10px] text-text-muted/50">
                                 Fit is scored against real shipped work — the answer is honest, even when it&apos;s &quot;not a match&quot;.
                             </p>
+
+                            {/* Owner mode (password-gated): pitch + hiring email generation */}
+                            <div className="pt-2 border-t border-white/5">
+                                {!ownerPanelOpen && !ownerMode ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setOwnerPanelOpen(true)}
+                                        className="mx-auto flex items-center gap-1.5 font-mono text-[10px] text-text-muted/40 hover:text-text-muted transition-colors"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                        </svg>
+                                        owner
+                                    </button>
+                                ) : !ownerAuthed ? (
+                                    <div className="max-w-sm mx-auto space-y-2">
+                                        <p className="text-center font-mono text-[10px] text-amber-400/80">Owner mode — enter the admin password</p>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="password"
+                                                value={ownerPassword}
+                                                onChange={e => setOwnerPassword(e.target.value)}
+                                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleOwnerUnlock(); } }}
+                                                placeholder="Admin password"
+                                                className="flex-1 rounded-lg border border-amber-500/30 bg-bg-surface px-3 py-2 text-xs text-white placeholder-text-muted focus:border-amber-400 focus:outline-none"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleOwnerUnlock}
+                                                disabled={ownerAuthBusy || !ownerPassword.trim()}
+                                                className="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-mono text-xs hover:bg-amber-500/30 disabled:opacity-40"
+                                            >
+                                                {ownerAuthBusy ? '…' : 'Unlock'}
+                                            </button>
+                                        </div>
+                                        {ownerAuthError && <p className="text-center text-[10px] text-red-400">{ownerAuthError}</p>}
+                                    </div>
+                                ) : (
+                                    <label className="mx-auto w-fit flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={ownerMode}
+                                            onChange={e => setOwnerMode(e.target.checked)}
+                                            className="accent-emerald-500"
+                                        />
+                                        <span className="font-mono text-[10px] text-emerald-400">
+                                            Owner mode — bypass gate + generate pitch &amp; hiring email
+                                        </span>
+                                    </label>
+                                )}
+                            </div>
                         </motion.form>
                     ) : (
                         /* ============ RESULT ============ */
@@ -396,6 +498,55 @@ export function ResumeGate() {
                                         <a href="#chat" className="text-cyan-400 hover:underline">ask my AI twin</a> or {' '}
                                         <a href="#contact" className="text-cyan-400 hover:underline">reach out directly</a> — the real me might disagree with them.
                                     </p>
+                                </div>
+                            )}
+
+                            {/* Owner-only outreach kit */}
+                            {result.outreach && (
+                                <div className="bg-bg-base/80 backdrop-blur-sm border border-amber-500/30 rounded-2xl p-6 space-y-5">
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-display text-lg font-bold text-white">Outreach kit</h3>
+                                        <span className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                            owner only
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+                                                Short pitch · {result.outreach.shortMessage.length}/400 chars
+                                            </h4>
+                                            <button
+                                                onClick={() => handleCopy('pitch', result.outreach!.shortMessage)}
+                                                className="px-2.5 py-1 rounded font-mono text-[10px] border border-white/15 text-text-muted hover:text-white hover:border-white/30 transition-colors"
+                                            >
+                                                {copied === 'pitch' ? '✓ copied' : 'copy'}
+                                            </button>
+                                        </div>
+                                        <p className="p-3 rounded-lg bg-bg-surface border border-white/10 text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
+                                            {result.outreach.shortMessage}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+                                                Email for the hiring team
+                                            </h4>
+                                            <button
+                                                onClick={() => handleCopy('email', `Subject: ${result.outreach!.subject}\n\n${result.outreach!.emailBody}`)}
+                                                className="px-2.5 py-1 rounded font-mono text-[10px] border border-white/15 text-text-muted hover:text-white hover:border-white/30 transition-colors"
+                                            >
+                                                {copied === 'email' ? '✓ copied' : 'copy'}
+                                            </button>
+                                        </div>
+                                        <p className="p-3 rounded-lg bg-bg-surface border border-white/10 text-xs text-cyan-300/90 font-medium mb-2">
+                                            Subject: {result.outreach.subject}
+                                        </p>
+                                        <p className="p-3 rounded-lg bg-bg-surface border border-white/10 text-xs text-text-secondary leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto">
+                                            {result.outreach.emailBody}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 

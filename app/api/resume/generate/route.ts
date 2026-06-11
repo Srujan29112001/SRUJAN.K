@@ -9,11 +9,22 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { runResumePipeline, logResumeRequest } from '@/lib/resume-agents/orchestrator';
 import { getResumePreferences } from '@/lib/resume-preferences';
 import { renderResumeHTML } from '@/lib/resume-template';
 import { PROVIDER_IDS, PROVIDER_LABELS, type ProviderId } from '@/lib/ai-providers';
 import type { LLMBase } from '@/lib/resume-agents/types';
+
+// Owner mode reuses the admin session cookie (set by POST /api/admin/auth)
+async function isOwner(): Promise<boolean> {
+    try {
+        const cookieStore = await cookies();
+        return cookieStore.get('admin_session')?.value === 'authenticated';
+    } catch {
+        return false;
+    }
+}
 
 // Simple in-memory rate limiter: max 4 generations per IP per 5 minutes
 const RATE_WINDOW_MS = 5 * 60 * 1000;
@@ -35,6 +46,8 @@ interface GenerateBody {
     requirements?: string;
     /** the visitor's own API key — same 🔑 config as the AI chat */
     byok?: { provider?: string; key?: string; model?: string };
+    /** owner-only: bypass gate + generate outreach kit (requires admin cookie) */
+    ownerMode?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -86,11 +99,27 @@ export async function POST(request: NextRequest) {
         }
         : null;
 
-    try {
-        const result = await runResumePipeline({ role, company, requirements }, llmBase);
+    // Owner mode: only honored with a valid admin session
+    let ownerMode = false;
+    if (body.ownerMode === true) {
+        if (!(await isOwner())) {
+            return NextResponse.json(
+                { error: 'Owner mode requires the admin password.', ownerAuthRequired: true },
+                { status: 401 },
+            );
+        }
+        ownerMode = true;
+    }
 
-        // log for the admin dashboard (never throws)
-        logResumeRequest(result, { role, company, requirements }, { ip, userAgent });
+    try {
+        const result = await runResumePipeline({ role, company, requirements }, llmBase, { ownerMode });
+
+        // log for the admin dashboard (never throws); tag owner runs
+        logResumeRequest(
+            { ...result, engine: (ownerMode ? `${result.engine}+owner` : result.engine) as typeof result.engine },
+            { role, company, requirements },
+            { ip, userAgent },
+        );
 
         let html: string | undefined;
         if (!result.gated && result.resume) {

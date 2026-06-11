@@ -157,6 +157,16 @@ export interface TailoredResume {
     projects: TailoredProject[];
 }
 
+/** Owner-only outreach kit: short pitch + email for the hiring team. */
+export interface OutreachKit {
+    /** ≤400-character pitch (LinkedIn note / referral message) */
+    shortMessage: string;
+    /** email subject line */
+    subject: string;
+    /** full plain-text email body */
+    emailBody: string;
+}
+
 export interface ResumePipelineResult {
     ok: boolean;
     engine: 'llm' | 'deterministic';
@@ -167,6 +177,8 @@ export interface ResumePipelineResult {
     /** true → fit below threshold; no tailored resume produced */
     gated: boolean;
     resume?: TailoredResume;
+    /** present only for authenticated owner-mode runs */
+    outreach?: OutreachKit;
     /** "Srujan - {Company} - {Role}" */
     fileName: string;
 }

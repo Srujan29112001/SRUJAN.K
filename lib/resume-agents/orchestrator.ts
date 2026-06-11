@@ -15,8 +15,17 @@ import { parseIntake, type IntakeInput } from './intake';
 import { retrieve } from './retriever';
 import { assessFit } from './fit';
 import { tailorResume } from './tailor';
+import { generateOutreach } from './outreach';
 import { getResumePreferences } from '@/lib/resume-preferences';
-import type { LLMBase, ResumePipelineResult, ResumeRequestLog } from './types';
+import type { LLMBase, OutreachKit, ResumePipelineResult, ResumeRequestLog } from './types';
+
+export interface PipelineOptions {
+    /**
+     * Authenticated owner run: bypasses the fit gate (the owner applies where
+     * they choose) and generates the outreach kit (pitch + hiring email).
+     */
+    ownerMode?: boolean;
+}
 
 const REQUESTS_FILE = path.join(process.cwd(), 'data', 'resume-requests.json');
 
@@ -24,8 +33,13 @@ function sanitizeNamePart(s: string): string {
     return s.replace(/[^a-zA-Z0-9 &.\-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40) || 'Unknown';
 }
 
-export async function runResumePipeline(input: IntakeInput, llmBase?: LLMBase | null): Promise<ResumePipelineResult> {
+export async function runResumePipeline(
+    input: IntakeInput,
+    llmBase?: LLMBase | null,
+    opts?: PipelineOptions,
+): Promise<ResumePipelineResult> {
     const prefs = getResumePreferences();
+    const ownerMode = opts?.ownerMode === true;
 
     // 1) Parse the job (visitor's key when provided, deterministic otherwise)
     const { intake, usedLLM: intakeLLM, llm: intakeLlm } = await parseIntake(input, llmBase);
@@ -36,8 +50,8 @@ export async function runResumePipeline(input: IntakeInput, llmBase?: LLMBase | 
     // 3) Score the fit
     const { fit, usedLLM: fitLLM, llm: fitLlm } = await assessFit(intake, retrieval, prefs, llmBase);
 
-    // 4) Gate
-    const gated = fit.score < prefs.minFitScore;
+    // 4) Gate — the owner applies wherever they choose, so owner runs bypass it
+    const gated = !ownerMode && fit.score < prefs.minFitScore;
 
     // 5) Tailor (only when the gate passes)
     let resume;
@@ -50,8 +64,19 @@ export async function runResumePipeline(input: IntakeInput, llmBase?: LLMBase | 
         tailorLlm = out.llm;
     }
 
+    // 6) Outreach kit (owner-only): pitch message + hiring-team email
+    let outreach: OutreachKit | undefined;
+    let outreachLLM = false;
+    let outreachLlm: string | undefined;
+    if (ownerMode) {
+        const out = await generateOutreach(intake, retrieval, fit, resume, prefs, llmBase, input.requirements);
+        outreach = out.outreach;
+        outreachLLM = out.usedLLM;
+        outreachLlm = out.llm;
+    }
+
     const fileName = `Srujan - ${sanitizeNamePart(intake.company)} - ${sanitizeNamePart(intake.role)}`;
-    const anyLLM = intakeLLM || fitLLM || tailorLLM;
+    const anyLLM = intakeLLM || fitLLM || tailorLLM || outreachLLM;
 
     return {
         ok: true,
@@ -59,12 +84,13 @@ export async function runResumePipeline(input: IntakeInput, llmBase?: LLMBase | 
         // Which provider ACTUALLY generated (tailor is the authoritative stage).
         // This is the ground truth — if a top-priority provider failed and the
         // pipeline fell back, it shows here.
-        providerUsed: tailorLlm || fitLlm || intakeLlm,
+        providerUsed: tailorLlm || outreachLlm || fitLlm || intakeLlm,
         intake,
         retrieval,
         fit,
         gated,
         resume,
+        outreach,
         fileName,
     };
 }
