@@ -52,6 +52,7 @@ export default function KnowledgeGraphPage() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [stats, setStats] = useState<Record<string, unknown> | null>(null);
+    const [gaps, setGaps] = useState<Array<{ query: string; timestamp: string }>>([]);
     const [selected, setSelected] = useState<GNode | null>(null);
     const [query, setQuery] = useState('');
     const [queryResult, setQueryResult] = useState<{ matches: QueryMatch[]; matchedSkills: string[]; missingSkills: string[]; coveragePct: number } | null>(null);
@@ -74,6 +75,7 @@ export default function KnowledgeGraphPage() {
                 }));
                 edgesRef.current = data.edges;
                 setStats(data.stats);
+                setGaps(data.knowledgeGaps || []);
             } catch (e) {
                 console.error('Graph load failed:', e);
             } finally {
@@ -408,6 +410,25 @@ export default function KnowledgeGraphPage() {
                                     <span className="text-white font-medium">Click a project node</span> for details.
                                     Hover to see names. Run a query above to light up the work that matches —
                                     this uses the exact same matcher the public Resume Gate runs.
+                                </p>
+                            </div>
+                        )}
+
+                        {gaps.length > 0 && (
+                            <div className="bg-bg-surface border border-amber-500/20 rounded-2xl p-5">
+                                <h3 className="font-mono text-[10px] uppercase tracking-wider text-amber-400 mb-3">
+                                    Knowledge gaps — chat questions the portfolio couldn&apos;t answer
+                                </h3>
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    {gaps.map((g, i) => (
+                                        <p key={i} className="text-[11px] text-text-secondary leading-snug">
+                                            <span className="text-text-muted font-mono">{new Date(g.timestamp).toLocaleDateString()}</span>{' '}
+                                            &quot;{g.query}&quot;
+                                        </p>
+                                    ))}
+                                </div>
+                                <p className="mt-3 pt-2 border-t border-white/5 text-[10px] text-text-muted">
+                                    Add the missing info to your data files or persona — it flows into the chatbot automatically.
                                 </p>
                             </div>
                         )}

@@ -484,6 +484,148 @@ export function hasAnyProvider(): boolean {
     return c.enabled && c.keys.length > 0;
 }
 
+// =============================================================================
+// TRUE TOKEN STREAMING
+// Same provider resolution and retry rules as generateText, but the reply
+// streams as it is generated — first token in well under a second instead of
+// waiting for the whole completion. OpenAI-dialect and Anthropic both speak
+// SSE; we normalize their event formats into one ReadableStream<string>.
+// =============================================================================
+
+function parseProviderSSE(body: ReadableStream<Uint8Array>, dialect: 'openai' | 'anthropic'): ReadableStream<string> {
+    const decoder = new TextDecoder();
+    let buffer = '';
+    return new ReadableStream<string>({
+        async start(controller) {
+            const reader = body.getReader();
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    // normalize CRLF so event splitting works on any transport
+                    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+                    const events = buffer.split('\n\n');
+                    buffer = events.pop() || '';
+                    for (const ev of events) {
+                        const dataLine = ev.split('\n').find(l => l.startsWith('data:'));
+                        if (!dataLine) continue;
+                        const json = dataLine.slice(5).trim();
+                        if (!json || json === '[DONE]') continue;
+                        try {
+                            const parsed = JSON.parse(json) as Record<string, unknown>;
+                            let text: string | undefined;
+                            if (dialect === 'openai') {
+                                const choices = parsed.choices as Array<{ delta?: { content?: string } }> | undefined;
+                                text = choices?.[0]?.delta?.content;
+                            } else {
+                                // anthropic: content_block_delta events carry text_delta
+                                const delta = parsed.delta as { type?: string; text?: string } | undefined;
+                                if (parsed.type === 'content_block_delta' && delta?.type === 'text_delta') text = delta.text;
+                            }
+                            if (text) controller.enqueue(text);
+                        } catch { /* skip malformed event */ }
+                    }
+                }
+                controller.close();
+            } catch (e) {
+                controller.error(e);
+            }
+        },
+    });
+}
+
+export interface StreamResult {
+    stream: ReadableStream<string>;
+    provider: ProviderId;
+    model: string;
+}
+
+export async function generateTextStream(req: LLMRequest): Promise<StreamResult> {
+    await hydrateConfigFromKV();
+    const id = req.provider || resolveActiveProvider();
+    if (!id) throw new Error('No AI provider configured');
+
+    const spec = SPECS[id];
+    const isByok = !!req.overrideKey;
+    const cfg = getProviderConfig(id);
+    if (!isByok && (!cfg.enabled || cfg.keys.length === 0)) throw new Error(`${id}: no keys / disabled`);
+    const keys = isByok ? [req.overrideKey!] : cfg.keys;
+    const model = req.overrideModel || cfg.model;
+
+    let lastError = '';
+    let overloadRetries = 0;
+    const attempts = Math.min(keys.length, 3) + 2;
+    for (let i = 0; i < attempts; i++) {
+        const key = isByok ? keys[0] : nextKey(keys);
+        if (!key) { lastError = `${id}: all keys cooling down`; break; }
+        try {
+            let response: Response;
+            if (spec.dialect === 'anthropic') {
+                response = await fetch(spec.url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+                    body: JSON.stringify({
+                        model,
+                        max_tokens: req.maxTokens ?? 2048,
+                        temperature: req.temperature ?? 0.7,
+                        stream: true,
+                        ...(req.system ? { system: req.system } : {}),
+                        messages: [
+                            ...(req.messages || []).map(m => ({ role: m.role, content: m.content })),
+                            { role: 'user', content: req.prompt },
+                        ],
+                    }),
+                });
+            } else {
+                response = await fetch(spec.url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+                    body: JSON.stringify({
+                        model,
+                        stream: true,
+                        messages: [
+                            ...(req.system ? [{ role: 'system', content: req.system }] : []),
+                            ...(req.messages || []).map(m => ({ role: m.role, content: m.content })),
+                            { role: 'user', content: req.prompt },
+                        ],
+                        temperature: req.temperature ?? 0.7,
+                        max_tokens: req.maxTokens ?? 2048,
+                        ...(spec.extraBody || {}),
+                    }),
+                });
+            }
+
+            if (response.ok && response.body) {
+                if (!isByok) keyCooldowns.delete(key);
+                return { stream: parseProviderSSE(response.body, spec.dialect), provider: id, model };
+            }
+
+            const status = response.status;
+            const errText = await response.text().catch(() => response.statusText);
+            lastError = `${id} ${status}: ${errText.slice(0, 300)}`;
+            if (status === 429) {
+                if (isByok) break;
+                coolKey(key);
+                continue;
+            }
+            if (status === 401 || status === 403) {
+                if (isByok) { lastError = `${id} ${status}: API key rejected`; break; }
+                coolKey(key, 10 * 60_000);
+                continue;
+            }
+            if (status >= 500) {
+                overloadRetries++;
+                if (overloadRetries <= 2) { await new Promise(r => setTimeout(r, 1200 * overloadRetries)); continue; }
+                break;
+            }
+            break;
+        } catch (e) {
+            lastError = `${id} network: ${e instanceof Error ? e.message : 'error'}`;
+        }
+    }
+    throw new Error(lastError || `${id}: stream failed`);
+}
+
 function stripFences(text: string): string {
     const m = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     return (m ? m[1] : text).trim();

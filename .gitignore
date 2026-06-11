@@ -36,6 +36,7 @@ data/chat-history.json
 # Resume gate runtime data + admin-entered AI provider keys (secrets!)
 data/resume-requests.json
 data/ai-providers.json
+data/knowledge-gaps.json
 
 # Local Claude Code session settings
 .claude/settings.local.json

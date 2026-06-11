@@ -123,32 +123,36 @@ async function doInitialize(): Promise<void> {
         vectorStore.clear();
     }
 
-    // 🔄 INCREMENTAL AUTO-SYNC (Phase 3)
-    // Rebuild the knowledge base from the live data files and embed only the
-    // documents that are NEW or whose content CHANGED since the cache was
-    // written. Adding a project to data/projects.ts therefore flows into the
-    // chatbot's knowledge automatically on the next boot — no manual script.
+    // 🔄 INCREMENTAL AUTO-SYNC (Phase 3) — runs in the BACKGROUND.
+    // The first chat message never waits on embedding API calls; retrieval
+    // works immediately from the cache (or the deterministic knowledge agent)
+    // while new/changed docs embed behind the scenes.
+    console.log(`✅ RAG ready — ${vectorStore.getCount()} cached docs (${Date.now() - startTime}ms); checking freshness in background`);
+    void runBackgroundSync();
+}
+
+let syncRunning = false;
+
+async function runBackgroundSync(): Promise<void> {
+    if (syncRunning) return;
+    syncRunning = true;
+    const vectorStore = getVectorStore();
     try {
         const documents = buildKnowledgeBase();
         const existing = new Map(vectorStore.getAllDocuments().map(d => [d.id, d.content]));
         const stale = documents.filter(doc => existing.get(doc.id) !== doc.content);
 
         if (stale.length === 0) {
-            console.log(`✅ RAG up to date — ${vectorStore.getCount()} docs (${Date.now() - startTime}ms)`);
+            console.log(`✅ RAG up to date — ${vectorStore.getCount()} docs`);
             return;
         }
 
-        if (!process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEYS) {
-            console.warn(`⚠️ ${stale.length} knowledge doc(s) changed but no GEMINI key for embeddings — using cached docs + keyword fallback.`);
-            return;
-        }
-
-        // Bounded batch so a serverless cold start never times out; the rest
-        // syncs on subsequent boots. Locally, RAG_SYNC_BATCH can be raised to
-        // regenerate the whole cache in one go (then commit the cache file).
+        // Bounded batch so a serverless instance never burns excessive time; the
+        // rest syncs on subsequent boots. Locally, RAG_SYNC_BATCH can be raised
+        // to regenerate the whole cache in one go (then commit the cache file).
         const BATCH_LIMIT = parseInt(process.env.RAG_SYNC_BATCH || '24');
         const toEmbed = stale.slice(0, BATCH_LIMIT);
-        console.log(`🔄 Embedding ${toEmbed.length}/${stale.length} new/changed knowledge doc(s)…`);
+        console.log(`🔄 Background-embedding ${toEmbed.length}/${stale.length} new/changed knowledge doc(s)…`);
 
         let embedded = 0;
         for (const doc of toEmbed) {
@@ -166,17 +170,19 @@ async function doInitialize(): Promise<void> {
                 await new Promise(r => setTimeout(r, toEmbed.length > 50 ? 650 : 150));
             } catch (e) {
                 console.warn(`⚠️ Embedding failed for "${doc.id}" — stopping batch:`, e instanceof Error ? e.message : e);
-                break; // likely rate-limited; keep what we got, retry next boot
+                break; // likely rate-limited or key-less; retry next boot
             }
         }
 
         if (embedded > 0) {
             vectorStore.saveToCache();
             writeCacheModel();
-            console.log(`✅ RAG synced: +${embedded} docs, ${vectorStore.getCount()} total (${Date.now() - startTime}ms)`);
+            console.log(`✅ RAG synced: +${embedded} docs, ${vectorStore.getCount()} total`);
         }
     } catch (e) {
-        console.error('RAG auto-sync failed (continuing with cached docs):', e);
+        console.error('RAG background sync failed (cached docs still serve):', e);
+    } finally {
+        syncRunning = false;
     }
 }
 

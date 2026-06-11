@@ -22,13 +22,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { aiPersona, quickResponses } from '@/data/ai-persona';
-import { getRAGContext, getRAGStatus, initializeRAG } from '@/lib/rag';
+import { getRAGStatus, initializeRAG } from '@/lib/rag';
 import { addMessageToSession, getChatHistory } from '@/lib/chat-history-store';
 import {
-    generateText, PROVIDER_IDS, PROVIDER_LABELS,
+    generateTextStream, PROVIDER_IDS, PROVIDER_LABELS,
     type ProviderId, type ChatTurn,
 } from '@/lib/ai-providers';
-import { mightNeedTool, decideTool, executeTool } from '@/lib/chat-tools';
+import { retrieveKnowledge, logKnowledgeGap } from '@/lib/chat-agents/knowledge';
+import { routeAndExecute } from '@/lib/chat-agents/router';
 
 // How many prior message *pairs* to replay back to the model
 const HISTORY_TURN_PAIRS = 4;
@@ -193,13 +194,22 @@ export async function POST(request: NextRequest) {
         const userModel = (byok.model || '').trim();
         const hasValidByok = !!userKey && userKey.length >= 8 && PROVIDER_IDS.includes(provider);
 
-        // 🔍 RAG retrieval (works key-less via keyword fallback)
-        let ragContext = '';
-        try {
-            await initializeRAG();
-            ragContext = await getRAGContext(message, 5);
-        } catch (e) {
-            console.error('RAG retrieval failed:', e);
+        // ============ PARALLEL CONTEXT ASSEMBLY (multi-agent) ============
+        // Three agents run simultaneously — none of them needs an LLM call:
+        //   knowledge agent: real-time deterministic retrieval (+ time-boxed vectors)
+        //   memory agent:    recent turns for this session
+        //   tool router:     deterministic data-tool execution
+        void initializeRAG(); // fast cache load; embedding sync detaches to background
+        const [knowledge, priorTurns, routed] = await Promise.all([
+            retrieveKnowledge(message, 5),
+            Promise.resolve(loadPriorTurns(sessionId)),
+            Promise.resolve(routeAndExecute(message)),
+        ]);
+        const ragContext = knowledge.context;
+
+        // Self-improvement signal: the portfolio had nothing solid for this
+        if (knowledge.weak && !routed && message.length > 12) {
+            logKnowledgeGap(message);
         }
 
         const respond = (text: string, source: string, prov: ChatProvenance) => {
@@ -216,33 +226,68 @@ export async function POST(request: NextRequest) {
             return respond(getOfflineResponse(message, 'no-key'), 'no-key', { live: false });
         }
 
-        // ============ BYOK PATH ============
+        // ============ BYOK PATH — true token streaming ============
         const llmBase = { provider, overrideKey: userKey, ...(userModel ? { overrideModel: userModel } : {}) };
-        const priorTurns = loadPriorTurns(sessionId);
-
-        // Tool pass (Phase 2) — only when the message smells like a data question
-        let toolResult: string | null = null;
-        let toolUsed: string | null = null;
-        if (mightNeedTool(message)) {
-            const call = await decideTool(message, llmBase);
-            if (call) {
-                toolResult = executeTool(call);
-                toolUsed = call.tool;
-                console.log(`🔧 Tool used: ${call.tool}(${JSON.stringify(call.args)})`);
-            }
-        }
+        if (routed) console.log(`🔧 Tool routed: ${routed.tool}(${JSON.stringify(routed.args)})`);
 
         try {
-            const result = await generateText({
+            const { stream, model } = await generateTextStream({
                 ...llmBase,
-                system: buildSystemPrompt(ragContext, toolResult),
+                system: buildSystemPrompt(ragContext, routed?.result || null),
                 messages: priorTurns,
                 prompt: message,
                 temperature: 0.85,
                 maxTokens: 1024,
             });
-            const source = `byok-${provider}${toolUsed ? `+${toolUsed}` : ''}`;
-            return respond(result.text, source, { live: true, provider: PROVIDER_LABELS[provider], model: result.model });
+            const source = `byok-${provider}${routed ? `+${routed.tool}` : ''}`;
+            const prov: ChatProvenance = { live: true, provider: PROVIDER_LABELS[provider], model };
+
+            if (!wantsStream) {
+                // non-stream clients: drain fully, return JSON (back-compat)
+                const reader = stream.getReader();
+                let full = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    full += value;
+                }
+                try { addMessageToSession(sessionId, message, full, source, userAgent, ipAddress); } catch {}
+                return NextResponse.json({ response: full, source, rag: ragContext.length > 0, sessionId, ...prov });
+            }
+
+            // Pipe provider tokens straight into our SSE protocol (identical
+            // event shapes — the typewriter/avatar frontend needs no changes).
+            const encoder = new TextEncoder();
+            const ragFlag = ragContext.length > 0;
+            const out = new ReadableStream<Uint8Array>({
+                async start(controller) {
+                    controller.enqueue(encoder.encode(sseEvent('meta', { sessionId, rag: ragFlag, source, ...prov })));
+                    const reader = stream.getReader();
+                    let full = '';
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            full += value;
+                            controller.enqueue(encoder.encode(sseEvent('chunk', { delta: value })));
+                        }
+                    } catch (e) {
+                        controller.enqueue(encoder.encode(sseEvent('error', { message: e instanceof Error ? e.message : 'stream error' })));
+                    } finally {
+                        try { addMessageToSession(sessionId, message, full, source, userAgent, ipAddress); } catch {}
+                        controller.enqueue(encoder.encode(sseEvent('done', { sessionId })));
+                        controller.close();
+                    }
+                },
+            });
+            return new Response(out, {
+                headers: {
+                    'Content-Type': 'text/event-stream; charset=utf-8',
+                    'Cache-Control': 'no-cache, no-transform',
+                    'Connection': 'keep-alive',
+                    'X-Accel-Buffering': 'no',
+                },
+            });
         } catch (e) {
             const detail = e instanceof Error ? e.message : 'request failed';
             console.warn(`BYOK ${provider} failed:`, detail);
@@ -270,11 +315,16 @@ export async function GET() {
     return NextResponse.json({
         status: 'ok',
         mode: 'byok',
+        architecture: 'v2: parallel agents (knowledge + memory + tool router) → true token streaming',
         keyPolicy: 'Visitors bring their own API key (any supported provider). Owner keys are not used for chat.',
         supportedProviders: PROVIDER_IDS.map(id => ({ id, label: PROVIDER_LABELS[id] })),
-        streaming: true,
-        tools: ['list_projects', 'get_project', 'get_skills', 'get_experience', 'booking_info'],
-        memory: { historyTurnPairs: HISTORY_TURN_PAIRS },
+        streaming: 'true token streaming (provider deltas piped through SSE)',
+        agents: {
+            knowledge: 'real-time deterministic retrieval over live portfolio + time-boxed vector merge',
+            memory: `last ${HISTORY_TURN_PAIRS} turn pairs per session`,
+            toolRouter: ['list_projects', 'get_project', 'get_skills', 'get_experience', 'booking_info'],
+            selfImprovement: 'background embedding sync + knowledge-gap logging',
+        },
         rag: { enabled: ragStatus.initialized, documentCount: ragStatus.documentCount },
     });
 }

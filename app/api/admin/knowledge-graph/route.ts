@@ -5,6 +5,7 @@ import { skillCategories } from '@/data/skills';
 import { getVectorStore } from '@/lib/vector-store';
 import { retrieve } from '@/lib/resume-agents/retriever';
 import { getResumePreferences } from '@/lib/resume-preferences';
+import { readKnowledgeGaps } from '@/lib/chat-agents/knowledge';
 
 const SESSION_NAME = 'admin_session';
 const SESSION_VALUE = 'authenticated';
@@ -124,6 +125,8 @@ export async function GET() {
             embeddedDocs: docs.length,
             docsByType: Object.fromEntries(byType),
         },
+        // Self-improvement signal: chat questions the portfolio couldn't answer
+        knowledgeGaps: readKnowledgeGaps().slice(0, 12),
     });
 }
 
