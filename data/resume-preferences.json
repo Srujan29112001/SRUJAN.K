@@ -1,0 +1,89 @@
+{
+  "header": {
+    "name": "SRUJAN",
+    "email": "srujan.hardik@gmail.com",
+    "phone": "+91 91007 25768",
+    "location": "Hyderabad, India",
+    "links": [
+      { "label": "LinkedIn", "url": "https://www.linkedin.com/in/k-srujan2/" },
+      { "label": "GitHub", "url": "https://github.com/srujan29112001" },
+      { "label": "Portfolio", "url": "https://srujan-k.vercel.app" }
+    ]
+  },
+  "experience": [
+    {
+      "title": "Independent AI & Robotics Researcher & Developer",
+      "org": "Freelance / Consultant",
+      "location": "Remote",
+      "dates": "Aug 2023 – Present",
+      "bullets": [
+        "Delivered 9 enterprise-grade MVP products for global and Indian clients — a Clinical AI Copilot (95% accuracy), a real-time Finance Analytics Platform, and a 38-agent Entrepreneurship Intelligence Platform — owning each from architecture to deployment.",
+        "Completed 30+ online courses across AI/ML (TensorFlow, PyTorch, Computer Vision), Robotics (ROS 2), and Cloud/MLOps — reinforced hands-on through projects in multi-agent systems, GraphRAG, and deployment pipelines.",
+        "Conducted 2 years of independent research into conscious technology — computational neuroscience, biological neural networks, and embodied cognition — applying sensorimotor-prediction insights to robust AI system design."
+      ]
+    },
+    {
+      "title": "AI & Robotics Research Engineer / Project Intern",
+      "org": "Defence Research & Development Laboratory (DRDO-DRDL)",
+      "location": "Hyderabad",
+      "dates": "Jan 2023 – Aug 2023",
+      "bullets": [
+        "Led the AI Band Vision Project under Dr. Akula Naresh (Scientist-F), deploying YOLOv7 on NVIDIA Jetson AGX Xavier for real-time aerial object detection — achieving 89% mAP, 22 FPS inference, and 95% field accuracy.",
+        "Built and trained custom defense datasets of 5,000+ annotated aerial images, with data-augmentation pipelines that improved model robustness by 18%.",
+        "Integrated the perception stack into the \"Tunga\" autonomous aerial platform (Jetson Nano + Pixhawk), optimizing edge-inference pipelines to cut latency by 35%.",
+        "Developed sensor-fusion algorithms under ROS / Gazebo with cross-functional teams for restricted operational environments."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "title": "B.E., Electronics & Communication Engineering",
+      "org": "Thapar Institute of Engineering & Technology",
+      "location": "Patiala, Punjab",
+      "dates": "2019 – 2023",
+      "note": "Relevant coursework: Machine Learning, Computer Vision, Signal Processing, Control Systems, Digital Electronics"
+    },
+    {
+      "title": "Advanced Certification — Generative AI & Prompt Engineering",
+      "org": "IIIT Hyderabad",
+      "location": "TalentSprint",
+      "dates": "Feb – Jun 2026"
+    }
+  ],
+  "currentStatus": "Freelance AI/ML engineer delivering client systems (clinical AI, finance analytics, multi-agent platforms) while completing the IIIT Hyderabad Advanced Certification in Generative AI & Prompt Engineering (ends 27 June 2026). Actively interviewing for full-time AI/ML, computer vision / edge AI, robotics, and AI agents roles.",
+  "lookingFor": [
+    "AI/ML Engineer",
+    "Computer Vision / Edge AI Engineer",
+    "Robotics Engineer (Perception / RL)",
+    "AI Agents / LLM Engineer",
+    "Generative AI Engineer",
+    "ML Research Engineer"
+  ],
+  "preferences": {
+    "workModes": ["remote", "hybrid", "on-site (relocation case-by-case)"],
+    "locations": "Hyderabad base; open to major Indian metros and remote-global roles",
+    "domains": [
+      "Computer Vision",
+      "Edge AI / Embedded ML",
+      "Robotics & Autonomous Systems",
+      "LLMs / RAG / AI Agents",
+      "Reinforcement Learning",
+      "Healthcare AI",
+      "Defense / Aerospace"
+    ],
+    "notes": "Prefers hands-on engineering roles over pure management. Values teams shipping real production systems."
+  },
+  "nonNegotiables": [
+    "No multi-year service bonds or salary-deposit agreements",
+    "Resume content must be 100% truthful — no fabricated experience, metrics, or skills",
+    "No purely non-technical roles (sales, BPO, data entry)"
+  ],
+  "excludedProjectIds": ["internship-semester"],
+  "minFitScore": 45,
+  "tailoringRules": {
+    "summaryMaxWords": 65,
+    "projectCount": 3,
+    "bulletsPerProject": 2,
+    "maxSkillRows": 4
+  }
+}

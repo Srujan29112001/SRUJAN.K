@@ -15,8 +15,9 @@ const navLinks = [
   { label: 'Projects', href: '#projects' },
   { label: 'Blog', href: '#blog' },
   { label: 'Testimonials', href: '#testimonials-content' },
-  // AI Chat sits between Testimonials and Contact in the page flow
+  // AI Chat and Resume sit between Testimonials and Contact in the page flow
   { label: 'AI Chat', href: '#chat' },
+  { label: 'Resume', href: '#resume' },
   { label: "Let's Connect", href: '#contact' },
 ];
 

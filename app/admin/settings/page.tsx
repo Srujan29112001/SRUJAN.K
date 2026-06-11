@@ -238,6 +238,18 @@ export default function AdminSettingsPage() {
                         >
                             Clients
                         </Link>
+                        <Link
+                            href="/admin/resume"
+                            className="text-sm text-text-muted hover:text-white transition-colors"
+                        >
+                            Resume
+                        </Link>
+                        <Link
+                            href="/admin/ai-providers"
+                            className="text-sm text-text-muted hover:text-white transition-colors"
+                        >
+                            AI Providers
+                        </Link>
                         <button
                             onClick={handleLogout}
                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"

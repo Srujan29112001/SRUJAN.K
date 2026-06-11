@@ -33,6 +33,10 @@ yarn-error.log*
 # Runtime chat logs (ephemeral; written by /api/chat at runtime)
 data/chat-history.json
 
+# Resume gate runtime data + admin-entered AI provider keys (secrets!)
+data/resume-requests.json
+data/ai-providers.json
+
 # Local Claude Code session settings
 .claude/settings.local.json
 

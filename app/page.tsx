@@ -22,6 +22,13 @@ const HolographicChat = dynamic(
   () => import('@/components/sections/HolographicChat'),
   { ssr: false }
 );
+
+// Resume Gate — recruiters describe their role, agents check fit against the
+// whole portfolio and assemble a tailored one-page resume.
+const ResumeGate = dynamic(
+  () => import('@/components/sections/ResumeGate'),
+  { ssr: false }
+);
 import { CustomCursor } from '@/components/ui/CustomCursor';
 import { Navigation } from '@/components/ui/Navigation';
 import { ScrollProgress } from '@/components/ui/ScrollProgress';
@@ -154,6 +161,7 @@ export default function Home() {
             document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
         />
+        <ResumeGate />
         <Contact />
         <Footer />
       </main>
