@@ -23,7 +23,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiPersona, quickResponses } from '@/data/ai-persona';
 import { getRAGContext, getRAGStatus, initializeRAG } from '@/lib/rag';
-import { addMessageToSession, getChatHistory } from '@/app/api/admin/chat-history/route';
+import { addMessageToSession, getChatHistory } from '@/lib/chat-history-store';
 import {
     generateText, PROVIDER_IDS, PROVIDER_LABELS,
     type ProviderId, type ChatTurn,

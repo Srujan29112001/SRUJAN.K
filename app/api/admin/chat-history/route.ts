@@ -1,33 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import fs from 'fs';
-import path from 'path';
+import { getChatHistory, saveChatHistory } from '@/lib/chat-history-store';
 
 const SESSION_NAME = 'admin_session';
 const SESSION_VALUE = 'authenticated';
-const CHAT_HISTORY_FILE = path.join(process.cwd(), 'data', 'chat-history.json');
-
-export interface ChatMessage {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
-    source?: string;
-}
-
-export interface ChatSession {
-    id: string;
-    startedAt: string;
-    lastMessageAt: string;
-    userAgent?: string;
-    ipAddress?: string;
-    messageCount: number;
-    messages: ChatMessage[];
-}
-
-interface ChatHistoryData {
-    sessions: ChatSession[];
-}
 
 // Check if admin is authenticated
 async function isAuthenticated(): Promise<boolean> {
@@ -38,72 +14,6 @@ async function isAuthenticated(): Promise<boolean> {
     } catch {
         return false;
     }
-}
-
-// Read chat history from JSON file
-export function getChatHistory(): ChatHistoryData {
-    try {
-        const data = fs.readFileSync(CHAT_HISTORY_FILE, 'utf-8');
-        return JSON.parse(data);
-    } catch {
-        return { sessions: [] };
-    }
-}
-
-// Write chat history to JSON file
-export function saveChatHistory(data: ChatHistoryData): void {
-    fs.writeFileSync(CHAT_HISTORY_FILE, JSON.stringify(data, null, 2));
-}
-
-// Add or update a chat session
-export function addMessageToSession(
-    sessionId: string,
-    userMessage: string,
-    assistantResponse: string,
-    source: string,
-    userAgent?: string,
-    ipAddress?: string
-): ChatSession {
-    const data = getChatHistory();
-    let session = data.sessions.find(s => s.id === sessionId);
-    const now = new Date().toISOString();
-
-    if (!session) {
-        // Create new session
-        session = {
-            id: sessionId,
-            startedAt: now,
-            lastMessageAt: now,
-            userAgent,
-            ipAddress,
-            messageCount: 0,
-            messages: []
-        };
-        data.sessions.unshift(session); // Add to beginning for easy access to recent
-    }
-
-    // Add user message
-    session.messages.push({
-        id: `${Date.now()}-user`,
-        role: 'user',
-        content: userMessage,
-        timestamp: now
-    });
-
-    // Add assistant response
-    session.messages.push({
-        id: `${Date.now()}-assistant`,
-        role: 'assistant',
-        content: assistantResponse,
-        timestamp: now,
-        source
-    });
-
-    session.messageCount = session.messages.length;
-    session.lastMessageAt = now;
-
-    saveChatHistory(data);
-    return session;
 }
 
 // GET - List all chat sessions (admin only)
