@@ -46,11 +46,26 @@
  * =============================================================================
  */
 
+import { getProviderConfig, hydrateConfigFromKV } from './ai-providers';
+
 // Google's embedding model. text-embedding-004 was retired (404s as of 2026);
 // gemini-embedding-001 is the replacement. We pin outputDimensionality to 768
 // so vectors keep the same shape the store/cosine math always used.
 export const EMBEDDING_MODEL = 'gemini-embedding-001';
 const EMBEDDING_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`;
+
+/**
+ * Resolve a Gemini key for embeddings: env vars first, then any key saved in
+ * the admin AI-providers config (KV/file). Embeddings are infrastructure —
+ * they use the gemini key even when gemini is disabled for text generation.
+ */
+async function resolveEmbeddingKey(): Promise<string | undefined> {
+    const fromEnv = process.env.GEMINI_API_KEY
+        || (process.env.GEMINI_API_KEYS || '').split(',')[0]?.trim();
+    if (fromEnv) return fromEnv;
+    await hydrateConfigFromKV();
+    return getProviderConfig('gemini').keys[0];
+}
 
 /**
  * Generate embedding for a single text using Google's API
@@ -59,11 +74,10 @@ const EMBEDDING_API_URL = `https://generativelanguage.googleapis.com/v1beta/mode
  * @returns A 768-dimensional vector
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-    const apiKey = process.env.GEMINI_API_KEY
-        || (process.env.GEMINI_API_KEYS || '').split(',')[0]?.trim();
+    const apiKey = await resolveEmbeddingKey();
 
     if (!apiKey) {
-        throw new Error('GEMINI_API_KEY is required for embeddings');
+        throw new Error('A Gemini API key (env var or admin AI-providers page) is required for embeddings');
     }
 
     const response = await fetch(`${EMBEDDING_API_URL}?key=${apiKey}`, {
@@ -180,12 +194,12 @@ export async function checkEmbeddingHealth(): Promise<{
     message: string;
 }> {
     try {
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = await resolveEmbeddingKey();
 
         if (!apiKey) {
             return {
                 available: false,
-                message: 'GEMINI_API_KEY not configured',
+                message: 'No Gemini key configured (env var or admin AI-providers page)',
             };
         }
 

@@ -208,6 +208,10 @@ export default function AdminAIProvidersPage() {
                         succeeds — reorder with the arrows. To stop a provider being used: untick{' '}
                         <span className="text-white font-medium">Enabled</span>, or untick its{' '}
                         <span className="text-white font-medium">env keys</span> checkbox if its keys come from environment variables.
+                        <span className="block mt-1.5 text-text-muted">
+                            Tip: keep at least one <span className="text-white font-medium">Google Gemini</span> key saved (even with
+                            Gemini disabled or last in order) — the chatbot&apos;s knowledge-base embeddings run on it.
+                        </span>
                         {durableStore === 'kv' ? (
                             <span className="block mt-1.5 text-emerald-400/90">
                                 ✓ Connected to Upstash Redis — saves from this page persist everywhere, including production.
