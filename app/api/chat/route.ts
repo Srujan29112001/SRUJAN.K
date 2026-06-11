@@ -129,11 +129,18 @@ function sseEvent(event: string, data: unknown): string {
     return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-function streamPlainText(text: string, sessionId: string, rag: boolean, source: string): Response {
+/** Provenance shown to the visitor: was this answered live on their key? */
+interface ChatProvenance {
+    live: boolean;
+    provider?: string;
+    model?: string;
+}
+
+function streamPlainText(text: string, sessionId: string, rag: boolean, source: string, prov: ChatProvenance): Response {
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-            controller.enqueue(encoder.encode(sseEvent('meta', { sessionId, rag, source })));
+            controller.enqueue(encoder.encode(sseEvent('meta', { sessionId, rag, source, ...prov })));
             const chunkSize = 25;
             for (let i = 0; i < text.length; i += chunkSize) {
                 controller.enqueue(encoder.encode(sseEvent('chunk', { delta: text.slice(i, i + chunkSize) })));
@@ -195,18 +202,18 @@ export async function POST(request: NextRequest) {
             console.error('RAG retrieval failed:', e);
         }
 
-        const respond = (text: string, source: string) => {
+        const respond = (text: string, source: string, prov: ChatProvenance) => {
             try { addMessageToSession(sessionId, message, text, source, userAgent, ipAddress); } catch {}
-            if (wantsStream) return streamPlainText(text, sessionId, ragContext.length > 0, source);
-            return NextResponse.json({ response: text, source, rag: ragContext.length > 0, sessionId });
+            if (wantsStream) return streamPlainText(text, sessionId, ragContext.length > 0, source, prov);
+            return NextResponse.json({ response: text, source, rag: ragContext.length > 0, sessionId, ...prov });
         };
 
         // ============ OFFLINE / NO-KEY PATHS ============
         if (offlineMode) {
-            return respond(getOfflineResponse(message, 'asa'), 'offline');
+            return respond(getOfflineResponse(message, 'asa'), 'offline', { live: false });
         }
         if (!hasValidByok) {
-            return respond(getOfflineResponse(message, 'no-key'), 'no-key');
+            return respond(getOfflineResponse(message, 'no-key'), 'no-key', { live: false });
         }
 
         // ============ BYOK PATH ============
@@ -235,7 +242,7 @@ export async function POST(request: NextRequest) {
                 maxTokens: 1024,
             });
             const source = `byok-${provider}${toolUsed ? `+${toolUsed}` : ''}`;
-            return respond(result.text, source);
+            return respond(result.text, source, { live: true, provider: PROVIDER_LABELS[provider], model: result.model });
         } catch (e) {
             const detail = e instanceof Error ? e.message : 'request failed';
             console.warn(`BYOK ${provider} failed:`, detail);
@@ -245,13 +252,13 @@ export async function POST(request: NextRequest) {
                 : /429|quota|rate/i.test(detail)
                     ? `Your ${PROVIDER_LABELS[provider]} key hit its rate limit — wait a moment or switch provider in the 🔑 panel.`
                     : `Couldn't reach ${PROVIDER_LABELS[provider]} right now — try again or switch provider in the 🔑 panel.`;
-            return respond(friendly, 'byok-error');
+            return respond(friendly, 'byok-error', { live: false });
         }
     } catch (error) {
         console.error('Chat API error:', error);
         const fb = "Something went wrong on my end — try again in a moment.";
-        if (wantsStream) return streamPlainText(fb, sessionId, false, 'error');
-        return NextResponse.json({ error: 'Failed to process message', response: fb, sessionId }, { status: 500 });
+        if (wantsStream) return streamPlainText(fb, sessionId, false, 'error', { live: false });
+        return NextResponse.json({ error: 'Failed to process message', response: fb, sessionId, live: false }, { status: 500 });
     }
 }
 

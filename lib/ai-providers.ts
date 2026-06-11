@@ -124,7 +124,13 @@ export interface ProviderConfig {
 }
 
 export interface AIProvidersFile {
+    /** legacy (chain mode) — no longer used for selection, kept for old files */
     order?: string[];
+    /**
+     * THE provider that powers the resume engine. Exactly one at a time —
+     * no fallback chain (owner's explicit preference, mirroring BYOK chat).
+     */
+    activeProvider?: ProviderId | null;
     providers?: Partial<Record<ProviderId, {
         enabled?: boolean;
         model?: string;
@@ -239,15 +245,28 @@ export function getProviderConfig(id: ProviderId): ProviderConfig {
     };
 }
 
-/** Provider priority: admin file > AI_PROVIDER_ORDER env > keyed providers in default order. */
+/** Display order for the admin UI (fixed — selection is via activeProvider). */
 export function getProviderOrder(): ProviderId[] {
+    return PROVIDER_IDS;
+}
+
+/**
+ * The single provider the resume engine runs on.
+ * Resolution: explicit admin choice > AI_PROVIDER env > first READY provider.
+ * Returns null when nothing is usable (engine then runs deterministically).
+ */
+export function resolveActiveProvider(): ProviderId | null {
     const file = readConfigFile();
-    const raw = file.order?.length
-        ? file.order
-        : (process.env.AI_PROVIDER_ORDER || '').split(',').map(s => s.trim()).filter(Boolean);
-    const valid = raw.filter((p): p is ProviderId => PROVIDER_IDS.includes(p as ProviderId));
-    const rest = PROVIDER_IDS.filter(p => !valid.includes(p));
-    return [...valid, ...rest];
+    const chosen = file.activeProvider;
+    if (chosen && PROVIDER_IDS.includes(chosen)) return chosen;
+    const fromEnv = (process.env.AI_PROVIDER || '').trim() as ProviderId;
+    if (fromEnv && PROVIDER_IDS.includes(fromEnv)) return fromEnv;
+    // no explicit choice — first provider that's actually ready
+    for (const id of PROVIDER_IDS) {
+        const cfg = getProviderConfig(id);
+        if (cfg.enabled && cfg.keys.length > 0) return id;
+    }
+    return null;
 }
 
 /** Snapshot of every provider for the admin UI (keys masked). */
@@ -442,27 +461,27 @@ async function callProvider(id: ProviderId, req: LLMRequest): Promise<
 }
 
 /**
- * Generate text, walking the provider order until one succeeds.
- * Throws only if every configured provider fails.
+ * Generate text using EXACTLY ONE provider:
+ * - req.provider when forced (BYOK chat always forces the visitor's choice)
+ * - otherwise the admin-selected active provider (resume engine)
+ * No silent fallback to other providers — failures surface honestly and the
+ * caller's deterministic path takes over.
  */
 export async function generateText(req: LLMRequest): Promise<LLMResult> {
     await hydrateConfigFromKV(); // pick up admin changes made from any instance
-    const order = req.provider ? [req.provider] : getProviderOrder();
-    const errors: string[] = [];
-    for (const id of order) {
-        const out = await callProvider(id, req);
-        if (out.ok) return out.result;
-        errors.push(out.error);
-    }
-    throw new Error(`All providers failed: ${errors.join(' | ')}`);
+    const id = req.provider || resolveActiveProvider();
+    if (!id) throw new Error('No AI provider configured');
+    const out = await callProvider(id, req);
+    if (out.ok) return out.result;
+    throw new Error(out.error);
 }
 
-/** True if at least one provider is ready (enabled + has keys). */
+/** True when the resolved single provider is ready (enabled + has keys). */
 export function hasAnyProvider(): boolean {
-    return getProviderOrder().some(id => {
-        const c = getProviderConfig(id);
-        return c.enabled && c.keys.length > 0;
-    });
+    const id = resolveActiveProvider();
+    if (!id) return false;
+    const c = getProviderConfig(id);
+    return c.enabled && c.keys.length > 0;
 }
 
 function stripFences(text: string): string {

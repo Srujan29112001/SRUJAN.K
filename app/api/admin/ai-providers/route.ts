@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import {
     PROVIDER_IDS, getProvidersStatus, getProviderConfig, getProviderOrder,
     writeConfig, testProvider, hydrateConfigFromKV, kvConfigAvailable,
+    resolveActiveProvider,
     type ProviderId, type AIProvidersFile,
 } from '@/lib/ai-providers';
 
@@ -29,12 +30,13 @@ export async function GET() {
     return NextResponse.json({
         providers: getProvidersStatus(),
         order: getProviderOrder(),
+        activeProvider: resolveActiveProvider(),
         durableStore: kvConfigAvailable() ? 'kv' : 'file',
     });
 }
 
 interface PutBody {
-    order?: string[];
+    activeProvider?: string | null;
     providers?: Partial<Record<ProviderId, { enabled?: boolean; model?: string; keysRaw?: string; useEnvKeys?: boolean }>>;
 }
 
@@ -67,8 +69,8 @@ export async function PUT(request: Request) {
         const body = await request.json() as PutBody;
         const next: AIProvidersFile = { providers: {} };
 
-        if (Array.isArray(body.order)) {
-            next.order = body.order.filter((p): p is ProviderId => PROVIDER_IDS.includes(p as ProviderId));
+        if (body.activeProvider && PROVIDER_IDS.includes(body.activeProvider as ProviderId)) {
+            next.activeProvider = body.activeProvider as ProviderId;
         }
 
         for (const id of PROVIDER_IDS) {
@@ -104,7 +106,12 @@ export async function PUT(request: Request) {
                     + 'or set keys via environment variables (e.g. GROQ_API_KEYS) in the Vercel dashboard.',
             }, { status: 500 });
         }
-        return NextResponse.json({ success: true, providers: getProvidersStatus(), persistedTo });
+        return NextResponse.json({
+            success: true,
+            providers: getProvidersStatus(),
+            activeProvider: resolveActiveProvider(),
+            persistedTo,
+        });
     } catch (e) {
         console.error('Failed to save AI providers:', e);
         return NextResponse.json({ error: 'Failed to save provider config' }, { status: 500 });

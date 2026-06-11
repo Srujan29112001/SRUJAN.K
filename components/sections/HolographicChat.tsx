@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { TerminalChat, ChatMessage, getByokConfig } from '@/components/ui/TerminalChat';
+import { TerminalChat, ChatMessage, ChatProvenance, getByokConfig } from '@/components/ui/TerminalChat';
 
 // Dynamic import for GIF-based avatar
 const AnimatedGifAvatar = dynamic(
@@ -298,7 +298,10 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
      *
      * SSE events: meta, chunk, done, error.
      */
-    const streamResponse = useCallback(async (userMessage: string, botMessageId: string): Promise<string> => {
+    const streamResponse = useCallback(async (
+        userMessage: string,
+        botMessageId: string,
+    ): Promise<{ text: string; provenance: ChatProvenance }> => {
         const lower = userMessage.toLowerCase();
         if (lower.includes('estimate') || lower.includes('cost') || lower.includes('price') || lower.includes('budget')) {
             onEstimateRequest?.();
@@ -307,6 +310,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
             onBookingRequest?.();
         }
 
+        const failProv: ChatProvenance = { live: false };
         let response: Response;
         try {
             // BYOK: include the visitor's own provider/key (read fresh each send so
@@ -323,23 +327,24 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 }),
             });
         } catch {
-            return "Couldn't reach the server. Try again in a moment.";
+            return { text: "Couldn't reach the server. Try again in a moment.", provenance: failProv };
         }
 
         if (!response.ok || !response.body) {
             try {
                 const data = await response.json();
-                return data.response || "Hit an error reaching the AI service.";
+                return { text: data.response || "Hit an error reaching the AI service.", provenance: failProv };
             } catch {
-                return "Hit an error reaching the AI service.";
+                return { text: "Hit an error reaching the AI service.", provenance: failProv };
             }
         }
 
-        return new Promise<string>((resolve) => {
+        return new Promise<{ text: string; provenance: ChatProvenance }>((resolve) => {
             let fullText = '';
             let displayedLength = 0;
             let networkDone = false;
             let firstCharShown = false;
+            let provenance: ChatProvenance = { live: false };
 
             // Display pace: ~20ms per char with 2 chars per tick = ~100 chars/sec.
             // Matches the original typewriter feel that the avatar GIFs were tuned to.
@@ -365,12 +370,12 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                     setMessages(prev =>
                         prev.map(m =>
                             m.id === botMessageId
-                                ? { ...m, isStreaming: false, content: fullText }
+                                ? { ...m, isStreaming: false, content: fullText, provenance }
                                 : m,
                         ),
                     );
                     setIsSpeaking(false);
-                    resolve(fullText);
+                    resolve({ text: fullText, provenance });
                 }
                 // else: caught up but stream still flowing — keep avatar speaking, idle this tick
             }, TICK_MS);
@@ -403,6 +408,12 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                                         setChatSessionId(data.sessionId);
                                         sessionStorage.setItem('chatSessionId', data.sessionId);
                                     }
+                                    // Provenance: did this reply run live on the visitor's key?
+                                    provenance = {
+                                        live: data.live === true,
+                                        ...(data.provider ? { provider: String(data.provider) } : {}),
+                                        ...(data.model ? { model: String(data.model) } : {}),
+                                    };
                                 } else if (eventLine === 'chunk' && typeof data.delta === 'string') {
                                     fullText += data.delta;
                                 } else if (eventLine === 'error') {
@@ -693,7 +704,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
         // streamResponse resolves when the full text has been REVEALED to the user
         // (not just received from the network), keeping avatar GIFs in sync with
         // what's actually appearing on screen.
-        const finalText = await streamResponse(content, botMessageId);
+        const { text: finalText } = await streamResponse(content, botMessageId);
 
         // AWRTC: pick a contextual avatar action from the final response
         if (awrtcMode) {

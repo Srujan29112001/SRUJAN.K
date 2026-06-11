@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     ArrowLeft, Cpu, Save, LogOut, Users, MessageSquare, Settings, FileText,
-    ChevronUp, ChevronDown, CheckCircle, AlertCircle, Zap,
+    CheckCircle, AlertCircle, Zap,
 } from 'lucide-react';
 
 interface ProviderStatus {
@@ -22,7 +22,6 @@ interface ProviderStatus {
 }
 
 interface ProviderEdit {
-    enabled: boolean;
     model: string;
     keysRaw: string;
     useEnvKeys: boolean;
@@ -34,6 +33,7 @@ export default function AdminAIProvidersPage() {
     const [order, setOrder] = useState<string[]>([]);
     const [statuses, setStatuses] = useState<Record<string, ProviderStatus>>({});
     const [edits, setEdits] = useState<Record<string, ProviderEdit>>({});
+    const [activeProvider, setActiveProvider] = useState<string | null>(null);
     const [durableStore, setDurableStore] = useState<'kv' | 'file'>('file');
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -60,7 +60,6 @@ export default function AdminAIProvidersPage() {
                 for (const p of data.providers as ProviderStatus[]) {
                     map[p.id] = p;
                     editMap[p.id] = {
-                        enabled: p.enabled,
                         model: p.model,
                         keysRaw: p.maskedKeys.join('\n'),
                         useEnvKeys: p.useEnvKeys,
@@ -69,6 +68,7 @@ export default function AdminAIProvidersPage() {
                 setStatuses(map);
                 setEdits(editMap);
                 setOrder(data.order || []);
+                setActiveProvider(data.activeProvider || null);
                 setDurableStore(data.durableStore || 'file');
             }
         } catch (error) {
@@ -83,17 +83,6 @@ export default function AdminAIProvidersPage() {
         router.push('/admin');
     };
 
-    const moveProvider = (id: string, dir: -1 | 1) => {
-        setOrder(prev => {
-            const idx = prev.indexOf(id);
-            const next = [...prev];
-            const swap = idx + dir;
-            if (idx < 0 || swap < 0 || swap >= next.length) return prev;
-            [next[idx], next[swap]] = [next[swap], next[idx]];
-            return next;
-        });
-    };
-
     const handleSave = useCallback(async () => {
         try {
             setIsSaving(true);
@@ -103,7 +92,7 @@ export default function AdminAIProvidersPage() {
             const res = await fetch('/api/admin/ai-providers', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order, providers }),
+                body: JSON.stringify({ activeProvider, providers }),
             });
             if (res.status === 401) {
                 router.push('/admin');
@@ -122,7 +111,7 @@ export default function AdminAIProvidersPage() {
             setIsSaving(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [edits, order, router]);
+    }, [edits, activeProvider, router]);
 
     const handleTest = async (id: string) => {
         setTesting(id);
@@ -204,10 +193,10 @@ export default function AdminAIProvidersPage() {
                 <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/15">
                     <p className="text-xs text-text-secondary leading-relaxed">
                         These keys power the <span className="text-white font-medium">Resume Engine only</span> (the AI Chat runs on each
-                        visitor&apos;s own key). Providers are tried <span className="text-white font-medium">top to bottom</span> until one
-                        succeeds — reorder with the arrows. To stop a provider being used: untick{' '}
-                        <span className="text-white font-medium">Enabled</span>, or untick its{' '}
-                        <span className="text-white font-medium">env keys</span> checkbox if its keys come from environment variables.
+                        visitor&apos;s own key). Exactly <span className="text-white font-medium">one provider is active at a time</span> —
+                        pick it with the radio button, just like visitors pick theirs in the chat. Each card remembers its key and model,
+                        so switching providers is one click + Save. If the active provider fails mid-request, the engine degrades to
+                        deterministic matching (never silently switches to another provider).
                         <span className="block mt-1.5 text-text-muted">
                             Tip: keep at least one <span className="text-white font-medium">Google Gemini</span> key saved (even with
                             Gemini disabled or last in order) — the chatbot&apos;s knowledge-base embeddings run on it.
@@ -228,38 +217,36 @@ export default function AdminAIProvidersPage() {
                     </p>
                 </div>
 
-                {order.map((id, idx) => {
+                {order.map((id) => {
                     const status = statuses[id];
                     const edit = edits[id];
                     if (!status || !edit) return null;
                     const test = testResults[id];
+                    const isActive = activeProvider === id;
                     return (
-                        <section key={id} className="bg-bg-surface border border-white/10 rounded-2xl p-5">
+                        <section
+                            key={id}
+                            className={`bg-bg-surface rounded-2xl p-5 border transition-colors ${isActive ? 'border-emerald-500/50 shadow-[0_0_24px_rgba(52,211,153,0.07)]' : 'border-white/10'}`}
+                        >
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="flex flex-col">
-                                    <button onClick={() => moveProvider(id, -1)} disabled={idx === 0}
-                                        className="p-0.5 text-text-muted hover:text-white disabled:opacity-20">
-                                        <ChevronUp className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => moveProvider(id, 1)} disabled={idx === order.length - 1}
-                                        className="p-0.5 text-text-muted hover:text-white disabled:opacity-20">
-                                        <ChevronDown className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <span className="font-mono text-xs text-text-muted w-6">#{idx + 1}</span>
-                                <h2 className="font-display text-base font-bold text-white flex-1">{status.label}</h2>
-                                <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] uppercase tracking-wider ${status.ready ? 'bg-green-500/15 text-green-400' : 'bg-white/5 text-text-muted'}`}>
-                                    {status.ready ? `ready · ${status.keyCount} key${status.keyCount === 1 ? '' : 's'}` : 'no keys'}
-                                </span>
-                                <label className="flex items-center gap-2 cursor-pointer">
+                                <label className="flex items-center gap-2.5 cursor-pointer flex-1">
                                     <input
-                                        type="checkbox"
-                                        checked={edit.enabled}
-                                        onChange={e => setEdits(prev => ({ ...prev, [id]: { ...prev[id], enabled: e.target.checked } }))}
-                                        className="accent-cyan-500"
+                                        type="radio"
+                                        name="active-provider"
+                                        checked={isActive}
+                                        onChange={() => setActiveProvider(id)}
+                                        className="accent-emerald-500 w-4 h-4"
                                     />
-                                    <span className="text-xs text-text-muted">Enabled</span>
+                                    <h2 className="font-display text-base font-bold text-white">{status.label}</h2>
+                                    {isActive && (
+                                        <span className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                            ✦ Active — powers the Resume Engine
+                                        </span>
+                                    )}
                                 </label>
+                                <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] uppercase tracking-wider ${status.ready ? 'bg-green-500/15 text-green-400' : 'bg-white/5 text-text-muted'}`}>
+                                    {status.ready ? `${status.keyCount} key${status.keyCount === 1 ? '' : 's'}` : 'no keys'}
+                                </span>
                             </div>
 
                             <div className="grid sm:grid-cols-2 gap-4">

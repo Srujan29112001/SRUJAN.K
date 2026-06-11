@@ -46,6 +46,12 @@ export function saveByokConfig(cfg: ByokConfig | null): void {
     } catch { /* private browsing etc. */ }
 }
 
+export interface ChatProvenance {
+    live: boolean;
+    provider?: string;
+    model?: string;
+}
+
 export interface ChatMessage {
     id: string;
     type: 'user' | 'bot' | 'system';
@@ -54,6 +60,8 @@ export interface ChatMessage {
     isTyping?: boolean;       // legacy: client-side typewriter for non-streamed messages
     isStreaming?: boolean;    // server-streamed: content grows in real time, render with cursor
     hasBeenSpoken?: boolean;
+    /** whether this reply came live from the visitor's API key, and which model */
+    provenance?: ChatProvenance;
 }
 
 interface TerminalChatProps {
@@ -442,10 +450,21 @@ export function TerminalChat({
                                 </div>
                             ) : message.type === 'bot' ? (
                                 <div className="flex flex-col pl-4 border-l-2 border-cyan-500/30">
-                                    <div className="flex items-center gap-2 text-text-muted text-xs mb-1">
+                                    <div className="flex items-center gap-2 text-text-muted text-xs mb-1 flex-wrap">
                                         <span className="text-cyan-400">srujan@ai</span>
                                         <span>~</span>
                                         <span>{formatTime(message.timestamp)}</span>
+                                        {message.provenance && (
+                                            message.provenance.live ? (
+                                                <span className="px-1.5 py-0.5 rounded bg-emerald-400/10 border border-emerald-400/30 text-emerald-400 text-[10px] font-mono">
+                                                    ● LIVE · {message.provenance.provider}{message.provenance.model ? ` · ${message.provenance.model}` : ''}
+                                                </span>
+                                            ) : (
+                                                <span className="px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[10px] font-mono">
+                                                    ○ OFFLINE — no API key in use
+                                                </span>
+                                            )
+                                        )}
                                     </div>
                                     <div className="text-text-secondary whitespace-pre-wrap">
                                         {message.isStreaming ? (

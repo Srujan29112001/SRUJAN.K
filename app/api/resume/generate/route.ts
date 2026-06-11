@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runResumePipeline, logResumeRequest } from '@/lib/resume-agents/orchestrator';
 import { getResumePreferences } from '@/lib/resume-preferences';
 import { renderResumeHTML } from '@/lib/resume-template';
-import { hasAnyProvider, getProviderOrder, getProviderConfig, PROVIDER_LABELS, hydrateConfigFromKV } from '@/lib/ai-providers';
+import { hasAnyProvider, getProviderConfig, PROVIDER_LABELS, hydrateConfigFromKV, resolveActiveProvider } from '@/lib/ai-providers';
 
 // Simple in-memory rate limiter: max 4 generations per IP per 5 minutes
 const RATE_WINDOW_MS = 5 * 60 * 1000;
@@ -97,21 +97,18 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// Lightweight status for the section UI — public transparency about which
-// engine powers the resume tailoring (the OWNER's keys, never the visitor's).
+// Lightweight status for the section UI — public transparency about THE single
+// engine powering the resume tailoring (the OWNER's key, never the visitor's).
 export async function GET() {
     await hydrateConfigFromKV(true);
-    const ready = getProviderOrder()
-        .map(id => ({ id, cfg: getProviderConfig(id) }))
-        .filter(p => p.cfg.enabled && p.cfg.keys.length > 0);
-    const current = ready[0]
-        ? { provider: ready[0].id, label: PROVIDER_LABELS[ready[0].id], model: ready[0].cfg.model }
-        : null;
+    const id = resolveActiveProvider();
+    const cfg = id ? getProviderConfig(id) : null;
+    const ready = !!(id && cfg && cfg.enabled && cfg.keys.length > 0);
     return NextResponse.json({
         status: 'ok',
         aiTailoring: hasAnyProvider(),
-        activeProviders: ready.map(p => p.id),
-        current,
-        fallbacks: ready.slice(1).map(p => PROVIDER_LABELS[p.id]),
+        activeProviders: ready && id ? [id] : [],
+        current: ready && id && cfg ? { provider: id, label: PROVIDER_LABELS[id], model: cfg.model } : null,
+        fallbacks: [], // single-provider mode: no chain by design
     });
 }
