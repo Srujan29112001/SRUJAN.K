@@ -18,7 +18,6 @@ import {
     Search,
     Users,
     FileText,
-    Cpu,
     Network
 } from 'lucide-react';
 
@@ -215,13 +214,6 @@ export default function AdminChatHistoryPage() {
                         >
                             <FileText className="w-4 h-4" />
                             <span className="text-sm hidden sm:inline">Resume</span>
-                        </Link>
-                        <Link
-                            href="/admin/ai-providers"
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
-                        >
-                            <Cpu className="w-4 h-4" />
-                            <span className="text-sm hidden sm:inline">AI</span>
                         </Link>
                         <button
                             onClick={handleLogout}

@@ -8,10 +8,10 @@
  * terms + a common-skills lexicon, so the pipeline works with zero API keys.
  */
 
-import { generateJSON, hasAnyProvider } from '@/lib/ai-providers';
+import { generateJSON } from '@/lib/ai-providers';
 import { projects } from '@/data/projects';
 import { skillCategories } from '@/data/skills';
-import type { JobIntake } from './types';
+import type { JobIntake, LLMBase } from './types';
 
 export interface IntakeInput {
     role: string;
@@ -98,12 +98,13 @@ function deterministicIntake(input: IntakeInput): JobIntake {
     };
 }
 
-export async function parseIntake(input: IntakeInput): Promise<{ intake: JobIntake; usedLLM: boolean; llm?: string }> {
+export async function parseIntake(input: IntakeInput, llmBase?: LLMBase | null): Promise<{ intake: JobIntake; usedLLM: boolean; llm?: string }> {
     const fallback = deterministicIntake(input);
-    if (!hasAnyProvider()) return { intake: fallback, usedLLM: false };
+    if (!llmBase) return { intake: fallback, usedLLM: false };
 
     try {
         const { data, provider, model } = await generateJSON<Partial<JobIntake>>({
+            ...llmBase,
             system: 'You parse job descriptions into structured JSON. Extract only what the text actually says — never invent.',
             prompt: `Parse this job opportunity.
 

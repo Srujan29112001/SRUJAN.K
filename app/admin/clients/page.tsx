@@ -16,8 +16,7 @@ import {
     CheckCircle,
     Settings,
     MessageSquare,
-    FileText,
-    Cpu
+    FileText
 } from 'lucide-react';
 
 interface Client {
@@ -167,13 +166,6 @@ export default function AdminClientsPage() {
                         >
                             <FileText className="w-4 h-4" />
                             <span className="text-sm">Resume</span>
-                        </Link>
-                        <Link
-                            href="/admin/ai-providers"
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
-                        >
-                            <Cpu className="w-4 h-4" />
-                            <span className="text-sm">AI Providers</span>
                         </Link>
                         <Link
                             href="/admin/settings"

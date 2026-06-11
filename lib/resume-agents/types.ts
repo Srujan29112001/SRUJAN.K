@@ -5,7 +5,20 @@
  * retriever matches portfolio work and collects links → fit scores coverage +
  * alignment with the owner's preferences → gate → tailor assembles the three
  * swappable sections → template renders a print-ready A4 page.
+ *
+ * KEY POLICY: the LLM stages run on the VISITOR's own API key (the same 🔑
+ * config as the AI chat). Without a key, every stage uses its deterministic
+ * path — the pipeline always works.
  */
+
+import type { ProviderId } from '@/lib/ai-providers';
+
+/** The visitor's BYOK credentials, threaded through every LLM stage. */
+export interface LLMBase {
+    provider: ProviderId;
+    overrideKey: string;
+    overrideModel?: string;
+}
 
 // =============================================================================
 // OWNER PREFERENCES (admin-editable; staples never tailored by the LLM)

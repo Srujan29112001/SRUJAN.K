@@ -16,7 +16,7 @@ import { retrieve } from './retriever';
 import { assessFit } from './fit';
 import { tailorResume } from './tailor';
 import { getResumePreferences } from '@/lib/resume-preferences';
-import type { ResumePipelineResult, ResumeRequestLog } from './types';
+import type { LLMBase, ResumePipelineResult, ResumeRequestLog } from './types';
 
 const REQUESTS_FILE = path.join(process.cwd(), 'data', 'resume-requests.json');
 
@@ -24,17 +24,17 @@ function sanitizeNamePart(s: string): string {
     return s.replace(/[^a-zA-Z0-9 &.\-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40) || 'Unknown';
 }
 
-export async function runResumePipeline(input: IntakeInput): Promise<ResumePipelineResult> {
+export async function runResumePipeline(input: IntakeInput, llmBase?: LLMBase | null): Promise<ResumePipelineResult> {
     const prefs = getResumePreferences();
 
-    // 1) Parse the job
-    const { intake, usedLLM: intakeLLM, llm: intakeLlm } = await parseIntake(input);
+    // 1) Parse the job (visitor's key when provided, deterministic otherwise)
+    const { intake, usedLLM: intakeLLM, llm: intakeLlm } = await parseIntake(input, llmBase);
 
     // 2) Scan the portfolio (deterministic — always real projects)
     const retrieval = retrieve(intake, prefs);
 
     // 3) Score the fit
-    const { fit, usedLLM: fitLLM, llm: fitLlm } = await assessFit(intake, retrieval, prefs);
+    const { fit, usedLLM: fitLLM, llm: fitLlm } = await assessFit(intake, retrieval, prefs, llmBase);
 
     // 4) Gate
     const gated = fit.score < prefs.minFitScore;
@@ -44,7 +44,7 @@ export async function runResumePipeline(input: IntakeInput): Promise<ResumePipel
     let tailorLLM = false;
     let tailorLlm: string | undefined;
     if (!gated) {
-        const out = await tailorResume(intake, retrieval, prefs);
+        const out = await tailorResume(intake, retrieval, prefs, llmBase);
         resume = out.resume;
         tailorLLM = out.usedLLM;
         tailorLlm = out.llm;

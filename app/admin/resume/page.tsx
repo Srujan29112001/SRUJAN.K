@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-    ArrowLeft, FileText, Save, LogOut, Users, MessageSquare, Settings, Cpu,
+    ArrowLeft, FileText, Save, LogOut, Users, MessageSquare, Settings,
     Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, History,
 } from 'lucide-react';
 import type { ResumePreferences, ResumeRequestLog } from '@/lib/resume-agents/types';
@@ -186,10 +186,6 @@ export default function AdminResumePage() {
                         <Link href="/admin/resume-history" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
                             <History className="w-4 h-4" />
                             <span className="text-sm hidden sm:inline">Resume Log</span>
-                        </Link>
-                        <Link href="/admin/ai-providers" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
-                            <Cpu className="w-4 h-4" />
-                            <span className="text-sm hidden sm:inline">AI Providers</span>
                         </Link>
                         <Link href="/admin/settings" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
                             <Settings className="w-4 h-4" />

@@ -154,12 +154,6 @@ export default function AdminSettingsPage() {
                         >
                             Resume
                         </Link>
-                        <Link
-                            href="/admin/ai-providers"
-                            className="text-sm text-text-muted hover:text-white transition-colors"
-                        >
-                            AI Providers
-                        </Link>
                         <button
                             onClick={handleLogout}
                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
@@ -192,25 +186,26 @@ export default function AdminSettingsPage() {
                     Configure pricing and payment links for Coffee and Applause tiers. Changes take effect immediately.
                 </p>
 
-                {/* AI key management moved — pointer card */}
+                {/* AI is fully visitor-keyed — info card */}
                 <div className="bg-bg-elevated rounded-2xl border border-white/10 p-6 mb-8">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
                             <Bot className="w-5 h-5 text-blue-400" />
                         </div>
                         <div className="flex-1">
-                            <h2 className="font-display text-lg font-bold text-white">AI Configuration has moved</h2>
+                            <h2 className="font-display text-lg font-bold text-white">AI runs on visitor keys</h2>
                             <p className="text-sm text-text-muted">
-                                The AI Chat now runs on each visitor&apos;s own API key (the 🔑 panel in the chat).
-                                Your keys power only the Resume Engine — manage them in{' '}
-                                <Link href="/admin/ai-providers" className="text-cyan-400 hover:underline">AI Providers</Link>.
+                                Both the AI Chat and the Resume Engine run on each visitor&apos;s own API key
+                                (the 🔑 panel in the chat section). No keys to manage here. You control the resume
+                                content — status, targets, rules, staples — in{' '}
+                                <Link href="/admin/resume" className="text-cyan-400 hover:underline">Resume Preferences</Link>.
                             </p>
                         </div>
                         <Link
-                            href="/admin/ai-providers"
-                            className="flex-shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                            href="/admin/resume"
+                            className="flex-shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-sm font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
                         >
-                            Open AI Providers →
+                            Resume Preferences →
                         </Link>
                     </div>
                 </div>

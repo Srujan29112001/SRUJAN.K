@@ -10,8 +10,8 @@
  * API keys the narrative is assembled from the same signals.
  */
 
-import { generateJSON, hasAnyProvider } from '@/lib/ai-providers';
-import type { FitResult, FitVerdict, JobIntake, RetrievalResult, ResumePreferences } from './types';
+import { generateJSON } from '@/lib/ai-providers';
+import type { FitResult, FitVerdict, JobIntake, LLMBase, RetrievalResult, ResumePreferences } from './types';
 
 function deterministicScore(
     intake: JobIntake,
@@ -69,6 +69,7 @@ export async function assessFit(
     intake: JobIntake,
     retrieval: RetrievalResult,
     prefs: ResumePreferences,
+    llmBase?: LLMBase | null,
 ): Promise<{ fit: FitResult; usedLLM: boolean; llm?: string }> {
     const { score, alignedRole, alignedDomain, flaggedNonNegotiables } = deterministicScore(intake, retrieval, prefs);
     const verdict = verdictFor(score);
@@ -101,11 +102,12 @@ export async function assessFit(
         alignmentNotes: baseAlignment.slice(0, 3),
     };
 
-    if (!hasAnyProvider()) return { fit: deterministic, usedLLM: false };
+    if (!llmBase) return { fit: deterministic, usedLLM: false };
 
     // LLM narrative pass — score and verdict stay deterministic
     try {
         const { data, provider, model } = await generateJSON<{ reasons?: string[]; concerns?: string[]; alignmentNotes?: string[] }>({
+            ...llmBase,
             system: 'You write honest, concise fit assessments for a candidate. Ground every statement in the provided data only. Never inflate; never invent skills or experience.',
             prompt: `A recruiter is evaluating Srujan (AI/ML engineer) for this role. The fit score was computed as ${score}/100 ("${verdict}").
 

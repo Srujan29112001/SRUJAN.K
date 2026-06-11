@@ -12,10 +12,10 @@
  *    verified career facts.
  */
 
-import { generateJSON, hasAnyProvider } from '@/lib/ai-providers';
+import { generateJSON } from '@/lib/ai-providers';
 import { skillCategories } from '@/data/skills';
 import type {
-    JobIntake, MatchedProject, ResumePreferences, RetrievalResult,
+    JobIntake, LLMBase, MatchedProject, ResumePreferences, RetrievalResult,
     SkillRow, TailoredProject, TailoredResume,
 } from './types';
 
@@ -185,15 +185,17 @@ export async function tailorResume(
     intake: JobIntake,
     retrieval: RetrievalResult,
     prefs: ResumePreferences,
+    llmBase?: LLMBase | null,
 ): Promise<{ resume: TailoredResume; usedLLM: boolean; llm?: string }> {
     const fallback = deterministicTailor(intake, retrieval, prefs);
-    if (!hasAnyProvider() || retrieval.matches.length === 0) return { resume: fallback, usedLLM: false };
+    if (!llmBase || retrieval.matches.length === 0) return { resume: fallback, usedLLM: false };
 
     const rules = prefs.tailoringRules;
     const candidates = retrieval.matches.slice(0, 6);
 
     try {
         const { data, provider, model } = await generateJSON<LLMTailorOut>({
+            ...llmBase,
             system: `You tailor one resume for a specific job. ABSOLUTE RULES:
 - NEVER invent facts, numbers, metrics, or technologies. Use ONLY what is provided.
 - Any number you write in a project bullet MUST literally appear in that project's provided data.

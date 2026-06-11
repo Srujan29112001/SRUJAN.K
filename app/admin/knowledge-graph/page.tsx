@@ -14,7 +14,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-    ArrowLeft, Network, LogOut, Users, MessageSquare, Settings, Cpu, FileText,
+    ArrowLeft, Network, LogOut, Users, MessageSquare, Settings, FileText,
     Search, X,
 } from 'lucide-react';
 
@@ -294,10 +294,6 @@ export default function KnowledgeGraphPage() {
                         <Link href="/admin/resume" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
                             <FileText className="w-4 h-4" />
                             <span className="text-sm hidden sm:inline">Resume</span>
-                        </Link>
-                        <Link href="/admin/ai-providers" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
-                            <Cpu className="w-4 h-4" />
-                            <span className="text-sm hidden sm:inline">AI</span>
                         </Link>
                         <Link href="/admin/settings" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
                             <Settings className="w-4 h-4" />

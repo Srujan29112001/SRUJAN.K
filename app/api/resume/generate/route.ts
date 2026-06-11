@@ -12,7 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runResumePipeline, logResumeRequest } from '@/lib/resume-agents/orchestrator';
 import { getResumePreferences } from '@/lib/resume-preferences';
 import { renderResumeHTML } from '@/lib/resume-template';
-import { hasAnyProvider, getProviderConfig, PROVIDER_LABELS, hydrateConfigFromKV, resolveActiveProvider } from '@/lib/ai-providers';
+import { PROVIDER_IDS, PROVIDER_LABELS, type ProviderId } from '@/lib/ai-providers';
+import type { LLMBase } from '@/lib/resume-agents/types';
 
 // Simple in-memory rate limiter: max 4 generations per IP per 5 minutes
 const RATE_WINDOW_MS = 5 * 60 * 1000;
@@ -32,6 +33,8 @@ interface GenerateBody {
     role?: string;
     company?: string;
     requirements?: string;
+    /** the visitor's own API key — same 🔑 config as the AI chat */
+    byok?: { provider?: string; key?: string; model?: string };
 }
 
 export async function POST(request: NextRequest) {
@@ -71,9 +74,20 @@ export async function POST(request: NextRequest) {
         );
     }
 
+    // Visitor BYOK (used transiently, never stored or logged)
+    const byok = body.byok || {};
+    const byokProvider = (byok.provider || '').trim() as ProviderId;
+    const byokKey = (byok.key || '').trim();
+    const llmBase: LLMBase | null = byokKey.length >= 8 && PROVIDER_IDS.includes(byokProvider)
+        ? {
+            provider: byokProvider,
+            overrideKey: byokKey,
+            ...(byok.model?.trim() ? { overrideModel: byok.model.trim() } : {}),
+        }
+        : null;
+
     try {
-        await hydrateConfigFromKV(); // respect admin provider changes from any instance
-        const result = await runResumePipeline({ role, company, requirements });
+        const result = await runResumePipeline({ role, company, requirements }, llmBase);
 
         // log for the admin dashboard (never throws)
         logResumeRequest(result, { role, company, requirements }, { ip, userAgent });
@@ -97,18 +111,14 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// Lightweight status for the section UI — public transparency about THE single
-// engine powering the resume tailoring (the OWNER's key, never the visitor's).
+// Health/status — the resume engine is fully BYOK: it tailors with the
+// visitor's own key (same 🔑 config as the chat) and falls back to
+// deterministic matching without one.
 export async function GET() {
-    await hydrateConfigFromKV(true);
-    const id = resolveActiveProvider();
-    const cfg = id ? getProviderConfig(id) : null;
-    const ready = !!(id && cfg && cfg.enabled && cfg.keys.length > 0);
     return NextResponse.json({
         status: 'ok',
-        aiTailoring: hasAnyProvider(),
-        activeProviders: ready && id ? [id] : [],
-        current: ready && id && cfg ? { provider: id, label: PROVIDER_LABELS[id], model: cfg.model } : null,
-        fallbacks: [], // single-provider mode: no chain by design
+        mode: 'byok',
+        keyPolicy: 'Tailoring runs on the visitor\'s API key (the chat 🔑 panel). Without a key, deterministic matching is used.',
+        supportedProviders: PROVIDER_IDS.map(id => ({ id, label: PROVIDER_LABELS[id] })),
     });
 }

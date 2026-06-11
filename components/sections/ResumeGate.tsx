@@ -12,6 +12,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ResumePipelineResult } from '@/lib/resume-agents/types';
+import { getByokConfig, BYOK_PROVIDERS, type ByokConfig } from '@/components/ui/TerminalChat';
 
 const STAGES = [
     'Parsing the job description…',
@@ -26,12 +27,6 @@ interface ApiResponse {
     error?: string;
 }
 
-interface EngineStatus {
-    aiTailoring: boolean;
-    current: { provider: string; label: string; model: string } | null;
-    fallbacks: string[];
-}
-
 export function ResumeGate() {
     const [role, setRole] = useState('');
     const [company, setCompany] = useState('');
@@ -41,16 +36,20 @@ export function ResumeGate() {
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<ResumePipelineResult | null>(null);
     const [resumeHtml, setResumeHtml] = useState<string | null>(null);
-    const [engine, setEngine] = useState<EngineStatus | null>(null);
+    const [byok, setByok] = useState<ByokConfig | null>(null);
     const blobUrlRef = useRef<string | null>(null);
 
-    // Public transparency: show which provider/model powers the tailoring.
-    // (Runs on the OWNER's keys — unlike the AI Chat, which uses the visitor's.)
+    // The resume engine runs on the SAME key the visitor set in the chat's 🔑
+    // panel. Re-read it whenever this tab regains focus so changes apply.
     useEffect(() => {
-        fetch('/api/resume/generate')
-            .then(r => r.ok ? r.json() : null)
-            .then(d => { if (d) setEngine(d); })
-            .catch(() => { /* banner just stays hidden */ });
+        const refresh = () => setByok(getByokConfig());
+        refresh();
+        window.addEventListener('focus', refresh);
+        document.addEventListener('visibilitychange', refresh);
+        return () => {
+            window.removeEventListener('focus', refresh);
+            document.removeEventListener('visibilitychange', refresh);
+        };
     }, []);
 
     // Cycle the stage label while the pipeline runs
@@ -77,10 +76,13 @@ export function ResumeGate() {
         setIsRunning(true);
 
         try {
+            // Send the visitor's key (read fresh — they may have just set it in the chat panel)
+            const liveByok = getByokConfig();
+            setByok(liveByok);
             const res = await fetch('/api/resume/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ role, company, requirements }),
+                body: JSON.stringify({ role, company, requirements, ...(liveByok ? { byok: liveByok } : {}) }),
             });
             const data: ApiResponse = await res.json();
             if (!res.ok || !data.result) {
@@ -163,23 +165,23 @@ export function ResumeGate() {
                     fit honestly, and assemble a one-page resume tailored to your exact requirements.
                 </motion.p>
 
-                {/* Engine transparency badge */}
-                {engine && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/10"
-                    >
-                        <span className={`w-1.5 h-1.5 rounded-full ${engine.aiTailoring ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                        <span className="font-mono text-[10px] text-text-muted tracking-wider">
-                            {engine.aiTailoring && engine.current
-                                ? <>ENGINE: <span className="text-cyan-400">{engine.current.label}</span> · <span className="text-text-secondary">{engine.current.model}</span>{engine.fallbacks.length > 0 && <span className="hidden sm:inline"> · fallback: {engine.fallbacks.join(', ')}</span>}</>
-                                : 'ENGINE: deterministic matching (AI tailoring offline)'}
-                        </span>
-                    </motion.div>
-                )}
+                {/* Engine transparency badge — driven by the visitor's own 🔑 key */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/10"
+                >
+                    <span className={`w-1.5 h-1.5 rounded-full ${byok ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                    <span className="font-mono text-[10px] text-text-muted tracking-wider">
+                        {byok ? (
+                            <>ENGINE: <span className="text-emerald-400">your {BYOK_PROVIDERS.find(p => p.id === byok.provider)?.label || byok.provider} key</span>{byok.model ? <span className="text-text-secondary"> · {byok.model}</span> : ''} — AI tailoring on</>
+                        ) : (
+                            <>ENGINE: deterministic matching — add your API key in the <a href="#chat" className="text-cyan-400 hover:underline">AI Chat 🔑 panel</a> for AI-tailored output</>
+                        )}
+                    </span>
+                </motion.div>
             </div>
 
             <div className="max-w-3xl mx-auto relative z-10">
