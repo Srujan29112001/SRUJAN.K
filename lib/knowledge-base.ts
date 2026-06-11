@@ -73,7 +73,7 @@ export interface KnowledgeDocument {
     content: string;
     metadata: {
         title: string;
-        type: 'project' | 'skill' | 'experience' | 'persona' | 'blog' | 'testimonial' | 'interest' | 'status';
+        type: 'project' | 'skill' | 'experience' | 'persona' | 'blog' | 'testimonial' | 'interest' | 'status' | 'custom';
         category?: string;
         tags?: string[];
         source?: string;

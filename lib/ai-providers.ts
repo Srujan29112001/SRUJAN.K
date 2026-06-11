@@ -174,6 +174,27 @@ async function kvCommand(cmd: unknown[]): Promise<unknown> {
     return data.result;
 }
 
+/** Generic JSON get/set on the optional Upstash store (shared by other libs). */
+export async function kvGetJSON<T>(key: string): Promise<T | null> {
+    if (!kvConfigAvailable()) return null;
+    try {
+        const raw = await kvCommand(['GET', key]);
+        return typeof raw === 'string' && raw ? JSON.parse(raw) as T : null;
+    } catch {
+        return null;
+    }
+}
+
+export async function kvSetJSON(key: string, value: unknown): Promise<boolean> {
+    if (!kvConfigAvailable()) return false;
+    try {
+        await kvCommand(['SET', key, JSON.stringify(value)]);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Pull the latest config from KV into the in-memory snapshot. Call at the top
  * of any async entry point that reads provider config (sync readers then see

@@ -234,8 +234,19 @@ export function KnowledgeGraph3D() {
     const [isQuerying, setIsQuerying] = useState(false);
     const [queryResult, setQueryResult] = useState<{ matches: QueryMatch[] } | null>(null);
     const [highlights, setHighlights] = useState<Map<string, number>>(new Map());
+    // Owner knowledge feed (password-gated, reuses the admin session)
+    const [ownerOpen, setOwnerOpen] = useState(false);
+    const [ownerAuthed, setOwnerAuthed] = useState(false);
+    const [ownerPassword, setOwnerPassword] = useState('');
+    const [ownerBusy, setOwnerBusy] = useState(false);
+    const [ownerMsg, setOwnerMsg] = useState<{ ok: boolean; text: string } | null>(null);
+    const [customDocs, setCustomDocs] = useState<Array<{ id: string; title: string; chars: number; sourceFile?: string; createdAt: string }>>([]);
+    const [feedTitle, setFeedTitle] = useState('');
+    const [feedTags, setFeedTags] = useState('');
+    const [feedText, setFeedText] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
+    const loadGraph = useCallback(() => {
         fetch('/api/knowledge-graph')
             .then(r => r.ok ? r.json() : null)
             .then(d => {
@@ -246,6 +257,89 @@ export function KnowledgeGraph3D() {
             })
             .catch(() => { /* section just stays empty */ });
     }, []);
+
+    useEffect(() => { loadGraph(); }, [loadGraph]);
+
+    useEffect(() => {
+        fetch('/api/admin/auth').then(r => { if (r.ok) setOwnerAuthed(true); }).catch(() => {});
+    }, []);
+
+    const loadCustomDocs = useCallback(async () => {
+        try {
+            const res = await fetch('/api/admin/custom-knowledge');
+            if (res.ok) {
+                const d = await res.json();
+                setCustomDocs(d.docs || []);
+            }
+        } catch { /* stays empty */ }
+    }, []);
+
+    useEffect(() => { if (ownerAuthed && ownerOpen) loadCustomDocs(); }, [ownerAuthed, ownerOpen, loadCustomDocs]);
+
+    const ownerUnlock = useCallback(async () => {
+        if (!ownerPassword.trim() || ownerBusy) return;
+        setOwnerBusy(true);
+        setOwnerMsg(null);
+        try {
+            const res = await fetch('/api/admin/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: ownerPassword }),
+            });
+            if (res.ok) { setOwnerAuthed(true); setOwnerPassword(''); }
+            else setOwnerMsg({ ok: false, text: 'Wrong password.' });
+        } catch {
+            setOwnerMsg({ ok: false, text: 'Could not reach the server.' });
+        } finally { setOwnerBusy(false); }
+    }, [ownerPassword, ownerBusy]);
+
+    const feedSubmit = useCallback(async () => {
+        if (ownerBusy) return;
+        const file = fileInputRef.current?.files?.[0];
+        if (!file && (feedTitle.trim().length < 3 || feedText.trim().length < 20)) {
+            setOwnerMsg({ ok: false, text: 'Give it a title + at least 20 characters of text, or pick a file.' });
+            return;
+        }
+        setOwnerBusy(true);
+        setOwnerMsg(null);
+        try {
+            let res: Response;
+            if (file) {
+                const form = new FormData();
+                form.append('file', file);
+                if (feedTitle.trim()) form.append('title', feedTitle.trim());
+                if (feedTags.trim()) form.append('tags', feedTags.trim());
+                res = await fetch('/api/admin/custom-knowledge', { method: 'POST', body: form });
+            } else {
+                res = await fetch('/api/admin/custom-knowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: feedTitle.trim(),
+                        content: feedText.trim(),
+                        tags: feedTags.split(',').map(t => t.trim()).filter(Boolean),
+                    }),
+                });
+            }
+            const d = await res.json();
+            if (res.ok) {
+                setOwnerMsg({ ok: true, text: `Added "${d.doc.title}" (${d.doc.chars} chars, saved to ${d.persistedTo}). The AI knows it now.` });
+                setFeedTitle(''); setFeedTags(''); setFeedText('');
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                await loadCustomDocs();
+                loadGraph(); // new Field Note node appears
+            } else {
+                setOwnerMsg({ ok: false, text: d.error || 'Failed to add.' });
+            }
+        } catch {
+            setOwnerMsg({ ok: false, text: 'Upload failed — network error.' });
+        } finally { setOwnerBusy(false); }
+    }, [feedTitle, feedTags, feedText, ownerBusy, loadCustomDocs, loadGraph]);
+
+    const feedDelete = useCallback(async (id: string) => {
+        const res = await fetch(`/api/admin/custom-knowledge?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (res.ok) { await loadCustomDocs(); loadGraph(); }
+    }, [loadCustomDocs, loadGraph]);
 
     const runQuery = useCallback(async () => {
         const q = query.trim();
@@ -454,6 +548,127 @@ export function KnowledgeGraph3D() {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* ===== Owner-only knowledge feed (password-gated) ===== */}
+                <div className="mt-6">
+                    {!ownerOpen ? (
+                        <button
+                            onClick={() => setOwnerOpen(true)}
+                            className="mx-auto flex items-center gap-1.5 font-mono text-[10px] text-text-muted/40 hover:text-text-muted transition-colors"
+                        >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                            </svg>
+                            owner
+                        </button>
+                    ) : !ownerAuthed ? (
+                        <div className="max-w-sm mx-auto space-y-2">
+                            <p className="text-center font-mono text-[10px] text-amber-400/80">Feed the knowledge base — enter the admin password</p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="password"
+                                    value={ownerPassword}
+                                    onChange={e => setOwnerPassword(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') ownerUnlock(); }}
+                                    placeholder="Admin password"
+                                    className="flex-1 rounded-lg border border-amber-500/30 bg-bg-surface px-3 py-2 text-xs text-white placeholder-text-muted focus:border-amber-400 focus:outline-none"
+                                />
+                                <button
+                                    onClick={ownerUnlock}
+                                    disabled={ownerBusy || !ownerPassword.trim()}
+                                    className="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-mono text-xs hover:bg-amber-500/30 disabled:opacity-40"
+                                >
+                                    {ownerBusy ? '…' : 'Unlock'}
+                                </button>
+                            </div>
+                            {ownerMsg && <p className="text-center text-[10px] text-red-400">{ownerMsg.text}</p>}
+                        </div>
+                    ) : (
+                        <div className="bg-bg-base/80 border border-amber-500/25 rounded-2xl p-5 sm:p-6">
+                            <div className="flex items-center gap-2 mb-4">
+                                <h3 className="font-display text-base font-bold text-white">Feed the knowledge base</h3>
+                                <span className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">owner only</span>
+                                <button onClick={() => setOwnerOpen(false)} className="ml-auto p-1 text-text-muted hover:text-white" aria-label="Close">✕</button>
+                            </div>
+                            <p className="text-xs text-text-muted mb-4">
+                                Paste text or upload a PDF / DOCX / TXT / MD. It joins the AI&apos;s brain instantly — searched by
+                                the chat, shown here as a <span className="text-slate-300">Field Notes</span> node.
+                                Images aren&apos;t OCR&apos;d yet — describe them in text instead.
+                            </p>
+                            <div className="grid lg:grid-cols-2 gap-5">
+                                <div className="space-y-2.5">
+                                    <div className="grid sm:grid-cols-2 gap-2.5">
+                                        <input
+                                            value={feedTitle}
+                                            onChange={e => setFeedTitle(e.target.value)}
+                                            placeholder="Title *"
+                                            className="rounded-lg border border-white/10 bg-bg-surface px-3 py-2.5 text-xs text-white placeholder-text-muted focus:border-cyan-500 focus:outline-none"
+                                        />
+                                        <input
+                                            value={feedTags}
+                                            onChange={e => setFeedTags(e.target.value)}
+                                            placeholder="Tags (comma-separated)"
+                                            className="rounded-lg border border-white/10 bg-bg-surface px-3 py-2.5 text-xs text-white placeholder-text-muted focus:border-cyan-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <textarea
+                                        value={feedText}
+                                        onChange={e => setFeedText(e.target.value)}
+                                        rows={5}
+                                        placeholder="Paste knowledge as text… (or use the file picker instead)"
+                                        className="w-full rounded-lg border border-white/10 bg-bg-surface px-3 py-2.5 text-xs text-white placeholder-text-muted focus:border-cyan-500 focus:outline-none resize-none"
+                                    />
+                                    <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".pdf,.docx,.doc,.txt,.md"
+                                            className="flex-1 text-[11px] text-text-muted file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-white/10 file:text-white file:text-xs file:font-mono file:cursor-pointer"
+                                        />
+                                        <button
+                                            onClick={feedSubmit}
+                                            disabled={ownerBusy}
+                                            className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-xs disabled:opacity-50 whitespace-nowrap"
+                                        >
+                                            {ownerBusy ? 'Feeding…' : 'Add to knowledge base'}
+                                        </button>
+                                    </div>
+                                    {ownerMsg && (
+                                        <p className={`text-[11px] ${ownerMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{ownerMsg.text}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <h4 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-2">
+                                        Field notes in the brain ({customDocs.length})
+                                    </h4>
+                                    {customDocs.length === 0 ? (
+                                        <p className="text-xs text-text-muted/60">Nothing fed yet.</p>
+                                    ) : (
+                                        <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                                            {customDocs.map(d => (
+                                                <div key={d.id} className="flex items-center gap-2 p-2 rounded-lg bg-bg-surface border border-white/5">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-white truncate">{d.title}</p>
+                                                        <p className="font-mono text-[10px] text-text-muted">
+                                                            {d.chars.toLocaleString()} chars{d.sourceFile ? ` · ${d.sourceFile}` : ''} · {new Date(d.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => feedDelete(d.id)}
+                                                        className="p-1 text-text-muted hover:text-red-400 flex-shrink-0"
+                                                        aria-label={`Delete ${d.title}`}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>

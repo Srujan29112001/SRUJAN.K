@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import { projects } from '@/data/projects';
 import { buildKnowledgeBase } from '@/lib/knowledge-base';
 import { searchKnowledgePublic } from '@/lib/chat-agents/knowledge';
+import { getCustomKnowledgeDocuments, hydrateCustomKnowledge } from '@/lib/custom-knowledge';
 
 const COLORS = {
     center: '#F8FAFC',
@@ -30,6 +31,7 @@ const COLORS = {
     interests: '#FB7185',
     clients: '#FACC15',
     now: '#34D399',
+    notes: '#94A3B8',
 };
 
 export interface GraphNode {
@@ -65,6 +67,7 @@ function excerpt(content: string, max = 300): string {
 
 // GET — the full mind-map
 export async function GET() {
+    await hydrateCustomKnowledge(); // owner-fed docs (Field Notes)
     const nodes: GraphNode[] = [];
     const edges: GraphEdge[] = [];
 
@@ -179,6 +182,29 @@ export async function GET() {
         edges.push({ source: doc.id, target: map.hub });
     }
 
+    // ----- owner-fed Field Notes (custom knowledge) -----
+    const customDocs = getCustomKnowledgeDocuments();
+    if (customDocs.length > 0) {
+        nodes.push({ id: 'hub:notes', label: 'Field Notes', type: 'category', color: COLORS.notes, size: 16 });
+        edges.push({ source: 'hub:notes', target: 'center' });
+        for (const doc of customDocs) {
+            nodes.push({
+                id: doc.id,
+                label: doc.metadata.title.length > 32 ? doc.metadata.title.slice(0, 30) + '…' : doc.metadata.title,
+                type: 'doc',
+                color: COLORS.notes,
+                size: 7.5,
+                hub: 'hub:notes',
+                detail: {
+                    description: excerpt(doc.content),
+                    tech: (doc.metadata.tags || []).slice(0, 6),
+                    kind: 'field note',
+                },
+            });
+            edges.push({ source: doc.id, target: 'hub:notes' });
+        }
+    }
+
     return NextResponse.json({
         nodes,
         edges,
@@ -199,6 +225,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Query must be 3–500 characters' }, { status: 400 });
         }
 
+        await hydrateCustomKnowledge();
         const hits = searchKnowledgePublic(query, 14)
             // per-skill micro-docs aren't graph nodes; their category doc is
             .filter(h => !(h.type === 'skill' && !h.id.startsWith('skills-')))

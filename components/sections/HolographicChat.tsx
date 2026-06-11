@@ -5,7 +5,130 @@ import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { TerminalChat, ChatMessage, ChatProvenance, getByokConfig } from '@/components/ui/TerminalChat';
+import {
+    TerminalChat, ChatMessage, ChatProvenance,
+    getByokConfig, saveByokConfig, BYOK_PROVIDERS, BYOK_CHANGED_EVENT, type ByokConfig,
+} from '@/components/ui/TerminalChat';
+
+/**
+ * BYOK CONNECT BAR — lives OUTSIDE the terminal (above the avatar/chat grid)
+ * so visitors see the key step before they start typing. Same localStorage
+ * config the terminal and the resume engine read.
+ */
+function ByokBar() {
+    const [provider, setProvider] = useState('gemini');
+    const [model, setModel] = useState('');
+    const [key, setKey] = useState('');
+    const [saved, setSaved] = useState<ByokConfig | null>(null);
+    const [justSaved, setJustSaved] = useState(false);
+
+    useEffect(() => {
+        const cfg = getByokConfig();
+        if (cfg) {
+            setSaved(cfg);
+            setProvider(cfg.provider);
+            setModel(cfg.model || '');
+            setKey(cfg.key);
+        }
+        const refresh = () => setSaved(getByokConfig());
+        window.addEventListener(BYOK_CHANGED_EVENT, refresh);
+        return () => window.removeEventListener(BYOK_CHANGED_EVENT, refresh);
+    }, []);
+
+    const connect = useCallback(() => {
+        const k = key.trim();
+        if (!k) return;
+        const cfg: ByokConfig = { provider, key: k, ...(model.trim() ? { model: model.trim() } : {}) };
+        saveByokConfig(cfg);
+        setSaved(cfg);
+        setJustSaved(true);
+        setTimeout(() => setJustSaved(false), 2000);
+    }, [provider, key, model]);
+
+    const disconnect = useCallback(() => {
+        saveByokConfig(null);
+        setSaved(null);
+        setKey('');
+        setModel('');
+    }, []);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className={`max-w-6xl mx-auto mb-8 relative z-10 rounded-2xl border backdrop-blur-sm p-4 sm:p-5 transition-colors ${saved
+                ? 'border-emerald-500/30 bg-emerald-500/[0.04]'
+                : 'border-amber-500/30 bg-amber-500/[0.04]'
+                }`}
+        >
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div className="flex items-center gap-2.5 lg:w-72 flex-shrink-0">
+                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${saved ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+                    <p className="text-xs sm:text-sm">
+                        {saved ? (
+                            <span className="text-emerald-400 font-mono">
+                                Connected · {BYOK_PROVIDERS.find(p => p.id === saved.provider)?.label || saved.provider}
+                            </span>
+                        ) : (
+                            <span className="text-text-secondary">
+                                <span className="text-amber-400 font-semibold">Bring your own key</span> — chat &amp; resume
+                                run on it. Free keys: Gemini, Groq, HF.
+                            </span>
+                        )}
+                    </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                    <select
+                        value={provider}
+                        onChange={e => setProvider(e.target.value)}
+                        aria-label="AI provider"
+                        className="bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 sm:w-56"
+                    >
+                        {BYOK_PROVIDERS.map(p => (
+                            <option key={p.id} value={p.id}>
+                                {p.label}{p.freeHint ? ` (${p.freeHint})` : ''}
+                            </option>
+                        ))}
+                    </select>
+                    <input
+                        type="text"
+                        value={model}
+                        onChange={e => setModel(e.target.value)}
+                        placeholder="Model (optional)"
+                        className="bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 sm:w-52 placeholder:text-text-muted/50"
+                    />
+                    <input
+                        type="password"
+                        value={key}
+                        onChange={e => setKey(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') connect(); }}
+                        placeholder={`API key (${BYOK_PROVIDERS.find(p => p.id === provider)?.keyHint || '…'}) — stays in your browser`}
+                        className="flex-1 bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 placeholder:text-text-muted/50"
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            onClick={connect}
+                            disabled={!key.trim()}
+                            className="px-4 py-2.5 rounded-lg bg-cyan-400 text-black font-mono text-xs font-bold hover:bg-cyan-300 transition-colors disabled:opacity-40 whitespace-nowrap"
+                        >
+                            {justSaved ? '✓ CONNECTED' : 'SAVE & CONNECT'}
+                        </button>
+                        {saved && (
+                            <button
+                                onClick={disconnect}
+                                className="px-3 py-2.5 rounded-lg border border-red-400/40 text-red-400 font-mono text-xs hover:bg-red-400/10 transition-colors"
+                            >
+                                DISCONNECT
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
 
 // Dynamic import for GIF-based avatar
 const AnimatedGifAvatar = dynamic(
@@ -774,6 +897,8 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 </motion.p>
             </div>
 
+            {/* BYOK connect bar — outside the terminal, always visible */}
+            <ByokBar />
 
             {/* Main content grid */}
             <div className="max-w-6xl w-full mx-auto grid lg:grid-cols-2 gap-8 items-stretch relative z-10 overflow-hidden">

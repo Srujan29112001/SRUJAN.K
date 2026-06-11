@@ -22,6 +22,7 @@ import path from 'path';
 import { buildKnowledgeBase, type KnowledgeDocument } from '@/lib/knowledge-base';
 import { generateEmbedding } from '@/lib/embeddings';
 import { getVectorStore } from '@/lib/vector-store';
+import { getCustomKnowledgeDocuments, hydrateCustomKnowledge } from '@/lib/custom-knowledge';
 
 const GAPS_FILE = path.join(process.cwd(), 'data', 'knowledge-gaps.json');
 const VECTOR_TIMEOUT_MS = 900; // never let embeddings slow the chat down
@@ -37,7 +38,9 @@ function knowledgeDocs(): KnowledgeDocument[] {
         kbCache = buildKnowledgeBase();
         kbBuiltAt = Date.now();
     }
-    return kbCache;
+    // owner-fed docs join the searchable corpus (snapshot refreshed by
+    // hydrateCustomKnowledge() at async entry points)
+    return [...kbCache, ...getCustomKnowledgeDocuments()];
 }
 
 const STOPWORDS = new Set([
@@ -129,6 +132,7 @@ export interface KnowledgeResult {
  * Never throws, never blocks longer than the vector time box.
  */
 export async function retrieveKnowledge(message: string, topK = 5): Promise<KnowledgeResult> {
+    await hydrateCustomKnowledge(); // owner-fed docs refresh (30s TTL, never throws)
     const det = deterministicSearch(message, topK);
 
     let vec: KnowledgeHit[] = [];

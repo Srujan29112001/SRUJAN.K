@@ -37,6 +37,7 @@ data/chat-history.json
 data/resume-requests.json
 data/ai-providers.json
 data/knowledge-gaps.json
+data/custom-knowledge.json
 
 # Local Claude Code session settings
 .claude/settings.local.json

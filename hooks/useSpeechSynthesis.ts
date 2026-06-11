@@ -82,6 +82,11 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
     const queueRef = useRef<string[]>([]);
     const speakingRef = useRef(false);
     const keepaliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // Generation counter: each speak() starts a new generation. Stale events
+    // from CANCELLED utterances (which fire asynchronously AFTER the next
+    // queue starts) are ignored instead of killing the new queue — this was
+    // the bug that muted every message after the first.
+    const genRef = useRef(0);
 
     useEffect(() => {
         setIsSupported(typeof window !== 'undefined' && 'speechSynthesis' in window);
@@ -112,19 +117,10 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
         }
     }, []);
 
-    /** Resolve the best voice; waits once for async voice loading if needed. */
-    const resolveVoice = useCallback(async (): Promise<SpeechSynthesisVoice | null> => {
-        let list = window.speechSynthesis.getVoices();
-        if (list.length === 0) {
-            list = await new Promise<SpeechSynthesisVoice[]>(resolve => {
-                const timer = setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1200);
-                window.speechSynthesis.addEventListener('voiceschanged', () => {
-                    clearTimeout(timer);
-                    resolve(window.speechSynthesis.getVoices());
-                }, { once: true });
-            });
-        }
-        if (list.length === 0) return null;
+    /** Pick the best voice from whatever is loaded RIGHT NOW (no waiting). */
+    const pickVoice = useCallback((): SpeechSynthesisVoice | null => {
+        const list = window.speechSynthesis.getVoices();
+        if (list.length === 0) return null; // default voice still speaks
 
         if (voiceName) {
             const named = list.find(v => v.name === voiceName);
@@ -146,7 +142,8 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
         return [...list].sort((a, b) => score(b) - score(a))[0] || null;
     }, [voiceName]);
 
-    const speakNext = useCallback((voice: SpeechSynthesisVoice | null) => {
+    const speakNext = useCallback((gen: number, voice: SpeechSynthesisVoice | null) => {
+        if (gen !== genRef.current) return; // a newer speak()/stop() superseded us
         const next = queueRef.current.shift();
         if (next === undefined) {
             speakingRef.current = false;
@@ -159,23 +156,35 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
         u.pitch = pitch;
         u.volume = volume;
         if (voice) u.voice = voice;
-        u.onend = () => speakNext(voice);
-        u.onerror = (e) => {
-            // 'interrupted'/'canceled' happen on stop() — don't continue the queue
-            if (e.error === 'interrupted' || e.error === 'canceled') {
-                speakingRef.current = false;
-                setIsSpeaking(false);
-                stopKeepalive();
-                return;
-            }
-            speakNext(voice); // skip the bad chunk, keep going
+        u.onend = () => speakNext(gen, voice);
+        u.onerror = () => {
+            // Stale-generation events (late 'interrupted' from a cancelled
+            // queue) are filtered by the gen check; current-generation errors
+            // just skip the chunk and continue.
+            speakNext(gen, voice);
         };
         window.speechSynthesis.speak(u);
+
+        // Watchdog (first chunk only): if audio hasn't started in 1.5s, the
+        // chosen voice may be broken on this device — retry once with the
+        // browser default voice.
+        if (voice) {
+            let started = false;
+            u.onstart = () => { started = true; };
+            setTimeout(() => {
+                if (!started && gen === genRef.current && !window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    queueRef.current.unshift(next);
+                    setTimeout(() => speakNext(gen, null), 60);
+                }
+            }, 1500);
+        }
     }, [rate, pitch, volume, stopKeepalive]);
 
     /** Speak text (chunked + queued). Replaces anything currently speaking. */
-    const speak = useCallback(async (text: string) => {
+    const speak = useCallback((text: string) => {
         if (!isSupported || !text) return;
+        const gen = ++genRef.current; // invalidate any previous queue's events
         window.speechSynthesis.cancel();
         const cleaned = cleanTextForSpeech(text);
         if (!cleaned) return;
@@ -185,15 +194,14 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
         setIsSpeaking(true);
         startKeepalive();
 
-        const voice = await resolveVoice();
+        const voice = pickVoice();
         // a cancel() needs a beat before speak() works reliably in Chrome
-        setTimeout(() => {
-            if (speakingRef.current) speakNext(voice);
-        }, 60);
-    }, [isSupported, resolveVoice, speakNext, startKeepalive]);
+        setTimeout(() => speakNext(gen, voice), 80);
+    }, [isSupported, pickVoice, speakNext, startKeepalive]);
 
     const stop = useCallback(() => {
         if (!isSupported) return;
+        genRef.current++; // invalidate in-flight utterance events
         queueRef.current = [];
         speakingRef.current = false;
         window.speechSynthesis.cancel();

@@ -12,7 +12,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ResumePipelineResult } from '@/lib/resume-agents/types';
-import { getByokConfig, BYOK_PROVIDERS, type ByokConfig } from '@/components/ui/TerminalChat';
+import { getByokConfig, BYOK_PROVIDERS, BYOK_CHANGED_EVENT, type ByokConfig } from '@/components/ui/TerminalChat';
 
 const STAGES = [
     'Parsing the job description…',
@@ -53,9 +53,11 @@ export function ResumeGate() {
         const refresh = () => setByok(getByokConfig());
         refresh();
         window.addEventListener('focus', refresh);
+        window.addEventListener(BYOK_CHANGED_EVENT, refresh); // instant update from the connect bar
         document.addEventListener('visibilitychange', refresh);
         return () => {
             window.removeEventListener('focus', refresh);
+            window.removeEventListener(BYOK_CHANGED_EVENT, refresh);
             document.removeEventListener('visibilitychange', refresh);
         };
     }, []);
