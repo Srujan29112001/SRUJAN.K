@@ -1,25 +1,13 @@
+/**
+ * PUBLIC knowledge-graph API — powers the interactive 3D graph section on the
+ * portfolio. Read-only views over public portfolio data (projects + tech).
+ * The admin-only signals (knowledge gaps, request logs) are NOT exposed here.
+ */
+
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { projects } from '@/data/projects';
-import { skillCategories } from '@/data/skills';
-import { getVectorStore } from '@/lib/vector-store';
 import { retrieve } from '@/lib/resume-agents/retriever';
 import { getResumePreferences } from '@/lib/resume-preferences';
-import { readKnowledgeGaps } from '@/lib/chat-agents/knowledge';
-
-const SESSION_NAME = 'admin_session';
-const SESSION_VALUE = 'authenticated';
-
-// Check if admin is authenticated
-async function isAuthenticated(): Promise<boolean> {
-    try {
-        const cookieStore = await cookies();
-        const session = cookieStore.get(SESSION_NAME);
-        return session?.value === SESSION_VALUE;
-    } catch {
-        return false;
-    }
-}
 
 const CATEGORY_COLORS: Record<string, string> = {
     AI: '#3B82F6',
@@ -49,22 +37,17 @@ export interface GraphEdge {
     target: string;
 }
 
-// GET — the knowledge graph: projects, shared-tech hubs, category hubs
+// GET — nodes + edges for the 3D graph
 export async function GET() {
-    if (!(await isAuthenticated())) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const nodes: GraphNode[] = [];
     const edges: GraphEdge[] = [];
 
-    // Category hubs
     const categories = ['AI', 'Robotics', 'Research'];
     for (const cat of categories) {
         nodes.push({ id: `cat:${cat}`, label: cat, type: 'category', color: CATEGORY_COLORS[cat], size: 22 });
     }
 
-    // Tech tag frequency — only tags shared by 3+ projects become hub nodes
+    // Tech tag frequency — tags shared by 3+ projects become hub nodes
     const techCount = new Map<string, number>();
     for (const p of projects) {
         for (const t of p.tech) techCount.set(t, (techCount.get(t) || 0) + 1);
@@ -78,7 +61,6 @@ export async function GET() {
         nodes.push({ id: `tech:${tech}`, label: tech, type: 'tech', color: '#06B6D4', size: 6 + Math.min(n, 12) });
     }
 
-    // Project nodes + edges
     for (const p of projects) {
         nodes.push({
             id: p.id,
@@ -105,48 +87,27 @@ export async function GET() {
         }
     }
 
-    // Knowledge-base stats (from the embeddings cache, no API calls)
-    const store = getVectorStore();
-    if (store.getCount() === 0) store.loadFromCache();
-    const docs = store.getAllDocuments();
-    const byType = new Map<string, number>();
-    for (const d of docs) {
-        const t = (d.metadata as { type?: string }).type || 'other';
-        byType.set(t, (byType.get(t) || 0) + 1);
-    }
-
     return NextResponse.json({
         nodes,
         edges,
         stats: {
             projects: projects.length,
             techHubs: topTech.length,
-            skillCategories: skillCategories.length,
-            embeddedDocs: docs.length,
-            docsByType: Object.fromEntries(byType),
         },
-        // Self-improvement signal: chat questions the portfolio couldn't answer
-        knowledgeGaps: readKnowledgeGaps().slice(0, 12),
     });
 }
 
-// POST { query } — run the same retriever the Resume Gate uses and return
-// which graph nodes light up. Lets the admin see exactly what a recruiter
-// query would match.
+// POST { query } — the same matcher the Resume Gate runs: returns which
+// projects light up for a JD-like query. Deterministic and cheap.
 export async function POST(request: Request) {
-    if (!(await isAuthenticated())) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     try {
         const body = await request.json() as { query?: string };
         const query = (body.query || '').trim();
-        if (query.length < 3) {
-            return NextResponse.json({ error: 'Query too short' }, { status: 400 });
+        if (query.length < 3 || query.length > 500) {
+            return NextResponse.json({ error: 'Query must be 3–500 characters' }, { status: 400 });
         }
 
         const prefs = getResumePreferences();
-        // Pseudo-intake: treat the query terms as both skills and keywords
         const terms = query.split(/[,;\n]+|\s{2,}/).map(s => s.trim()).filter(Boolean);
         const result = retrieve({
             role: query.slice(0, 80),
@@ -157,12 +118,12 @@ export async function POST(request: Request) {
             responsibilities: [],
             keywords: query.split(/\s+/).filter(w => w.length > 2).slice(0, 10),
             redFlags: [],
-        }, { ...prefs, excludedProjectIds: [] }); // show everything in the graph view
+        }, { ...prefs, excludedProjectIds: [] });
 
         return NextResponse.json({
-            matches: result.matches.map(m => ({ id: m.id, title: m.title, relevance: m.relevance, why: m.why })),
-            matchedSkills: result.matchedSkills,
-            missingSkills: result.missingSkills,
+            matches: result.matches.map(m => ({ id: m.id, title: m.title, relevance: m.relevance })),
+            matchedSkills: result.matchedSkills.slice(0, 10),
+            missingSkills: result.missingSkills.slice(0, 6),
             coveragePct: result.coveragePct,
         });
     } catch (e) {

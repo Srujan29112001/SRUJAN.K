@@ -29,6 +29,12 @@ const ResumeGate = dynamic(
   () => import('@/components/sections/ResumeGate'),
   { ssr: false }
 );
+
+// 3D interactive knowledge graph — the same portfolio map the AI agents search
+const KnowledgeGraph3D = dynamic(
+  () => import('@/components/sections/KnowledgeGraph3D'),
+  { ssr: false }
+);
 import { CustomCursor } from '@/components/ui/CustomCursor';
 import { Navigation } from '@/components/ui/Navigation';
 import { ScrollProgress } from '@/components/ui/ScrollProgress';
@@ -162,6 +168,7 @@ export default function Home() {
           }}
         />
         <ResumeGate />
+        <KnowledgeGraph3D />
         <Contact />
         <Footer />
       </main>

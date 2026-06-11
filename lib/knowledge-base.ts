@@ -54,6 +54,10 @@ import { aiPersona } from '@/data/ai-persona';
 import { personalKnowledgeBase } from '@/data/personal-profile';
 import { lifeKnowledgeBase } from '@/data/life-knowledge';
 import { mediaKnowledgeBase } from '@/data/media-knowledge';
+import { blogPosts } from '@/data/blog';
+import { testimonials } from '@/data/testimonials';
+import { interests } from '@/data/interests';
+import { getResumePreferences } from '@/lib/resume-preferences';
 
 /**
  * Document structure for the knowledge base
@@ -69,7 +73,7 @@ export interface KnowledgeDocument {
     content: string;
     metadata: {
         title: string;
-        type: 'project' | 'skill' | 'experience' | 'persona';
+        type: 'project' | 'skill' | 'experience' | 'persona' | 'blog' | 'testimonial' | 'interest' | 'status';
         category?: string;
         tags?: string[];
         source?: string;
@@ -366,18 +370,99 @@ export function buildKnowledgeBase(): KnowledgeDocument[] {
         ...personalProfileDocs,
         ...lifeDocs,
         ...mediaDocs,
+        ...buildBlogDocuments(),
+        ...buildTestimonialDocuments(),
+        ...buildInterestDocuments(),
+        ...buildStatusDocuments(),
     ];
 
-    console.log(`📚 Knowledge base built: ${documents.length} documents`);
-    console.log(`   - Projects: ${projects.length}`);
-    console.log(`   - Skill categories: ${skillCategories.length}`);
-    console.log(`   - Experience entries: ${experiences.length}`);
-    console.log(`   - Persona documents: 4`);
-    console.log(`   - Personal profile sections: ${personalProfileDocs.length}`);
-    console.log(`   - Life knowledge sections: ${lifeDocs.length}`);
-    console.log(`   - Media knowledge sections: ${mediaDocs.length}`);
+    console.log(`📚 Knowledge base built: ${documents.length} documents (projects, skills, experience, persona, profile, life, media, blog, testimonials, interests, status)`);
 
     return documents;
+}
+
+/**
+ * Blog posts — the chatbot can discuss articles the owner has written.
+ */
+function buildBlogDocuments(): KnowledgeDocument[] {
+    return blogPosts.map(post => ({
+        id: `blog-${post.id}`,
+        content: `
+Blog article by Srujan: ${post.title}
+Published: ${post.date} (${post.readTime})
+Topics: ${post.tags.join(', ')}
+Summary: ${post.summary}
+${post.content.slice(0, 1800)}
+        `.trim(),
+        metadata: {
+            title: `Blog: ${post.title}`,
+            type: 'blog' as const,
+            tags: post.tags,
+            source: 'blog.ts',
+        },
+    }));
+}
+
+/**
+ * Client testimonials — social proof the chatbot can reference honestly.
+ */
+function buildTestimonialDocuments(): KnowledgeDocument[] {
+    return testimonials.map(t => ({
+        id: `testimonial-${t.id}`,
+        content: `Client testimonial from ${t.name} (${t.role} at ${t.company}): "${t.content}"`,
+        metadata: {
+            title: `Testimonial: ${t.name}, ${t.company}`,
+            type: 'testimonial' as const,
+            tags: [t.company, t.role],
+            source: 'testimonials.ts',
+        },
+    }));
+}
+
+/**
+ * Personal interests (the Interests section) — hobbies framed as engineering.
+ */
+function buildInterestDocuments(): KnowledgeDocument[] {
+    return interests.map(i => ({
+        id: `interest-${i.id}`,
+        content: `Personal interest: ${i.title} — ${i.subtitle}. ${i.description}`,
+        metadata: {
+            title: `Interest: ${i.title}`,
+            type: 'interest' as const,
+            tags: [i.title],
+            source: 'interests.ts',
+        },
+    }));
+}
+
+/**
+ * Live status & targets from the admin-editable resume preferences — keeps
+ * "what are you doing now / looking for" answers current with one admin edit.
+ */
+function buildStatusDocuments(): KnowledgeDocument[] {
+    try {
+        const prefs = getResumePreferences();
+        const content = `
+Srujan's current status: ${prefs.currentStatus}
+Currently looking for roles like: ${prefs.lookingFor.join(', ')}
+Preferred domains: ${prefs.preferences.domains.join(', ')}
+Work modes: ${prefs.preferences.workModes.join(', ')}
+Locations: ${prefs.preferences.locations}
+Non-negotiables: ${prefs.nonNegotiables.join('; ')}
+        `.trim();
+        return [{
+            id: 'status-current',
+            content,
+            metadata: {
+                title: 'Current Status & What I\'m Looking For',
+                type: 'status' as const,
+                tags: ['status', 'availability', 'looking for', 'targets'],
+                source: 'resume-preferences.json',
+            },
+        }];
+    } catch {
+        return [];
+    }
 }
 
 /**

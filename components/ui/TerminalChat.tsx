@@ -137,7 +137,10 @@ export function TerminalChat({
         setIsTypingActive(false);
     }, []);
 
-    // Speak new bot messages when voice is enabled (starts immediately, not after typing)
+    // Speak bot messages when they are COMPLETE. Streamed messages appear with
+    // empty content and grow — speaking on arrival used to read nothing and
+    // mark them "spoken" (the old inconsistency). Completion = isStreaming and
+    // isTyping both false with real content present.
     useEffect(() => {
         if (!voiceEnabled || !isSupported) return;
 
@@ -145,9 +148,11 @@ export function TerminalChat({
         if (
             lastMessage &&
             lastMessage.type === 'bot' &&
+            !lastMessage.isStreaming &&
+            !lastMessage.isTyping &&
+            lastMessage.content.trim().length > 0 &&
             !spokenMessageIds.has(lastMessage.id)
         ) {
-            // Start speaking immediately when bot message appears
             speak(lastMessage.content);
             setSpokenMessageIds(prev => new Set(prev).add(lastMessage.id));
         }

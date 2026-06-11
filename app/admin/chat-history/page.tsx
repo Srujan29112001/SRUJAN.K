@@ -43,6 +43,7 @@ interface ChatSession {
 export default function AdminChatHistoryPage() {
     const router = useRouter();
     const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [knowledgeGaps, setKnowledgeGaps] = useState<Array<{ query: string; timestamp: string }>>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedSession, setExpandedSession] = useState<string | null>(null);
     const [sessionDetails, setSessionDetails] = useState<Record<string, ChatSession>>({});
@@ -55,7 +56,18 @@ export default function AdminChatHistoryPage() {
 
     useEffect(() => {
         loadSessions();
+        loadKnowledgeGaps();
     }, [page]);
+
+    const loadKnowledgeGaps = async () => {
+        try {
+            const res = await fetch('/api/admin/knowledge-gaps');
+            if (res.ok) {
+                const data = await res.json();
+                setKnowledgeGaps(data.gaps || []);
+            }
+        } catch { /* panel just stays hidden */ }
+    };
 
     const loadSessions = async () => {
         try {
@@ -201,13 +213,13 @@ export default function AdminChatHistoryPage() {
                             <Users className="w-4 h-4" />
                             <span className="text-sm hidden sm:inline">Clients</span>
                         </Link>
-                        <Link
-                            href="/admin/knowledge-graph"
+                        <a
+                            href="/#knowledge"
                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
                         >
                             <Network className="w-4 h-4" />
-                            <span className="text-sm hidden sm:inline">Graph</span>
-                        </Link>
+                            <span className="text-sm hidden sm:inline">3D Graph</span>
+                        </a>
                         <Link
                             href="/admin/resume"
                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
@@ -228,6 +240,25 @@ export default function AdminChatHistoryPage() {
 
             {/* Main Content */}
             <main className="relative z-10 max-w-6xl mx-auto px-6 py-8">
+                {/* Knowledge gaps — chat questions the portfolio couldn't answer */}
+                {knowledgeGaps.length > 0 && (
+                    <div className="mb-6 bg-bg-surface border border-amber-500/20 rounded-2xl p-5">
+                        <h2 className="font-mono text-[10px] uppercase tracking-wider text-amber-400 mb-3">
+                            Knowledge gaps — questions the chatbot couldn&apos;t ground ({knowledgeGaps.length})
+                        </h2>
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                            {knowledgeGaps.map((g, i) => (
+                                <p key={i} className="text-[11px] text-text-secondary leading-snug">
+                                    <span className="text-text-muted font-mono">{new Date(g.timestamp).toLocaleDateString()}</span>{' '}
+                                    &quot;{g.query}&quot;
+                                </p>
+                            ))}
+                        </div>
+                        <p className="mt-3 pt-2 border-t border-white/5 text-[10px] text-text-muted">
+                            Add the missing info to your data files or persona — it flows into the chatbot automatically.
+                        </p>
+                    </div>
+                )}
                 {/* Message Toast */}
                 {message && (
                     <div className={`fixed top-20 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg ${message.type === 'success'

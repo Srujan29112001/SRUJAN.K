@@ -1,5 +1,26 @@
 'use client';
 
+/**
+ * =============================================================================
+ * SPEECH SYNTHESIS v2 — reliable browser TTS
+ * =============================================================================
+ * The old implementation spoke one giant utterance, which hits two notorious
+ * browser bugs:
+ *   1. Chrome silently kills utterances longer than ~15s of audio.
+ *   2. getVoices() is empty until the async `voiceschanged` event, so early
+ *      calls picked no/default voices inconsistently.
+ *
+ * v2 fixes both:
+ *   - sentence-level CHUNK QUEUE: text is split into ≤~220-char chunks at
+ *     sentence boundaries; chunks chain via onend → nothing exceeds Chrome's
+ *     limit, and isSpeaking stays true across the whole queue (avatar sync)
+ *   - KEEPALIVE: while speaking, speechSynthesis.resume() fires every 5s —
+ *     the documented workaround for Chrome's random pause bug
+ *   - voices resolved lazily at speak time, with a one-time async wait for
+ *     `voiceschanged` when the list is still empty
+ * =============================================================================
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseSpeechSynthesisOptions {
@@ -9,163 +30,195 @@ interface UseSpeechSynthesisOptions {
     voiceName?: string;
 }
 
+/** Split cleaned text into speakable chunks at sentence boundaries. */
+function chunkText(text: string, maxLen = 220): string[] {
+    const sentences = text.match(/[^.!?]+[.!?]+[\s]*|[^.!?]+$/g) || [text];
+    const chunks: string[] = [];
+    let current = '';
+    for (const s of sentences) {
+        if ((current + s).length > maxLen && current) {
+            chunks.push(current.trim());
+            current = s;
+        } else {
+            current += s;
+        }
+        // a single overlong sentence: hard-split on commas/spaces
+        while (current.length > maxLen * 1.6) {
+            const cut = current.lastIndexOf(',', maxLen) > 40
+                ? current.lastIndexOf(',', maxLen) + 1
+                : current.lastIndexOf(' ', maxLen);
+            chunks.push(current.slice(0, cut).trim());
+            current = current.slice(cut);
+        }
+    }
+    if (current.trim()) chunks.push(current.trim());
+    return chunks.filter(Boolean);
+}
+
+function cleanTextForSpeech(text: string): string {
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/`(.*?)`/g, '$1')
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+        .replace(/#{1,6}\s/g, '')
+        .replace(/https?:\/\/[^\s]+/g, '')
+        .replace(/_\([^)]*\)_/g, '') // italic side-notes like _(running offline …)_
+        .replace(/[•◦▪▫●○■□★☆→←↑↓↔↕➜➔➤🎯🚀💡✨🔊🎤⚡🔑]/g, '')
+        .replace(/[|\\/<>{}[\]@#$%^&*~_]/g, ' ')
+        .replace(/\n+/g, '. ')
+        .replace(/\s+/g, ' ')
+        .replace(/\.{2,}/g, '.')
+        .replace(/\.\s*\./g, '.')
+        .trim();
+}
+
 export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
     const { rate = 1, pitch = 1, volume = 1, voiceName } = options;
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-    const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+    const queueRef = useRef<string[]>([]);
+    const speakingRef = useRef(false);
+    const keepaliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Check if speech synthesis is supported
     useEffect(() => {
-        setIsSupported('speechSynthesis' in window);
+        setIsSupported(typeof window !== 'undefined' && 'speechSynthesis' in window);
     }, []);
 
-    // Load available voices
     useEffect(() => {
         if (!isSupported) return;
-
-        const loadVoices = () => {
-            const availableVoices = window.speechSynthesis.getVoices();
-            setVoices(availableVoices);
-        };
-
+        const loadVoices = () => setVoices(window.speechSynthesis.getVoices());
         loadVoices();
-
-        // Voices may load asynchronously
-        window.speechSynthesis.onvoiceschanged = loadVoices;
-
-        return () => {
-            window.speechSynthesis.onvoiceschanged = null;
-        };
+        window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+        return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
     }, [isSupported]);
 
-    // Get the best voice (prefer Indian English male voices)
-    const getVoice = useCallback(() => {
-        if (voiceName) {
-            const namedVoice = voices.find(v => v.name === voiceName);
-            if (namedVoice) return namedVoice;
-        }
-
-        // Try to find an Indian English voice (en-IN)
-        const indianVoices = voices.filter(v => v.lang === 'en-IN' || v.lang.startsWith('en-IN'));
-
-        // Look for male Indian voices (names often contain "Male", "Ravi", "Prabhat", etc.)
-        const maleIndianVoice = indianVoices.find(v =>
-            v.name.toLowerCase().includes('male') ||
-            v.name.toLowerCase().includes('ravi') ||
-            v.name.toLowerCase().includes('prabhat') ||
-            v.name.toLowerCase().includes('kumar') ||
-            !v.name.toLowerCase().includes('female')
-        );
-        if (maleIndianVoice) return maleIndianVoice;
-
-        // Fallback to any Indian English voice
-        if (indianVoices.length > 0) return indianVoices[0];
-
-        // Try to find any male English voice
-        const englishVoices = voices.filter(v => v.lang.startsWith('en'));
-        const maleEnglishVoice = englishVoices.find(v =>
-            v.name.toLowerCase().includes('male') ||
-            v.name.toLowerCase().includes('david') ||
-            v.name.toLowerCase().includes('james') ||
-            v.name.toLowerCase().includes('daniel') ||
-            v.name.toLowerCase().includes('guy') ||
-            !v.name.toLowerCase().includes('female') &&
-            !v.name.toLowerCase().includes('samantha') &&
-            !v.name.toLowerCase().includes('karen') &&
-            !v.name.toLowerCase().includes('victoria')
-        );
-        if (maleEnglishVoice) return maleEnglishVoice;
-
-        // Fallback to any English voice
-        if (englishVoices.length > 0) return englishVoices[0];
-
-        // Fallback to any voice
-        return voices[0] || null;
-    }, [voices, voiceName]);
-
-    // Clean text for better TTS output
-    const cleanTextForSpeech = useCallback((text: string): string => {
-        return text
-            // Remove markdown formatting
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Bold
-            .replace(/\*(.*?)\*/g, '$1') // Italic
-            .replace(/`(.*?)`/g, '$1') // Inline code
-            .replace(/```[\s\S]*?```/g, '') // Code blocks
-            .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Links - keep text
-            .replace(/#{1,6}\s/g, '') // Headers
-            // Remove URLs
-            .replace(/https?:\/\/[^\s]+/g, '')
-            // Clean up special characters (but keep basic punctuation for natural pauses)
-            .replace(/[•◦▪▫●○■□★☆→←↑↓↔↕➜➔➤🎯🚀💡✨🔊🎤⚡]/g, '')
-            .replace(/[|\\/<>{}[\]@#$%^&*~_]/g, '')
-            // Clean up multiple spaces and newlines
-            .replace(/\n+/g, '. ')
-            .replace(/\s+/g, ' ')
-            // Clean up multiple periods
-            .replace(/\.{2,}/g, '.')
-            .replace(/\.\s*\./g, '.')
-            .trim();
+    // Chrome pause-bug keepalive — runs only while the queue is active
+    const startKeepalive = useCallback(() => {
+        if (keepaliveRef.current) return;
+        keepaliveRef.current = setInterval(() => {
+            if (speakingRef.current && window.speechSynthesis.speaking) {
+                window.speechSynthesis.resume();
+            }
+        }, 5000);
     }, []);
 
-    // Speak text
-    const speak = useCallback((text: string) => {
-        if (!isSupported || !text) return;
-
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
-
-        // Clean the text for better TTS
-        const cleanedText = cleanTextForSpeech(text);
-        if (!cleanedText) return;
-
-        const utterance = new SpeechSynthesisUtterance(cleanedText);
-        utterance.rate = rate;
-        utterance.pitch = pitch;
-        utterance.volume = volume;
-
-        const voice = getVoice();
-        if (voice) {
-            utterance.voice = voice;
+    const stopKeepalive = useCallback(() => {
+        if (keepaliveRef.current) {
+            clearInterval(keepaliveRef.current);
+            keepaliveRef.current = null;
         }
+    }, []);
 
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
+    /** Resolve the best voice; waits once for async voice loading if needed. */
+    const resolveVoice = useCallback(async (): Promise<SpeechSynthesisVoice | null> => {
+        let list = window.speechSynthesis.getVoices();
+        if (list.length === 0) {
+            list = await new Promise<SpeechSynthesisVoice[]>(resolve => {
+                const timer = setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1200);
+                window.speechSynthesis.addEventListener('voiceschanged', () => {
+                    clearTimeout(timer);
+                    resolve(window.speechSynthesis.getVoices());
+                }, { once: true });
+            });
+        }
+        if (list.length === 0) return null;
 
-        utteranceRef.current = utterance;
-        window.speechSynthesis.speak(utterance);
-    }, [isSupported, rate, pitch, volume, getVoice, cleanTextForSpeech]);
+        if (voiceName) {
+            const named = list.find(v => v.name === voiceName);
+            if (named) return named;
+        }
+        const score = (v: SpeechSynthesisVoice): number => {
+            let s = 0;
+            const name = v.name.toLowerCase();
+            if (v.lang === 'en-IN') s += 50;
+            else if (v.lang.startsWith('en')) s += 30;
+            // prefer the higher-quality engine voices
+            if (/natural|neural|online|premium|enhanced/.test(name)) s += 20;
+            if (/google/.test(name)) s += 8;
+            if (/female|samantha|karen|victoria|zira|susan/.test(name)) s -= 10;
+            if (/male|ravi|prabhat|david|guy|james|daniel/.test(name)) s += 6;
+            if (v.localService) s += 2; // no network flakiness
+            return s;
+        };
+        return [...list].sort((a, b) => score(b) - score(a))[0] || null;
+    }, [voiceName]);
 
-    // Stop speaking
+    const speakNext = useCallback((voice: SpeechSynthesisVoice | null) => {
+        const next = queueRef.current.shift();
+        if (next === undefined) {
+            speakingRef.current = false;
+            setIsSpeaking(false);
+            stopKeepalive();
+            return;
+        }
+        const u = new SpeechSynthesisUtterance(next);
+        u.rate = rate;
+        u.pitch = pitch;
+        u.volume = volume;
+        if (voice) u.voice = voice;
+        u.onend = () => speakNext(voice);
+        u.onerror = (e) => {
+            // 'interrupted'/'canceled' happen on stop() — don't continue the queue
+            if (e.error === 'interrupted' || e.error === 'canceled') {
+                speakingRef.current = false;
+                setIsSpeaking(false);
+                stopKeepalive();
+                return;
+            }
+            speakNext(voice); // skip the bad chunk, keep going
+        };
+        window.speechSynthesis.speak(u);
+    }, [rate, pitch, volume, stopKeepalive]);
+
+    /** Speak text (chunked + queued). Replaces anything currently speaking. */
+    const speak = useCallback(async (text: string) => {
+        if (!isSupported || !text) return;
+        window.speechSynthesis.cancel();
+        const cleaned = cleanTextForSpeech(text);
+        if (!cleaned) return;
+
+        queueRef.current = chunkText(cleaned);
+        speakingRef.current = true;
+        setIsSpeaking(true);
+        startKeepalive();
+
+        const voice = await resolveVoice();
+        // a cancel() needs a beat before speak() works reliably in Chrome
+        setTimeout(() => {
+            if (speakingRef.current) speakNext(voice);
+        }, 60);
+    }, [isSupported, resolveVoice, speakNext, startKeepalive]);
+
     const stop = useCallback(() => {
         if (!isSupported) return;
+        queueRef.current = [];
+        speakingRef.current = false;
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
-    }, [isSupported]);
+        stopKeepalive();
+    }, [isSupported, stopKeepalive]);
 
-    // Pause speaking
     const pause = useCallback(() => {
-        if (!isSupported) return;
-        window.speechSynthesis.pause();
+        if (isSupported) window.speechSynthesis.pause();
     }, [isSupported]);
 
-    // Resume speaking
     const resume = useCallback(() => {
-        if (!isSupported) return;
-        window.speechSynthesis.resume();
+        if (isSupported) window.speechSynthesis.resume();
     }, [isSupported]);
 
-    return {
-        speak,
-        stop,
-        pause,
-        resume,
-        isSpeaking,
-        isSupported,
-        voices,
-    };
+    // cleanup on unmount
+    useEffect(() => () => {
+        queueRef.current = [];
+        stopKeepalive();
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+    }, [stopKeepalive]);
+
+    return { speak, stop, pause, resume, isSpeaking, isSupported, voices };
 }
 
 export default useSpeechSynthesis;

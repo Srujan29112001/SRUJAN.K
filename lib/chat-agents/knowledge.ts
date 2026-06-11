@@ -27,10 +27,16 @@ const GAPS_FILE = path.join(process.cwd(), 'data', 'knowledge-gaps.json');
 const VECTOR_TIMEOUT_MS = 900; // never let embeddings slow the chat down
 
 // The knowledge base is pure in-memory assembly from imported data — cheap,
-// but no need to redo it per message within one server instance.
+// but no need to redo it per message. 5-min TTL so admin-edited pieces (the
+// live status doc) refresh without a redeploy.
 let kbCache: KnowledgeDocument[] | null = null;
+let kbBuiltAt = 0;
+const KB_TTL_MS = 5 * 60 * 1000;
 function knowledgeDocs(): KnowledgeDocument[] {
-    if (!kbCache) kbCache = buildKnowledgeBase();
+    if (!kbCache || Date.now() - kbBuiltAt > KB_TTL_MS) {
+        kbCache = buildKnowledgeBase();
+        kbBuiltAt = Date.now();
+    }
     return kbCache;
 }
 
