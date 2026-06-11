@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runResumePipeline, logResumeRequest } from '@/lib/resume-agents/orchestrator';
 import { getResumePreferences } from '@/lib/resume-preferences';
 import { renderResumeHTML } from '@/lib/resume-template';
-import { hasAnyProvider, getProviderOrder, getProviderConfig } from '@/lib/ai-providers';
+import { hasAnyProvider, getProviderOrder, getProviderConfig, PROVIDER_LABELS } from '@/lib/ai-providers';
 
 // Simple in-memory rate limiter: max 4 generations per IP per 5 minutes
 const RATE_WINDOW_MS = 5 * 60 * 1000;
@@ -96,15 +96,20 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// Lightweight status for the section UI (shows whether AI tailoring is live)
+// Lightweight status for the section UI — public transparency about which
+// engine powers the resume tailoring (the OWNER's keys, never the visitor's).
 export async function GET() {
-    const providers = getProviderOrder()
-        .map(id => ({ id, ready: getProviderConfig(id).enabled && getProviderConfig(id).keys.length > 0 }))
-        .filter(p => p.ready)
-        .map(p => p.id);
+    const ready = getProviderOrder()
+        .map(id => ({ id, cfg: getProviderConfig(id) }))
+        .filter(p => p.cfg.enabled && p.cfg.keys.length > 0);
+    const current = ready[0]
+        ? { provider: ready[0].id, label: PROVIDER_LABELS[ready[0].id], model: ready[0].cfg.model }
+        : null;
     return NextResponse.json({
         status: 'ok',
         aiTailoring: hasAnyProvider(),
-        activeProviders: providers,
+        activeProviders: ready.map(p => p.id),
+        current,
+        fallbacks: ready.slice(1).map(p => PROVIDER_LABELS[p.id]),
     });
 }

@@ -18,7 +18,8 @@ import {
     Search,
     Users,
     FileText,
-    Cpu
+    Cpu,
+    Network
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -200,6 +201,13 @@ export default function AdminChatHistoryPage() {
                         >
                             <Users className="w-4 h-4" />
                             <span className="text-sm hidden sm:inline">Clients</span>
+                        </Link>
+                        <Link
+                            href="/admin/knowledge-graph"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors"
+                        >
+                            <Network className="w-4 h-4" />
+                            <span className="text-sm hidden sm:inline">Graph</span>
                         </Link>
                         <Link
                             href="/admin/resume"

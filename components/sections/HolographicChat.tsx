@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { TerminalChat, ChatMessage } from '@/components/ui/TerminalChat';
+import { TerminalChat, ChatMessage, getByokConfig } from '@/components/ui/TerminalChat';
 
 // Dynamic import for GIF-based avatar
 const AnimatedGifAvatar = dynamic(
@@ -309,6 +309,9 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
 
         let response: Response;
         try {
+            // BYOK: include the visitor's own provider/key (read fresh each send so
+            // changes in the 🔑 panel apply immediately). Never the owner's keys.
+            const byok = getByokConfig();
             response = await fetch('/api/chat?stream=1', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
@@ -316,6 +319,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                     message: userMessage,
                     offlineMode: oocMode,
                     sessionId: chatSessionId || undefined,
+                    ...(byok ? { byok } : {}),
                 }),
             });
         } catch {

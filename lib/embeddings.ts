@@ -46,17 +46,21 @@
  * =============================================================================
  */
 
-// Google's embedding model endpoint
-const EMBEDDING_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent';
+// Google's embedding model. text-embedding-004 was retired (404s as of 2026);
+// gemini-embedding-001 is the replacement. We pin outputDimensionality to 768
+// so vectors keep the same shape the store/cosine math always used.
+export const EMBEDDING_MODEL = 'gemini-embedding-001';
+const EMBEDDING_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`;
 
 /**
  * Generate embedding for a single text using Google's API
- * 
+ *
  * @param text - The text to embed
  * @returns A 768-dimensional vector
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY
+        || (process.env.GEMINI_API_KEYS || '').split(',')[0]?.trim();
 
     if (!apiKey) {
         throw new Error('GEMINI_API_KEY is required for embeddings');
@@ -68,10 +72,11 @@ export async function generateEmbedding(text: string): Promise<number[]> {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model: 'models/text-embedding-004',
+            model: `models/${EMBEDDING_MODEL}`,
             content: {
                 parts: [{ text }],
             },
+            outputDimensionality: 768,
         }),
     });
 

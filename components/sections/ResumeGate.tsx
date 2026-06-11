@@ -26,6 +26,12 @@ interface ApiResponse {
     error?: string;
 }
 
+interface EngineStatus {
+    aiTailoring: boolean;
+    current: { provider: string; label: string; model: string } | null;
+    fallbacks: string[];
+}
+
 export function ResumeGate() {
     const [role, setRole] = useState('');
     const [company, setCompany] = useState('');
@@ -35,7 +41,17 @@ export function ResumeGate() {
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<ResumePipelineResult | null>(null);
     const [resumeHtml, setResumeHtml] = useState<string | null>(null);
+    const [engine, setEngine] = useState<EngineStatus | null>(null);
     const blobUrlRef = useRef<string | null>(null);
+
+    // Public transparency: show which provider/model powers the tailoring.
+    // (Runs on the OWNER's keys — unlike the AI Chat, which uses the visitor's.)
+    useEffect(() => {
+        fetch('/api/resume/generate')
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d) setEngine(d); })
+            .catch(() => { /* banner just stays hidden */ });
+    }, []);
 
     // Cycle the stage label while the pipeline runs
     useEffect(() => {
@@ -146,6 +162,24 @@ export function ResumeGate() {
                     Tell my agents about your role. They&apos;ll scan everything I&apos;ve built, score the
                     fit honestly, and assemble a one-page resume tailored to your exact requirements.
                 </motion.p>
+
+                {/* Engine transparency badge */}
+                {engine && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                        className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/10"
+                    >
+                        <span className={`w-1.5 h-1.5 rounded-full ${engine.aiTailoring ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                        <span className="font-mono text-[10px] text-text-muted tracking-wider">
+                            {engine.aiTailoring && engine.current
+                                ? <>ENGINE: <span className="text-cyan-400">{engine.current.label}</span> · <span className="text-text-secondary">{engine.current.model}</span>{engine.fallbacks.length > 0 && <span className="hidden sm:inline"> · fallback: {engine.fallbacks.join(', ')}</span>}</>
+                                : 'ENGINE: deterministic matching (AI tailoring offline)'}
+                        </span>
+                    </motion.div>
+                )}
             </div>
 
             <div className="max-w-3xl mx-auto relative z-10">

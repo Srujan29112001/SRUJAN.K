@@ -203,15 +203,29 @@ function coolKey(key: string, ms = 60_000) {
 // CALLERS
 // =============================================================================
 
+export interface ChatTurn {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
 export interface LLMRequest {
     system?: string;
     prompt: string;
+    /** optional prior conversation turns, inserted between system and prompt */
+    messages?: ChatTurn[];
     temperature?: number;
     maxTokens?: number;
     /** force a specific provider instead of walking the order */
     provider?: ProviderId;
     /** request JSON output (json_object mode where supported + instruction) */
     json?: boolean;
+    /**
+     * BYOK: use this exact API key instead of configured keys.
+     * The key is used transiently — never stored, never logged.
+     */
+    overrideKey?: string;
+    /** BYOK: use this model instead of the configured one */
+    overrideModel?: string;
 }
 
 export interface LLMResult {
@@ -227,6 +241,7 @@ async function callOpenAICompat(
         model,
         messages: [
             ...(req.system ? [{ role: 'system', content: req.system }] : []),
+            ...(req.messages || []).map(m => ({ role: m.role, content: m.content })),
             { role: 'user', content: req.prompt },
         ],
         temperature: req.temperature ?? 0.4,
@@ -265,7 +280,10 @@ async function callAnthropic(
             max_tokens: req.maxTokens ?? 2048,
             temperature: req.temperature ?? 0.4,
             ...(req.system ? { system: req.system } : {}),
-            messages: [{ role: 'user', content: req.prompt }],
+            messages: [
+                ...(req.messages || []).map(m => ({ role: m.role, content: m.content })),
+                { role: 'user', content: req.prompt },
+            ],
         }),
     });
     if (!res.ok) {
@@ -280,32 +298,45 @@ async function callAnthropic(
 
 /**
  * Call one provider, rotating through its keys (max 3 attempts per provider).
+ * With req.overrideKey (BYOK), exactly that key is used — it is never stored
+ * in the cooldown map (which would retain user secrets in memory).
  */
 async function callProvider(id: ProviderId, req: LLMRequest): Promise<
     { ok: true; result: LLMResult } | { ok: false; error: string }
 > {
     const spec = SPECS[id];
+    const isByok = !!req.overrideKey;
     const cfg = getProviderConfig(id);
-    if (!cfg.enabled || cfg.keys.length === 0) {
+    if (!isByok && (!cfg.enabled || cfg.keys.length === 0)) {
         return { ok: false, error: `${id}: no keys / disabled` };
     }
+    const keys = isByok ? [req.overrideKey!] : cfg.keys;
+    const model = req.overrideModel || cfg.model;
 
     let lastError = '';
     let overloadRetries = 0;
-    const attempts = Math.min(cfg.keys.length, 3) + 2; // headroom for 503 retries
+    const attempts = Math.min(keys.length, 3) + 2; // headroom for 503 retries
     for (let i = 0; i < attempts; i++) {
-        const key = nextKey(cfg.keys);
+        const key = isByok ? keys[0] : nextKey(keys);
         if (!key) { lastError = `${id}: all keys cooling down`; break; }
         try {
             const out = spec.dialect === 'anthropic'
-                ? await callAnthropic(spec, cfg.model, key, req)
-                : await callOpenAICompat(spec, cfg.model, key, req);
+                ? await callAnthropic(spec, model, key, req)
+                : await callOpenAICompat(spec, model, key, req);
             if (out.ok) {
-                return { ok: true, result: { text: out.text, provider: id, model: cfg.model } };
+                return { ok: true, result: { text: out.text, provider: id, model } };
             }
             lastError = `${id} ${out.status}: ${out.error}`;
-            if (out.status === 429) { coolKey(key); continue; } // rate limit is per-key → rotate
-            if (out.status === 401 || out.status === 403) { coolKey(key, 10 * 60_000); continue; }
+            if (out.status === 429) {
+                if (isByok) break; // user's own quota — surface immediately
+                coolKey(key);
+                continue; // rate limit is per-key → rotate
+            }
+            if (out.status === 401 || out.status === 403) {
+                if (isByok) { lastError = `${id} ${out.status}: API key rejected`; break; }
+                coolKey(key, 10 * 60_000);
+                continue;
+            }
             if (out.status >= 500) {
                 // Model-wide overload — the key is fine; wait briefly and retry (max 2x)
                 overloadRetries++;

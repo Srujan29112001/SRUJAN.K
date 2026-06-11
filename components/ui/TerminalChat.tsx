@@ -4,6 +4,47 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
+// =============================================================================
+// BYOK (Bring Your Own Key) — visitors chat using THEIR OWN API key.
+// Stored only in the visitor's browser (localStorage); sent only with their
+// chat messages; never persisted server-side.
+// =============================================================================
+
+export interface ByokConfig {
+    provider: string;
+    key: string;
+    model?: string;
+}
+
+const BYOK_STORAGE_KEY = 'srujan-chat-byok';
+
+export const BYOK_PROVIDERS: Array<{ id: string; label: string; keyHint: string; freeHint?: string }> = [
+    { id: 'gemini', label: 'Google Gemini', keyHint: 'AIza…', freeHint: 'free at aistudio.google.com' },
+    { id: 'groq', label: 'Groq', keyHint: 'gsk_…', freeHint: 'free at console.groq.com' },
+    { id: 'openai', label: 'OpenAI', keyHint: 'sk-…' },
+    { id: 'anthropic', label: 'Anthropic Claude', keyHint: 'sk-ant-…' },
+    { id: 'deepseek', label: 'DeepSeek', keyHint: 'sk-…' },
+    { id: 'zai', label: 'Z.ai (GLM)', keyHint: '…' },
+];
+
+export function getByokConfig(): ByokConfig | null {
+    try {
+        const raw = localStorage.getItem(BYOK_STORAGE_KEY);
+        if (!raw) return null;
+        const cfg = JSON.parse(raw) as ByokConfig;
+        return cfg.key && cfg.provider ? cfg : null;
+    } catch {
+        return null;
+    }
+}
+
+export function saveByokConfig(cfg: ByokConfig | null): void {
+    try {
+        if (cfg) localStorage.setItem(BYOK_STORAGE_KEY, JSON.stringify(cfg));
+        else localStorage.removeItem(BYOK_STORAGE_KEY);
+    } catch { /* private browsing etc. */ }
+}
+
 export interface ChatMessage {
     id: string;
     type: 'user' | 'bot' | 'system';
@@ -43,6 +84,12 @@ export function TerminalChat({
     const [commandHistory, setCommandHistory] = useState<string[]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [voiceEnabled, setVoiceEnabled] = useState(false);
+    // BYOK panel state
+    const [byokOpen, setByokOpen] = useState(false);
+    const [byokProvider, setByokProvider] = useState('gemini');
+    const [byokKey, setByokKey] = useState('');
+    const [byokModel, setByokModel] = useState('');
+    const [byokSaved, setByokSaved] = useState<ByokConfig | null>(null);
     const [spokenMessageIds, setSpokenMessageIds] = useState<Set<string>>(new Set());
     const [isTypingActive, setIsTypingActive] = useState(false);
     const [stopTypingTrigger, setStopTypingTrigger] = useState(0);
@@ -131,6 +178,33 @@ export function TerminalChat({
         inputRef.current?.focus();
     }, []);
 
+    // Load saved BYOK config on mount
+    useEffect(() => {
+        const cfg = getByokConfig();
+        if (cfg) {
+            setByokSaved(cfg);
+            setByokProvider(cfg.provider);
+            setByokKey(cfg.key);
+            setByokModel(cfg.model || '');
+        }
+    }, []);
+
+    const handleByokSave = useCallback(() => {
+        const key = byokKey.trim();
+        if (!key) return;
+        const cfg: ByokConfig = { provider: byokProvider, key, ...(byokModel.trim() ? { model: byokModel.trim() } : {}) };
+        saveByokConfig(cfg);
+        setByokSaved(cfg);
+        setByokOpen(false);
+    }, [byokProvider, byokKey, byokModel]);
+
+    const handleByokClear = useCallback(() => {
+        saveByokConfig(null);
+        setByokSaved(null);
+        setByokKey('');
+        setByokModel('');
+    }, []);
+
     // Determine if input should be disabled
     const isInputDisabled = isLoading || isTypingActive;
 
@@ -192,6 +266,20 @@ export function TerminalChat({
                     srujan-ai@terminal ~ v1.0
                 </span>
                 <div className="ml-auto flex items-center gap-3">
+                    {/* BYOK API Key Button */}
+                    <button
+                        onClick={() => setByokOpen(!byokOpen)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono transition-colors border ${byokSaved
+                            ? 'bg-emerald-400/15 text-emerald-400 border-emerald-400/40'
+                            : 'bg-amber-400/15 text-amber-400 border-amber-400/40 animate-pulse'
+                            }`}
+                        title={byokSaved ? `Connected: ${byokSaved.provider}` : 'Add your API key to chat'}
+                    >
+                        <span>🔑</span>
+                        <span className="hidden sm:inline">
+                            {byokSaved ? BYOK_PROVIDERS.find(p => p.id === byokSaved.provider)?.label || byokSaved.provider : 'Add API Key'}
+                        </span>
+                    </button>
                     {/* Voice Toggle Button */}
                     {isSupported && (
                         <button
@@ -233,6 +321,77 @@ export function TerminalChat({
                 </div>
             </div>
 
+            {/* BYOK Key Panel */}
+            <AnimatePresence>
+                {byokOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden border-b border-cyan-900/30 bg-bg-surface/80"
+                    >
+                        <div className="p-4 space-y-3">
+                            <p className="font-mono text-[11px] text-text-secondary leading-relaxed">
+                                Chat runs on <span className="text-cyan-400">your own API key</span> — pick a provider,
+                                paste a key, done. The key stays in your browser and is only used for your messages.
+                                Gemini &amp; Groq have generous free tiers.
+                            </p>
+                            <div className="grid sm:grid-cols-2 gap-2">
+                                <select
+                                    value={byokProvider}
+                                    onChange={e => setByokProvider(e.target.value)}
+                                    className="bg-bg-base border border-cyan-900/40 rounded px-3 py-2 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50"
+                                >
+                                    {BYOK_PROVIDERS.map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.label}{p.freeHint ? ` (${p.freeHint})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="text"
+                                    value={byokModel}
+                                    onChange={e => setByokModel(e.target.value)}
+                                    placeholder="Model (optional — sensible default used)"
+                                    className="bg-bg-base border border-cyan-900/40 rounded px-3 py-2 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 placeholder:text-text-muted/50"
+                                />
+                            </div>
+                            <input
+                                type="password"
+                                value={byokKey}
+                                onChange={e => setByokKey(e.target.value)}
+                                placeholder={`API key (${BYOK_PROVIDERS.find(p => p.id === byokProvider)?.keyHint || '…'})`}
+                                className="w-full bg-bg-base border border-cyan-900/40 rounded px-3 py-2 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 placeholder:text-text-muted/50"
+                            />
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleByokSave}
+                                    disabled={!byokKey.trim()}
+                                    className="px-4 py-1.5 rounded bg-cyan-400 text-black font-mono text-xs font-bold hover:bg-cyan-300 transition-colors disabled:opacity-40"
+                                >
+                                    SAVE &amp; CONNECT
+                                </button>
+                                {byokSaved && (
+                                    <button
+                                        onClick={handleByokClear}
+                                        className="px-4 py-1.5 rounded border border-red-400/40 text-red-400 font-mono text-xs hover:bg-red-400/10 transition-colors"
+                                    >
+                                        DISCONNECT
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setByokOpen(false)}
+                                    className="ml-auto px-3 py-1.5 text-text-muted font-mono text-xs hover:text-white transition-colors"
+                                >
+                                    close
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Messages Area */}
             <div
                 data-lenis-prevent
@@ -250,6 +409,12 @@ export function TerminalChat({
                             Welcome! I&apos;m an AI representation of Srujan.
                             Feel free to discuss anything — projects, ideas, or questions you have in mind.
                         </p>
+                        {!byokSaved && (
+                            <p className="mt-3 text-amber-400/90 text-[11px] sm:text-xs leading-relaxed border-t border-cyan-900/30 pt-3">
+                                ⚡ This chat runs on <b>your</b> API key — tap the <span className="px-1.5 py-0.5 bg-amber-400/15 border border-amber-400/40 rounded">🔑 Add API Key</span> button
+                                above, pick your favourite AI provider (Gemini &amp; Groq are free), and start talking.
+                            </p>
+                        )}
                     </div>
                 )}
 

@@ -47,9 +47,31 @@
  * =============================================================================
  */
 
+import fs from 'fs';
+import path from 'path';
 import { buildKnowledgeBase, KnowledgeDocument } from './knowledge-base';
-import { generateEmbedding, generateEmbeddings } from './embeddings';
+import { generateEmbedding, generateEmbeddings, EMBEDDING_MODEL } from './embeddings';
 import { getVectorStore, SearchResult } from './vector-store';
+
+// Tracks which embedding model produced the cache. Vectors from different
+// models are NOT comparable — a model change invalidates everything.
+const META_FILE = path.join(process.cwd(), 'data', 'embeddings-meta.json');
+
+function readCacheModel(): string | null {
+    try {
+        return (JSON.parse(fs.readFileSync(META_FILE, 'utf-8')) as { model?: string }).model || null;
+    } catch {
+        return null;
+    }
+}
+
+function writeCacheModel(): void {
+    try {
+        fs.writeFileSync(META_FILE, JSON.stringify({ model: EMBEDDING_MODEL, updatedAt: new Date().toISOString() }, null, 2));
+    } catch (e) {
+        console.warn('Could not write embeddings meta:', e instanceof Error ? e.message : e);
+    }
+}
 
 // Track initialization state
 let isInitialized = false;
@@ -89,28 +111,73 @@ async function doInitialize(): Promise<void> {
 
     const vectorStore = getVectorStore();
 
-    // Try to load from cache first
-    if (vectorStore.loadFromCache()) {
-        console.log(`✅ RAG initialized from cache in ${Date.now() - startTime}ms`);
-        return;
+    // Load whatever cache exists (may be partial or stale — we diff below)
+    vectorStore.loadFromCache();
+
+    // Model-version check: if the cache was produced by a different embedding
+    // model, every vector in it is incomparable garbage — drop them all so the
+    // incremental sync below re-embeds from scratch.
+    const cacheModel = readCacheModel();
+    if (vectorStore.getCount() > 0 && cacheModel !== EMBEDDING_MODEL) {
+        console.warn(`♻️ Embeddings cache was built with "${cacheModel || 'unknown'}", current model is "${EMBEDDING_MODEL}" — full re-embed required.`);
+        vectorStore.clear();
     }
 
-    // No cache - check if API key is available
-    if (!process.env.GEMINI_API_KEY) {
-        console.warn('⚠️ GEMINI_API_KEY not set - RAG will use fallback mode');
-        return;
+    // 🔄 INCREMENTAL AUTO-SYNC (Phase 3)
+    // Rebuild the knowledge base from the live data files and embed only the
+    // documents that are NEW or whose content CHANGED since the cache was
+    // written. Adding a project to data/projects.ts therefore flows into the
+    // chatbot's knowledge automatically on the next boot — no manual script.
+    try {
+        const documents = buildKnowledgeBase();
+        const existing = new Map(vectorStore.getAllDocuments().map(d => [d.id, d.content]));
+        const stale = documents.filter(doc => existing.get(doc.id) !== doc.content);
+
+        if (stale.length === 0) {
+            console.log(`✅ RAG up to date — ${vectorStore.getCount()} docs (${Date.now() - startTime}ms)`);
+            return;
+        }
+
+        if (!process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEYS) {
+            console.warn(`⚠️ ${stale.length} knowledge doc(s) changed but no GEMINI key for embeddings — using cached docs + keyword fallback.`);
+            return;
+        }
+
+        // Bounded batch so a serverless cold start never times out; the rest
+        // syncs on subsequent boots. Locally, RAG_SYNC_BATCH can be raised to
+        // regenerate the whole cache in one go (then commit the cache file).
+        const BATCH_LIMIT = parseInt(process.env.RAG_SYNC_BATCH || '24');
+        const toEmbed = stale.slice(0, BATCH_LIMIT);
+        console.log(`🔄 Embedding ${toEmbed.length}/${stale.length} new/changed knowledge doc(s)…`);
+
+        let embedded = 0;
+        for (const doc of toEmbed) {
+            try {
+                const embedding = await generateEmbedding(doc.content);
+                vectorStore.addDocument({
+                    id: doc.id,
+                    content: doc.content,
+                    embedding,
+                    metadata: doc.metadata,
+                });
+                embedded++;
+                // ~100 RPM free-tier limit on the embedding API: big (local regen)
+                // batches need ≥600ms gaps; small serverless syncs can go faster.
+                await new Promise(r => setTimeout(r, toEmbed.length > 50 ? 650 : 150));
+            } catch (e) {
+                console.warn(`⚠️ Embedding failed for "${doc.id}" — stopping batch:`, e instanceof Error ? e.message : e);
+                break; // likely rate-limited; keep what we got, retry next boot
+            }
+        }
+
+        if (embedded > 0) {
+            vectorStore.saveToCache();
+            writeCacheModel();
+            console.log(`✅ RAG synced: +${embedded} docs, ${vectorStore.getCount()} total (${Date.now() - startTime}ms)`);
+        }
+    } catch (e) {
+        console.error('RAG auto-sync failed (continuing with cached docs):', e);
     }
-
-    // Build knowledge base
-    const documents = buildKnowledgeBase();
-
-    // For first-time initialization, we'll do it in background
-    // This prevents blocking the first chat request
-    console.log(`📝 No cache found. Run 'npx ts-node scripts/generate-embeddings.ts' to pre-generate embeddings.`);
-    console.log(`⚠️ RAG disabled until embeddings are cached.`);
-
-    // Don't generate embeddings on-the-fly as it takes too long
-    // User should run the script to generate embeddings
 }
 
 /**

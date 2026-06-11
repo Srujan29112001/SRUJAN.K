@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     ArrowLeft, FileText, Save, LogOut, Users, MessageSquare, Settings, Cpu,
-    Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle,
+    Trash2, ChevronDown, ChevronUp, CheckCircle, AlertCircle, History,
 } from 'lucide-react';
 import type { ResumePreferences, ResumeRequestLog } from '@/lib/resume-agents/types';
 
@@ -183,6 +183,10 @@ export default function AdminResumePage() {
                             <MessageSquare className="w-4 h-4" />
                             <span className="text-sm hidden sm:inline">Chats</span>
                         </Link>
+                        <Link href="/admin/resume-history" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
+                            <History className="w-4 h-4" />
+                            <span className="text-sm hidden sm:inline">Resume Log</span>
+                        </Link>
                         <Link href="/admin/ai-providers" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-colors">
                             <Cpu className="w-4 h-4" />
                             <span className="text-sm hidden sm:inline">AI Providers</span>
@@ -318,6 +322,10 @@ export default function AdminResumePage() {
                         <label className="block text-xs font-medium text-text-muted mb-2">
                             Excluded projects ({prefs.excludedProjectIds.length}) — never used in the Key Projects section
                         </label>
+                        <p className="text-[11px] text-emerald-400/80 mb-2 font-mono">
+                            ⟳ {projectOptions.length} projects auto-synced from the portfolio — add or update a project in
+                            data/projects.ts and it appears here (and in the resume engine) on the next deploy.
+                        </p>
                         <div className="max-h-56 overflow-y-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5 p-3 rounded-xl border border-white/10 bg-bg-base">
                             {projectOptions.map(p => (
                                 <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer">
@@ -431,16 +439,24 @@ export default function AdminResumePage() {
                     </button>
                 </div>
 
-                {/* ===== Requests log ===== */}
+                {/* ===== Recent requests (full log lives at /admin/resume-history) ===== */}
                 <section className="bg-bg-surface border border-white/10 rounded-2xl p-6">
-                    <h2 className="font-display text-base font-bold text-white mb-4">
-                        Resume Gate Requests <span className="text-text-muted font-normal text-sm">({requests.length})</span>
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="font-display text-base font-bold text-white">
+                            Recent Resume Requests <span className="text-text-muted font-normal text-sm">(last {Math.min(requests.length, 5)})</span>
+                        </h2>
+                        <Link
+                            href="/admin/resume-history"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono hover:bg-emerald-500/20 transition-colors"
+                        >
+                            Full history →
+                        </Link>
+                    </div>
                     {requests.length === 0 ? (
                         <p className="text-sm text-text-muted">No requests logged yet. Every recruiter who runs the fit check shows up here.</p>
                     ) : (
                         <div className="space-y-2">
-                            {requests.map(r => (
+                            {requests.slice(0, 5).map(r => (
                                 <div key={r.id} className="rounded-xl border border-white/10 bg-bg-base overflow-hidden">
                                     <div className="flex items-center gap-3 px-4 py-3">
                                         <span
