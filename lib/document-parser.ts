@@ -12,7 +12,17 @@ let mammoth: typeof import('mammoth') | null = null;
 
 async function loadPdfParser() {
     if (!pdfjsLib) {
-        pdfjsLib = await import('pdfjs-dist');
+        // The legacy build is the Node-safe one (no DOM API assumptions), and
+        // importing the worker module registers globalThis.pdfjsWorker so the
+        // "fake worker" setup never require()s './pdf.worker.js' from disk —
+        // that path doesn't exist inside the Next.js server bundle.
+        // @ts-expect-error - no type declarations for the legacy subpath
+        const lib = await import('pdfjs-dist/legacy/build/pdf.js');
+        // @ts-expect-error - no type declarations for the worker subpath
+        const worker = await import('pdfjs-dist/legacy/build/pdf.worker.js');
+        const w = (worker as { default?: unknown }).default || worker;
+        (globalThis as Record<string, unknown>).pdfjsWorker = w;
+        pdfjsLib = lib as unknown as typeof import('pdfjs-dist');
     }
     return pdfjsLib;
 }
