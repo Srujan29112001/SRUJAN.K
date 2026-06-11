@@ -25,9 +25,9 @@
 import fs from 'fs';
 import path from 'path';
 
-export type ProviderId = 'gemini' | 'groq' | 'openai' | 'anthropic' | 'deepseek' | 'zai';
+export type ProviderId = 'gemini' | 'groq' | 'openai' | 'anthropic' | 'deepseek' | 'zai' | 'huggingface';
 
-export const PROVIDER_IDS: ProviderId[] = ['gemini', 'groq', 'openai', 'anthropic', 'deepseek', 'zai'];
+export const PROVIDER_IDS: ProviderId[] = ['gemini', 'groq', 'openai', 'anthropic', 'deepseek', 'zai', 'huggingface'];
 
 export const PROVIDER_LABELS: Record<ProviderId, string> = {
     gemini: 'Google Gemini',
@@ -36,6 +36,7 @@ export const PROVIDER_LABELS: Record<ProviderId, string> = {
     anthropic: 'Anthropic Claude',
     deepseek: 'DeepSeek',
     zai: 'Z.ai (GLM)',
+    huggingface: 'Hugging Face',
 };
 
 interface ProviderSpec {
@@ -96,6 +97,15 @@ const SPECS: Record<ProviderId, ProviderSpec> = {
         supportsJsonMode: false,
         envPrefix: 'ZAI',
     },
+    huggingface: {
+        // HF Inference Providers router — OpenAI-compatible, free monthly
+        // credits with any hf_ token. Model ids are hub ids.
+        url: 'https://router.huggingface.co/v1/chat/completions',
+        dialect: 'openai',
+        defaultModel: 'meta-llama/Llama-3.3-70B-Instruct',
+        supportsJsonMode: false,
+        envPrefix: 'HUGGINGFACE',
+    },
 };
 
 // =============================================================================
@@ -126,7 +136,58 @@ export interface AIProvidersFile {
 
 const CONFIG_FILE = path.join(process.cwd(), 'data', 'ai-providers.json');
 
+// =============================================================================
+// KV PERSISTENCE (Upstash Redis REST — optional)
+// Vercel's filesystem is read-only, so admin-saved provider config evaporates
+// there. When UPSTASH_REDIS_REST_URL/TOKEN are set (free tier, 2-click Vercel
+// integration), config persists in Redis and survives deploys + cold starts.
+// Falls back to the JSON file when KV is not configured (local dev).
+// =============================================================================
+
+const KV_KEY = 'srujan:ai-providers-config';
+const KV_TTL_MS = 30_000; // re-read from KV at most every 30s
+
+let kvCache: AIProvidersFile | null = null; // null = nothing stored in KV
+let kvFetchedAt = 0;
+
+export function kvConfigAvailable(): boolean {
+    return !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+}
+
+async function kvCommand(cmd: unknown[]): Promise<unknown> {
+    const res = await fetch(process.env.UPSTASH_REDIS_REST_URL!, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cmd),
+    });
+    if (!res.ok) throw new Error(`KV ${res.status}: ${await res.text().catch(() => '')}`);
+    const data = await res.json() as { result?: unknown };
+    return data.result;
+}
+
+/**
+ * Pull the latest config from KV into the in-memory snapshot. Call at the top
+ * of any async entry point that reads provider config (sync readers then see
+ * the fresh snapshot). No-op when KV isn't configured.
+ */
+export async function hydrateConfigFromKV(force = false): Promise<void> {
+    if (!kvConfigAvailable()) return;
+    if (!force && Date.now() - kvFetchedAt < KV_TTL_MS) return;
+    try {
+        const raw = await kvCommand(['GET', KV_KEY]);
+        kvCache = typeof raw === 'string' && raw ? JSON.parse(raw) as AIProvidersFile : null;
+        kvFetchedAt = Date.now();
+    } catch (e) {
+        console.warn('KV hydrate failed (using file/env config):', e instanceof Error ? e.message : e);
+    }
+}
+
 function readConfigFile(): AIProvidersFile {
+    // KV snapshot wins when present (it is the durable store in production)
+    if (kvCache !== null) return kvCache;
     try {
         return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8')) as AIProvidersFile;
     } catch {
@@ -134,8 +195,20 @@ function readConfigFile(): AIProvidersFile {
     }
 }
 
-export function writeConfigFile(cfg: AIProvidersFile): void {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+/**
+ * Persist config. KV first (durable everywhere), file as local-dev convenience.
+ * Returns where it landed so the admin UI can say so.
+ */
+export async function writeConfig(cfg: AIProvidersFile): Promise<'kv' | 'file'> {
+    if (kvConfigAvailable()) {
+        await kvCommand(['SET', KV_KEY, JSON.stringify(cfg)]);
+        kvCache = cfg;
+        kvFetchedAt = Date.now();
+        try { fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2)); } catch { /* read-only FS — KV is the store */ }
+        return 'kv';
+    }
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2)); // throws on read-only FS
+    return 'file';
 }
 
 function envKeys(prefix: string): string[] {
@@ -373,6 +446,7 @@ async function callProvider(id: ProviderId, req: LLMRequest): Promise<
  * Throws only if every configured provider fails.
  */
 export async function generateText(req: LLMRequest): Promise<LLMResult> {
+    await hydrateConfigFromKV(); // pick up admin changes made from any instance
     const order = req.provider ? [req.provider] : getProviderOrder();
     const errors: string[] = [];
     for (const id of order) {
@@ -427,6 +501,7 @@ export async function testProvider(
     id: ProviderId,
     opts?: { key?: string; model?: string },
 ): Promise<{ ok: boolean; detail: string; latencyMs?: number }> {
+    await hydrateConfigFromKV();
     const cfg = getProviderConfig(id);
     if (!opts?.key && cfg.keys.length === 0) {
         return { ok: false, detail: 'No API keys configured (paste a key, then Test — saving is not required)' };

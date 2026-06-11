@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runResumePipeline, logResumeRequest } from '@/lib/resume-agents/orchestrator';
 import { getResumePreferences } from '@/lib/resume-preferences';
 import { renderResumeHTML } from '@/lib/resume-template';
-import { hasAnyProvider, getProviderOrder, getProviderConfig, PROVIDER_LABELS } from '@/lib/ai-providers';
+import { hasAnyProvider, getProviderOrder, getProviderConfig, PROVIDER_LABELS, hydrateConfigFromKV } from '@/lib/ai-providers';
 
 // Simple in-memory rate limiter: max 4 generations per IP per 5 minutes
 const RATE_WINDOW_MS = 5 * 60 * 1000;
@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+        await hydrateConfigFromKV(); // respect admin provider changes from any instance
         const result = await runResumePipeline({ role, company, requirements });
 
         // log for the admin dashboard (never throws)
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
 // Lightweight status for the section UI — public transparency about which
 // engine powers the resume tailoring (the OWNER's keys, never the visitor's).
 export async function GET() {
+    await hydrateConfigFromKV(true);
     const ready = getProviderOrder()
         .map(id => ({ id, cfg: getProviderConfig(id) }))
         .filter(p => p.cfg.enabled && p.cfg.keys.length > 0);

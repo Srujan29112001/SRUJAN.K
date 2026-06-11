@@ -21,6 +21,7 @@ const BYOK_STORAGE_KEY = 'srujan-chat-byok';
 export const BYOK_PROVIDERS: Array<{ id: string; label: string; keyHint: string; freeHint?: string }> = [
     { id: 'gemini', label: 'Google Gemini', keyHint: 'AIza…', freeHint: 'free at aistudio.google.com' },
     { id: 'groq', label: 'Groq', keyHint: 'gsk_…', freeHint: 'free at console.groq.com' },
+    { id: 'huggingface', label: 'Hugging Face', keyHint: 'hf_…', freeHint: 'free at hf.co/settings/tokens' },
     { id: 'openai', label: 'OpenAI', keyHint: 'sk-…' },
     { id: 'anthropic', label: 'Anthropic Claude', keyHint: 'sk-ant-…' },
     { id: 'deepseek', label: 'DeepSeek', keyHint: 'sk-…' },

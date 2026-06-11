@@ -34,6 +34,7 @@ export default function AdminAIProvidersPage() {
     const [order, setOrder] = useState<string[]>([]);
     const [statuses, setStatuses] = useState<Record<string, ProviderStatus>>({});
     const [edits, setEdits] = useState<Record<string, ProviderEdit>>({});
+    const [durableStore, setDurableStore] = useState<'kv' | 'file'>('file');
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ ok: boolean; text: string } | null>(null);
     const [testResults, setTestResults] = useState<Record<string, { ok: boolean; detail: string; latencyMs?: number }>>({});
@@ -68,6 +69,7 @@ export default function AdminAIProvidersPage() {
                 setStatuses(map);
                 setEdits(editMap);
                 setOrder(data.order || []);
+                setDurableStore(data.durableStore || 'file');
             }
         } catch (error) {
             console.error('Failed to load providers:', error);
@@ -206,11 +208,19 @@ export default function AdminAIProvidersPage() {
                         succeeds — reorder with the arrows. To stop a provider being used: untick{' '}
                         <span className="text-white font-medium">Enabled</span>, or untick its{' '}
                         <span className="text-white font-medium">env keys</span> checkbox if its keys come from environment variables.
-                        <span className="block mt-1.5 text-amber-400/80">
-                            On Vercel the filesystem is read-only — keys saved here work locally; for production set
-                            env vars (<span className="font-mono">GROQ_API_KEYS</span>, …) in the Vercel dashboard. The{' '}
-                            <span className="font-mono">Test</span> button tests whatever is typed in the box, no save needed.
-                        </span>
+                        {durableStore === 'kv' ? (
+                            <span className="block mt-1.5 text-emerald-400/90">
+                                ✓ Connected to Upstash Redis — saves from this page persist everywhere, including production.
+                            </span>
+                        ) : (
+                            <span className="block mt-1.5 text-amber-400/80">
+                                Saves currently go to a local file — fine in dev, but on Vercel the filesystem is read-only.
+                                For durable production saves, add the free <span className="font-mono">Upstash Redis</span> integration
+                                (Vercel → Storage → Upstash) — this page picks it up automatically. Alternatively set env vars
+                                (<span className="font-mono">GROQ_API_KEYS</span>, …). The <span className="font-mono">Test</span> button
+                                tests whatever is typed in the box, no save needed.
+                            </span>
+                        )}
                     </p>
                 </div>
 

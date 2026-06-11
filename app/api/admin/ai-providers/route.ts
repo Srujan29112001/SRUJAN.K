@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import {
     PROVIDER_IDS, getProvidersStatus, getProviderConfig, getProviderOrder,
-    writeConfigFile, testProvider, type ProviderId, type AIProvidersFile,
+    writeConfig, testProvider, hydrateConfigFromKV, kvConfigAvailable,
+    type ProviderId, type AIProvidersFile,
 } from '@/lib/ai-providers';
 
 const SESSION_NAME = 'admin_session';
@@ -24,7 +25,12 @@ export async function GET() {
     if (!(await isAuthenticated())) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return NextResponse.json({ providers: getProvidersStatus(), order: getProviderOrder() });
+    await hydrateConfigFromKV(true);
+    return NextResponse.json({
+        providers: getProvidersStatus(),
+        order: getProviderOrder(),
+        durableStore: kvConfigAvailable() ? 'kv' : 'file',
+    });
 }
 
 interface PutBody {
@@ -57,6 +63,7 @@ export async function PUT(request: Request) {
     }
 
     try {
+        await hydrateConfigFromKV(true); // masks must resolve against the live store
         const body = await request.json() as PutBody;
         const next: AIProvidersFile = { providers: {} };
 
@@ -85,18 +92,19 @@ export async function PUT(request: Request) {
             };
         }
 
+        let persistedTo: 'kv' | 'file';
         try {
-            writeConfigFile(next);
+            persistedTo = await writeConfig(next);
         } catch (writeErr) {
-            // Vercel serverless: project filesystem is read-only
+            // No KV configured AND read-only filesystem (Vercel without Upstash)
             console.error('Provider config write failed:', writeErr);
             return NextResponse.json({
-                error: 'Could not persist config — this host has a read-only filesystem (Vercel). '
-                    + 'Set keys via environment variables (e.g. GROQ_API_KEYS) in the Vercel dashboard, '
-                    + 'or save from a local dev session and commit. The env-key toggles also need env-side changes here.',
+                error: 'Could not persist config — this host has a read-only filesystem and no KV store is connected. '
+                    + 'Either add the free Upstash Redis integration in Vercel (Storage → Upstash → connect; saves then work from this page), '
+                    + 'or set keys via environment variables (e.g. GROQ_API_KEYS) in the Vercel dashboard.',
             }, { status: 500 });
         }
-        return NextResponse.json({ success: true, providers: getProvidersStatus() });
+        return NextResponse.json({ success: true, providers: getProvidersStatus(), persistedTo });
     } catch (e) {
         console.error('Failed to save AI providers:', e);
         return NextResponse.json({ error: 'Failed to save provider config' }, { status: 500 });
@@ -111,6 +119,7 @@ export async function POST(request: Request) {
     }
 
     try {
+        await hydrateConfigFromKV();
         const body = await request.json() as { provider?: string; keysRaw?: string; model?: string };
         const id = body.provider as ProviderId;
         if (!PROVIDER_IDS.includes(id)) {
