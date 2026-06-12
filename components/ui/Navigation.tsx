@@ -15,10 +15,10 @@ const navLinks = [
   { label: 'Projects', href: '#projects' },
   { label: 'Blog', href: '#blog' },
   { label: 'Testimonials', href: '#testimonials-content' },
-  // AI Chat and Resume sit between Testimonials and Contact in the page flow
+  // AI Chat, Resume and the Neural Map sit between Testimonials and Contact
   { label: 'AI Chat', href: '#chat' },
   { label: 'Resume', href: '#resume' },
-  { label: "Let's Connect", href: '#contact' },
+  { label: 'Neural Map', href: '#knowledge' },
 ];
 
 // Rotating roles for the logo area
@@ -93,10 +93,11 @@ export function Navigation() {
     );
 
     // Observe tunnel sections
-    const warpSection = document.getElementById('warp-transition');
-    const wormholeSection = document.getElementById('wormhole-transition');
-    if (warpSection) tunnelObserver.observe(warpSection);
-    if (wormholeSection) tunnelObserver.observe(wormholeSection);
+    const tunnelIds = ['warp-transition', 'wormhole-transition', 'compile-transition', 'uplink-transition'];
+    tunnelIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) tunnelObserver.observe(el);
+    });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -392,15 +393,15 @@ export function Navigation() {
             ))}
           </div>
 
-          {/* CTA Button — jumps to booking section (Schedule a meeting) */}
+          {/* CTA Button — jumps to the Get in Touch section (form + booking) */}
           <div className="hidden md:block">
             <a
-              href="#booking"
-              onClick={(e) => handleNavClick(e, '#booking')}
+              href="#contact"
+              onClick={(e) => handleNavClick(e, '#contact')}
               className="group relative inline-flex items-center gap-2 px-4 py-2 overflow-hidden rounded-full border border-cyan-500/40 bg-cyan-500/10 font-mono text-[10px] uppercase tracking-wider text-cyan-400 transition-all duration-300 hover:border-cyan-400 hover:bg-cyan-500/20 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
             >
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="relative z-10">Hire Me for Projects</span>
+              <span className="relative z-10">Let&apos;s Connect</span>
               <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
@@ -477,8 +478,8 @@ export function Navigation() {
           ))}
 
           <a
-            href="#booking"
-            onClick={(e) => handleNavClick(e, '#booking')}
+            href="#contact"
+            onClick={(e) => handleNavClick(e, '#contact')}
             className={cn(
               'mt-4 inline-flex items-center gap-2 px-6 py-3 rounded-full border border-cyan-500/50 bg-cyan-500/10 font-mono text-sm uppercase tracking-wider text-cyan-400 transition-all duration-300 hover:bg-cyan-500/20',
               isMenuOpen
@@ -490,7 +491,7 @@ export function Navigation() {
             }}
           >
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            Hire Me for Projects
+            Let&apos;s Connect
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>

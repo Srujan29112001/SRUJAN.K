@@ -41,6 +41,7 @@ data/custom-knowledge.json
 
 # Local Claude Code session settings
 .claude/settings.local.json
+.claude/launch.json
 
 # TypeScript
 *.tsbuildinfo

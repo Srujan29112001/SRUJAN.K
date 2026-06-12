@@ -621,7 +621,7 @@ export function Contact() {
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           className="flex flex-col items-center gap-4 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
-          onClick={() => document.getElementById('chat')?.scrollIntoView({ behavior: 'smooth' })}
+          onClick={() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' })}
         >
           <span className="font-display text-sm sm:text-base text-cyan-400/90 tracking-wider text-center px-4 italic">
             "But wait... the magic doesn't stop here."

@@ -13,6 +13,8 @@ import { WormholeTransition } from '@/components/sections/WormholeTransition';
 import { VideoTransition } from '@/components/sections/VideoTransition';
 import { VideoTransition2 } from '@/components/sections/VideoTransition2';
 import { Testimonials } from '@/components/sections/Testimonials';
+import { CompileTransition } from '@/components/sections/CompileTransition';
+import { UplinkTransition } from '@/components/sections/UplinkTransition';
 import { Contact } from '@/components/sections/Contact';
 import { Footer } from '@/components/sections/Footer';
 
@@ -167,8 +169,12 @@ export default function Home() {
             document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
         />
+        {/* The chat above forges itself into the resume below */}
+        <CompileTransition />
         <ResumeGate />
         <KnowledgeGraph3D />
+        {/* The neural map transmits its signal into Get in Touch */}
+        <UplinkTransition />
         <Contact />
         <Footer />
       </main>
