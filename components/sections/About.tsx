@@ -722,24 +722,24 @@ export function About() {
     >
       {/* Section label — sits below the fixed navbar, in its own band ABOVE
           the book (clears both the navbar and the page deck). */}
-      <div className="absolute top-16 sm:top-20 left-0 right-0 z-30 text-center pointer-events-none px-4">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[560px] h-[160px] sm:h-[200px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-        <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
+      <div className="absolute top-16 sm:top-[72px] left-0 right-0 z-30 text-center pointer-events-none px-4">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[200px] sm:h-[260px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
+        <h2 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight">
           THE JOURNEY
         </h2>
-        <p className="mt-1 font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-cyan-400/70">
+        <p className="mt-2 font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-cyan-400/70">
           Scroll to turn the pages
         </p>
       </div>
 
-      {/* Book stage */}
+      {/* Book stage — top padding clears the (now full-size) title band */}
       <div
-        className="absolute inset-0 flex items-center justify-center px-4 pt-40 sm:pt-44 pb-14"
+        className="absolute inset-0 flex items-center justify-center px-4 pt-44 sm:pt-48 lg:pt-56 pb-12"
         style={{ perspective: '2600px' }}
       >
         <div
           className="book relative"
-          style={{ width: 'min(92vw, 1060px)', height: 'min(70vh, 660px)', transformStyle: 'preserve-3d' }}
+          style={{ width: 'min(92vw, 1060px)', height: 'min(62vh, 620px)', transformStyle: 'preserve-3d' }}
         >
           {/* closed-book base + spine behind the leaf deck */}
           <div className="absolute -inset-x-3 -inset-y-3 rounded-2xl bg-gradient-to-br from-[#16161f] to-[#0a0a12] border border-white/5 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]" />
