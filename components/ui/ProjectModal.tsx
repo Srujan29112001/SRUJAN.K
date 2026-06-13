@@ -199,9 +199,29 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                   <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
                   Project Overview
                 </h3>
-                <p className="text-white/70 leading-relaxed text-sm sm:text-base lg:text-lg">
-                  {project.longDescription || project.description}
-                </p>
+                <div className="space-y-4">
+                  {(project.longDescription || project.description)
+                    .split(/\n{2,}/)
+                    .map((block) => block.trim())
+                    .filter(Boolean)
+                    .map((block, i) => {
+                      // Pull out a leading section label ("ARCHITECTURE — …",
+                      // "Workflow: …", "Tech stack: …") and style it, so the
+                      // overview reads as organised paragraphs, not a wall.
+                      const m = block.match(/^([A-Za-z][A-Za-z0-9 &/'+-]{1,30}?)\s*([—–:])\s+([\s\S]+)$/);
+                      return (
+                        <p key={i} className="text-white/70 leading-relaxed text-sm sm:text-base lg:text-lg">
+                          {m ? (
+                            <>
+                              <span className="font-semibold text-cyan-300">{m[1].trim()}</span>
+                              <span className="text-white/40">{m[2] === ':' ? ': ' : ' — '}</span>
+                              {m[3].trim()}
+                            </>
+                          ) : block}
+                        </p>
+                      );
+                    })}
+                </div>
               </div>
             </div>
 

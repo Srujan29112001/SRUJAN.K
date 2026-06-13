@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { projects, Project } from '@/data/projects';
+import { getLenis } from '@/lib/lenis';
 import { cn } from '@/lib/utils';
 import { ArrowUpRight, Github, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { ProjectModal, useProjectModal } from '@/components/ui/ProjectModal';
@@ -52,31 +53,24 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
 
     const handleToggle = () => {
         if (isExpanded) {
-            // Use requestAnimationFrame to ensure DOM is ready
-            requestAnimationFrame(() => {
-                let scrollTarget = 0;
-
-                if (activeCategory === 'AI') {
-                    // AI has more projects, scroll to main Projects header
-                    const container = document.getElementById('projects');
-                    if (container) {
-                        scrollTarget = container.getBoundingClientRect().top + window.scrollY;
-                    }
-                } else {
-                    // Robotics and Research - scroll to sub-header
-                    if (projectsHeaderRef.current) {
-                        scrollTarget = projectsHeaderRef.current.getBoundingClientRect().top + window.scrollY - 100;
-                    }
+            // Collapse FIRST, then jump back up to the "More in …" header. The
+            // grid shrinks a lot, so we hand Lenis the target ELEMENT (it computes
+            // the position itself), resize() it so it knows the new page height,
+            // and force the jump — plain window.scrollTo is overridden by Lenis,
+            // which is why the page used to stay put while the content shrank.
+            setIsExpanded(false);
+            setTimeout(() => {
+                const headerEl = projectsHeaderRef.current;
+                const lenis = getLenis();
+                if (lenis && headerEl) {
+                    lenis.resize();
+                    lenis.scrollTo(headerEl, { offset: -100, immediate: true, force: true });
+                } else if (headerEl) {
+                    window.scrollTo(0, headerEl.getBoundingClientRect().top + window.scrollY - 100);
                 }
-
-                // Scroll first
-                window.scrollTo({ top: scrollTarget, behavior: 'instant' });
-
-                // Collapse after scroll with slightly longer delay for reliability
-                setTimeout(() => {
-                    setIsExpanded(false);
-                }, 100);
-            });
+                // re-measure pinned triggers below now that the grid collapsed
+                setTimeout(() => ScrollTrigger.refresh(), 60);
+            }, 120);
         } else {
             setIsExpanded(true);
         }

@@ -3,7 +3,6 @@
 import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { MagneticButton } from '@/components/ui/MagneticButton';
 import { useIsMobile } from '@/hooks/useMediaQuery';
@@ -615,27 +614,8 @@ export function Contact() {
         </div>
       </div>
 
-      {/* Scroll Down Indicator */}
-      <div className="w-full flex flex-col items-center justify-center pt-8 pb-16 relative z-10">
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex flex-col items-center gap-4 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
-          onClick={() => document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' })}
-        >
-          <span className="font-display text-sm sm:text-base text-cyan-400/90 tracking-wider text-center px-4 italic">
-            "But wait... the magic doesn't stop here."
-          </span>
-          <div className="flex flex-col items-center -space-y-2 text-cyan-400/70">
-            <svg className="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-            <svg className="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ animationDelay: '0.2s' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </motion.div>
-      </div>
+      {/* Spacing before the booking block */}
+      <div className="w-full pt-4 pb-8" />
 
       {/* Appointment Booking Section */}
       <div className="w-full">
