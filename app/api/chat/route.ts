@@ -23,7 +23,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiPersona, quickResponses } from '@/data/ai-persona';
 import { getRAGStatus, initializeRAG } from '@/lib/rag';
-import { addMessageToSession, getChatHistory } from '@/lib/chat-history-store';
+import { addMessageToSession, getChatHistory, hydrateChatHistory } from '@/lib/chat-history-store';
 import {
     generateTextStream, PROVIDER_IDS, PROVIDER_LABELS,
     type ProviderId, type ChatTurn,
@@ -200,6 +200,7 @@ export async function POST(request: NextRequest) {
         //   memory agent:    recent turns for this session
         //   tool router:     deterministic data-tool execution
         void initializeRAG(); // fast cache load; embedding sync detaches to background
+        await hydrateChatHistory(); // pull durable history (KV) so memory + saves are correct on Vercel
         const [knowledge, priorTurns, routed] = await Promise.all([
             retrieveKnowledge(message, 5),
             Promise.resolve(loadPriorTurns(sessionId)),

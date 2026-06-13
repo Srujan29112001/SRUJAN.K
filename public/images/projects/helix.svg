@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675" role="img" aria-label="Helix — Autonomous Data Science Agent">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#04121a"/>
+      <stop offset="0.55" stop-color="#06121f"/>
+      <stop offset="1" stop-color="#0a0a14"/>
+    </linearGradient>
+    <linearGradient id="strand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="0.6"/></filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="300" cy="338" r="320" fill="url(#glow)"/>
+
+  <!-- faint grid -->
+  <g stroke="#22D3EE" stroke-opacity="0.05">
+    <path d="M0 112.5H1200M0 225H1200M0 337.5H1200M0 450H1200M0 562.5H1200"/>
+    <path d="M150 0V675M300 0V675M450 0V675M600 0V675M750 0V675M900 0V675M1050 0V675"/>
+  </g>
+
+  <!-- double helix -->
+  <g transform="translate(300 338)" filter="url(#soft)">
+    <g stroke="url(#strand)" stroke-width="5" fill="none" stroke-linecap="round">
+      <path d="M-150 -230 C 60 -150, 60 -70, -150 10 C 60 90, 60 170, -150 250"/>
+      <path d="M150 -230 C -60 -150, -60 -70, 150 10 C -60 90, -60 170, 150 250"/>
+    </g>
+    <g stroke="#67E8F9" stroke-width="3" stroke-opacity="0.7">
+      <line x1="-120" y1="-200" x2="120" y2="-200"/>
+      <line x1="-30" y1="-150" x2="30" y2="-150"/>
+      <line x1="-120" y1="10" x2="120" y2="10"/>
+      <line x1="-30" y1="-70" x2="30" y2="-70"/>
+      <line x1="-30" y1="90" x2="30" y2="90"/>
+      <line x1="-120" y1="220" x2="120" y2="220"/>
+    </g>
+    <g fill="#A7F3D0">
+      <circle cx="-150" cy="-230" r="9"/><circle cx="150" cy="-230" r="9"/>
+      <circle cx="-150" cy="10" r="9"/><circle cx="150" cy="10" r="9"/>
+      <circle cx="-150" cy="250" r="9"/><circle cx="150" cy="250" r="9"/>
+    </g>
+  </g>
+
+  <!-- wordmark -->
+  <g transform="translate(620 300)" fill="#F8FAFC" font-family="'Segoe UI', system-ui, sans-serif">
+    <text x="0" y="0" font-size="110" font-weight="800" letter-spacing="2">HELIX</text>
+    <text x="4" y="56" font-size="30" font-weight="600" fill="#34D399" letter-spacing="1">Autonomous Data Science Agent</text>
+    <text x="4" y="104" font-size="20" fill="#94A3B8" font-family="'Fira Code', monospace">CSV + a question → a business-ready answer</text>
+    <text x="4" y="150" font-size="16" fill="#64748B" font-family="'Fira Code', monospace">LangGraph · FastAPI · Next.js · 7 agents</text>
+  </g>
+</svg>

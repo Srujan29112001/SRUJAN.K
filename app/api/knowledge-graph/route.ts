@@ -44,6 +44,8 @@ export interface GraphNode {
     /** which hub this node belongs to (for seeding the layout) */
     hub?: string;
     detail?: {
+        /** full, untruncated title for the detail panel header */
+        title?: string;
         description: string;
         tech?: string[];
         year?: string;
@@ -60,7 +62,9 @@ export interface GraphEdge {
     target: string;
 }
 
-function excerpt(content: string, max = 300): string {
+// The detail panel is scrollable, so we keep descriptions generous and only
+// trim pathologically long docs. Project nodes use their full longDescription.
+function excerpt(content: string, max = 2000): string {
     const clean = content.replace(/\s+/g, ' ').trim();
     return clean.length > max ? clean.slice(0, max) + '…' : clean;
 }
@@ -113,15 +117,19 @@ export async function GET() {
             size: p.featured ? 11 : 7.5,
             hub: `cat:${p.category}`,
             detail: {
-                description: p.description,
+                title: p.title,
+                // prefer the full long-form write-up (overview, workflow,
+                // architecture, stack) — falls back to the one-liner
+                description: p.longDescription || p.description,
                 tech: p.tech,
                 year: p.year,
                 metric: p.metric,
                 featured: p.featured,
                 ongoing: !!p.ongoing,
                 links: [
-                    ...(p.github && p.github !== '#' ? [{ label: 'GitHub', url: p.github }] : []),
+                    ...(p.github && p.github !== '#' && p.github !== 'https://github.com/srujan29112001' ? [{ label: 'GitHub', url: p.github }] : []),
                     ...(p.documentation && p.documentation !== '#' ? [{ label: 'Docs', url: p.documentation }] : []),
+                    ...(p.link && p.link !== '#' ? [{ label: 'View', url: p.link }] : []),
                 ],
                 kind: 'project',
             },
@@ -157,7 +165,7 @@ export async function GET() {
                 color: COLORS.now,
                 size: 11,
                 hub: 'center',
-                detail: { description: excerpt(doc.content, 420), tech: doc.metadata.tags, kind: 'current status' },
+                detail: { title: 'Now — Status & Targets', description: excerpt(doc.content), tech: doc.metadata.tags, kind: 'current status' },
             });
             edges.push({ source: doc.id, target: 'center' });
             continue;
@@ -174,6 +182,7 @@ export async function GET() {
             size: 7.5,
             hub: map.hub,
             detail: {
+                title: doc.metadata.title.replace(/^(Blog|Testimonial|Interest): /, ''),
                 description: excerpt(doc.content),
                 tech: (doc.metadata.tags || []).slice(0, 6),
                 kind: map.kind,
@@ -196,6 +205,7 @@ export async function GET() {
                 size: 7.5,
                 hub: 'hub:notes',
                 detail: {
+                    title: doc.metadata.title,
                     description: excerpt(doc.content),
                     tech: (doc.metadata.tags || []).slice(0, 6),
                     kind: 'field note',

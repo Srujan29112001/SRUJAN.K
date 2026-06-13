@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getChatHistory, saveChatHistory } from '@/lib/chat-history-store';
+import { getChatHistory, saveChatHistory, hydrateChatHistory } from '@/lib/chat-history-store';
 
 const SESSION_NAME = 'admin_session';
 const SESSION_VALUE = 'authenticated';
@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const sessionId = searchParams.get('sessionId');
 
+    await hydrateChatHistory();
     const data = getChatHistory();
 
     // If requesting specific session
@@ -72,6 +73,7 @@ export async function DELETE(request: Request) {
     const sessionId = searchParams.get('sessionId');
     const olderThanDays = searchParams.get('olderThanDays');
 
+    await hydrateChatHistory();
     const data = getChatHistory();
     const initialCount = data.sessions.length;
 

@@ -24,6 +24,7 @@ interface GNode {
     size: number;
     hub?: string;
     detail?: {
+        title?: string;
         description: string;
         tech?: string[];
         year?: string;
@@ -493,7 +494,7 @@ export function KnowledgeGraph3D() {
                         {selected?.detail ? (
                             <div className="bg-bg-base/80 border border-cyan-900/30 rounded-2xl p-5">
                                 <div className="flex items-start justify-between gap-2 mb-2">
-                                    <h3 className="font-display text-sm font-bold text-white leading-snug">{selected.label}</h3>
+                                    <h3 className="font-display text-base font-bold text-white leading-snug">{selected.detail.title || selected.label}</h3>
                                     <button onClick={() => setSelected(null)} className="p-1 text-text-muted hover:text-white flex-shrink-0" aria-label="Close details">✕</button>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5 mb-3">
@@ -505,7 +506,7 @@ export function KnowledgeGraph3D() {
                                     {selected.detail.year && <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-text-muted">{selected.detail.year}</span>}
                                     {selected.detail.metric && <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-text-muted">{selected.detail.metric}</span>}
                                 </div>
-                                <p className="text-xs text-text-secondary leading-relaxed mb-3 max-h-44 overflow-y-auto pr-1">{selected.detail.description}</p>
+                                <p className="text-[13px] text-text-secondary leading-relaxed mb-3 max-h-[24rem] overflow-y-auto pr-1.5 whitespace-pre-line">{selected.detail.description}</p>
                                 <div className="flex flex-wrap gap-1 mb-3">
                                     {(selected.detail.tech || []).slice(0, 8).map(t => (
                                         <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-bg-surface border border-white/10 text-text-muted">{t}</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { useIsMobile } from '@/hooks/useMediaQuery';
@@ -55,8 +55,8 @@ const storyPanels = [
     id: 'awakening',
     number: '04',
     title: 'The Awakening',
-    subtitle: 'Consciousness & AGI Research',
-    content: `I stepped away to study what makes intelligence possible. Investigating Gödel's incompleteness, game theory, and biological neural networks. I explored how stress reduction and cognitive optimization can inform robust AI architectures. This wasn't a detour—it was necessary infrastructure for understanding AGi.`,
+    subtitle: 'Consciousness-Aware Technology',
+    content: `I stepped away to study what makes intelligence possible — game theory, biological neural networks, and the architecture of robust, consciousness-aware AI. To understand how emotions drive us, I immersed myself in retreats across different cultures and traditions, learning breathing techniques, body movement, and cognitive optimization. Not a detour — it was the infrastructure for everything I build now.`,
     stats: [
       { value: 2, suffix: ' Years', label: 'Deep Research' },
       { value: 100, suffix: '%', label: 'Curiosity' },
@@ -107,7 +107,132 @@ const storyPanels = [
     image: '/images/experience/freelance.png',
     button: { text: 'Testimonials', link: '#testimonials-content' },
   },
+  {
+    id: 'genai-iiith',
+    number: '08',
+    title: 'The Frontier',
+    subtitle: 'Advanced GenAI & Prompt Engineering — IIIT Hyderabad × TalentSprint (Feb–Jun 2026)',
+    content: `A focused 4-month advanced certification in Generative AI & Prompt Engineering from IIIT Hyderabad with TalentSprint — including an on-campus visit. Under the mentorship of Prof. Ponnurangam Kumaraguru (PK), I went deep on LLMs, RAG, multi-agent systems, and responsible AI, shipping three minor projects and one major capstone.`,
+    stats: [
+      { value: 4, suffix: ' Months', label: 'IIIT-H × TalentSprint' },
+      { value: 4, suffix: ' Projects', label: '3 Minor + 1 Capstone' },
+    ],
+    color: '#A855F7', // Violet
+    // image intentionally omitted until the IIIT-H visual is generated — a
+    // themed placeholder renders in its place (see image blocks below). When
+    // the file arrives, set image: '/images/experience/iiith-genai.png'.
+    image: '',
+    button: { text: 'Mentor — Prof. PK', link: 'https://www.linkedin.com/in/ponguru' },
+    // Gallery collage (campus visit + certificate) — populated later.
+    gallery: [] as string[],
+  },
 ];
+
+type StoryPanel = (typeof storyPanels)[number];
+
+// Themed gradient hero shown when a panel has no photo yet (e.g. panel 08
+// before the campus-visit visual is generated). Reads as intentional, never
+// a broken <img>.
+function PanelImagePlaceholder({ panel }: { panel: StoryPanel }) {
+  return (
+    <div
+      className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden"
+      style={{
+        background: `radial-gradient(circle at 30% 30%, ${panel.color}33 0%, transparent 60%), linear-gradient(145deg, rgba(20,20,35,0.96) 0%, rgba(10,10,20,0.99) 100%)`,
+      }}
+    >
+      <span
+        className="font-display font-black leading-none opacity-20 select-none"
+        style={{ color: panel.color, fontSize: 'clamp(5rem, 14vw, 11rem)' }}
+      >
+        {panel.number}
+      </span>
+      <span
+        className="mt-2 font-mono text-[10px] sm:text-xs uppercase tracking-[0.25em]"
+        style={{ color: panel.color }}
+      >
+        Visual coming soon
+      </span>
+      {/* faint grid for texture */}
+      <div
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(${panel.color} 1px, transparent 1px), linear-gradient(90deg, ${panel.color} 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+        }}
+      />
+    </div>
+  );
+}
+
+// Lightbox collage for a panel's gallery (campus visit photos + certificate).
+// Empty state shows a tasteful "coming soon" card so the button is meaningful
+// even before images are added.
+function GalleryModal({ panel, onClose }: { panel: StoryPanel; onClose: () => void }) {
+  const images = panel.gallery ?? [];
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100000] flex items-center justify-center p-4 sm:p-8 bg-black/85 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-5xl max-h-[88vh] overflow-y-auto rounded-2xl border p-5 sm:p-8"
+        style={{ borderColor: `${panel.color}40`, background: 'linear-gradient(145deg, rgba(18,18,30,0.98), rgba(10,10,18,0.99))' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <p className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.25em]" style={{ color: panel.color }}>
+              {panel.number} · Gallery
+            </p>
+            <h3 className="mt-1 font-display text-xl sm:text-2xl font-bold text-white">{panel.title}</h3>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close gallery"
+            className="flex-shrink-0 w-9 h-9 rounded-full border border-white/20 text-white/80 hover:bg-white/10 transition-colors flex items-center justify-center"
+          >
+            ✕
+          </button>
+        </div>
+
+        {images.length > 0 ? (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 [column-fill:_balance]">
+            {images.map((src, i) => (
+              <div key={i} className="mb-3 break-inside-avoid rounded-xl overflow-hidden border border-white/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`${panel.title} ${i + 1}`} className="w-full h-auto block" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="rounded-xl border border-dashed py-16 px-6 text-center"
+            style={{ borderColor: `${panel.color}40` }}
+          >
+            <div className="text-4xl mb-3" aria-hidden>🎓</div>
+            <p className="font-display text-lg text-white mb-1">Gallery coming soon</p>
+            <p className="text-sm text-text-secondary max-w-md mx-auto">
+              Campus-visit photos and the course certificate will be added here as a collage shortly.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -116,6 +241,7 @@ export function About() {
   const mobileCardsRef = useRef<HTMLDivElement[]>([]);
   const isMobile = useIsMobile();
   const scrollTo = useScrollTo();
+  const [galleryPanel, setGalleryPanel] = useState<StoryPanel | null>(null);
 
   useEffect(() => {
     if (isMobile) return; // Skip horizontal scroll on mobile
@@ -335,6 +461,8 @@ export function About() {
   // Mobile layout - Cards without 3D tilt
   if (isMobile) {
     return (
+      <>
+      {galleryPanel && <GalleryModal panel={galleryPanel} onClose={() => setGalleryPanel(null)} />}
       <section
         ref={sectionRef}
         id="about"
@@ -411,38 +539,42 @@ export function About() {
                   {panel.number}
                 </div>
 
-                {/* Image with parallax-like zoom */}
-                {panel.image && (
-                  <div className="relative h-52 sm:h-64 w-full overflow-hidden">
-                    <Image
-                      src={panel.image}
-                      alt={panel.title}
-                      fill
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                    />
-                    {/* Gradient overlays for depth */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a14] via-transparent to-transparent" />
-                    <div
-                      className="absolute inset-0 opacity-40"
-                      style={{
-                        background: `linear-gradient(135deg, ${panel.color}20 0%, transparent 60%)`,
-                      }}
-                    />
+                {/* Image with parallax-like zoom (themed placeholder if none yet) */}
+                <div className="relative h-52 sm:h-64 w-full overflow-hidden">
+                  {panel.image ? (
+                    <>
+                      <Image
+                        src={panel.image}
+                        alt={panel.title}
+                        fill
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      />
+                      {/* Gradient overlays for depth */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a14] via-transparent to-transparent" />
+                      <div
+                        className="absolute inset-0 opacity-40"
+                        style={{
+                          background: `linear-gradient(135deg, ${panel.color}20 0%, transparent 60%)`,
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <PanelImagePlaceholder panel={panel} />
+                  )}
 
-                    {/* Floating number badge */}
-                    <div
-                      className="absolute top-4 left-4 px-3 py-1.5 rounded-full font-mono text-xs font-bold backdrop-blur-md"
-                      style={{
-                        background: `${panel.color}20`,
-                        border: `1px solid ${panel.color}50`,
-                        color: panel.color,
-                        boxShadow: `0 0 20px ${panel.color}30`,
-                      }}
-                    >
-                      {panel.number}
-                    </div>
+                  {/* Floating number badge */}
+                  <div
+                    className="absolute top-4 left-4 px-3 py-1.5 rounded-full font-mono text-xs font-bold backdrop-blur-md"
+                    style={{
+                      background: `${panel.color}20`,
+                      border: `1px solid ${panel.color}50`,
+                      color: panel.color,
+                      boxShadow: `0 0 20px ${panel.color}30`,
+                    }}
+                  >
+                    {panel.number}
                   </div>
-                )}
+                </div>
 
                 {/* Content area */}
                 <div className="p-5 sm:p-6 relative z-10">
@@ -499,7 +631,8 @@ export function About() {
                     ))}
                   </div>
 
-                  {/* Button with glow effect */}
+                  {/* Buttons */}
+                  <div className="flex flex-wrap items-center gap-3">
                   {panel.button && (
                     <a
                       href={panel.button.link}
@@ -563,6 +696,23 @@ export function About() {
                       </svg>
                     </a>
                   )}
+                  {panel.gallery && (
+                    <button
+                      onClick={() => setGalleryPanel(panel)}
+                      className="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 overflow-hidden group/btn"
+                      style={{ border: `1px solid ${panel.color}`, color: panel.color }}
+                    >
+                      <div
+                        className="absolute inset-0 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"
+                        style={{ background: `linear-gradient(135deg, ${panel.color}30 0%, transparent 100%)` }}
+                      />
+                      <svg className="relative w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                      </svg>
+                      <span className="relative">Gallery</span>
+                    </button>
+                  )}
+                  </div>
                 </div>
 
                 {/* Bottom accent line */}
@@ -618,11 +768,14 @@ export function About() {
           .animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
         `}</style>
       </section>
+      </>
     );
   }
 
   // Desktop layout - horizontal scroll
   return (
+    <>
+    {galleryPanel && <GalleryModal panel={galleryPanel} onClose={() => setGalleryPanel(null)} />}
     <section
       ref={sectionRef}
       id="about"
@@ -699,7 +852,8 @@ export function About() {
                   ))}
                 </div>
 
-                {/* Button */}
+                {/* Buttons */}
+                <div className="flex flex-wrap items-center gap-3 pointer-events-auto">
                 {panel.button && (
                   <a
                     href={panel.button.link}
@@ -779,11 +933,26 @@ export function About() {
                     </svg>
                   </a>
                 )}
+                {panel.gallery && (
+                  <button
+                    onClick={() => setGalleryPanel(panel)}
+                    className="inline-flex items-center gap-2 px-4 sm:px-5 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-full border font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95 pointer-events-auto"
+                    style={{ borderColor: panel.color, color: panel.color }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = panel.color; e.currentTarget.style.color = '#000'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel.color; }}
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                    </svg>
+                    Gallery
+                  </button>
+                )}
+                </div>
               </div>
 
               {/* Right: Image */}
               <div className="panel-image relative h-[40vh] sm:h-[50vh] lg:h-[60vh] w-full rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-                {panel.image && (
+                {panel.image ? (
                   <>
                     <Image
                       src={panel.image}
@@ -793,9 +962,9 @@ export function About() {
                     />
                     {/* Overlay for text readability if needed, or just aesthetic */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-
-
                   </>
+                ) : (
+                  <PanelImagePlaceholder panel={panel} />
                 )}
               </div>
 
@@ -812,5 +981,6 @@ export function About() {
         />
       </div>
     </section>
+    </>
   );
 }

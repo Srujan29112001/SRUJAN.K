@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { isNavigating, setVideoPlaying } from '@/lib/navigationState';
+import { getLenis } from '@/lib/lenis';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -126,6 +127,10 @@ export function VideoTransition() {
     const [showVideo, setShowVideo] = useState(false);
 
     const lockScroll = useCallback(() => {
+        // Lenis drives scrolling through its own RAF loop and ignores CSS
+        // overflow, so stopping it is what actually freezes the page behind
+        // the video. The overflow flags stay as a native-scroll backstop.
+        getLenis()?.stop();
         document.body.style.overflow = 'hidden';
         document.documentElement.style.overflow = 'hidden';
     }, []);
@@ -133,6 +138,7 @@ export function VideoTransition() {
     const unlockScroll = useCallback(() => {
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
+        getLenis()?.start();
     }, []);
 
     const completeTransition = useCallback(() => {
@@ -141,8 +147,16 @@ export function VideoTransition() {
         setShowVideo(false);
         unlockScroll();
 
+        const target = targetScrollRef.current;
         requestAnimationFrame(() => {
-            window.scrollTo(0, targetScrollRef.current);
+            // Jump straight to the destination and keep Lenis's internal
+            // position in sync, otherwise it would snap back on the next wheel.
+            const lenis = getLenis();
+            if (lenis) {
+                lenis.scrollTo(target, { immediate: true });
+            } else {
+                window.scrollTo(0, target);
+            }
         });
 
         isPlayingRef.current = false;

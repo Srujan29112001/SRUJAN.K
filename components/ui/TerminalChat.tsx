@@ -104,8 +104,10 @@ export function TerminalChat({
     const [lastTypingMessageId, setLastTypingMessageId] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    // id of the message whose voice we are currently streaming (sentence-by-sentence)
+    const voiceStreamIdRef = useRef<string | null>(null);
 
-    const { speak, stop, isSpeaking, isSupported } = useSpeechSynthesis({ rate: 1, pitch: 1 });
+    const { speak, startStream, feedStream, endStream, stop, isSpeaking, isSupported } = useSpeechSynthesis({ rate: 1, pitch: 1 });
 
     // Check if any message is currently typing OR streaming and reset stop trigger for new messages
     useEffect(() => {
@@ -136,31 +138,50 @@ export function TerminalChat({
         setIsTypingActive(false);
     }, []);
 
-    // Speak bot messages when they are COMPLETE. Streamed messages appear with
-    // empty content and grow — speaking on arrival used to read nothing and
-    // mark them "spoken" (the old inconsistency). Completion = isStreaming and
-    // isTyping both false with real content present.
+    // Speak bot messages. For server-STREAMED replies we speak sentence-by-
+    // sentence AS the text is revealed (startStream → feedStream → endStream),
+    // so the voice tracks the typing and the avatar instead of waiting for the
+    // whole reply. Non-streamed (offline / client-typewriter) messages speak
+    // once on completion.
     useEffect(() => {
         if (!voiceEnabled || !isSupported) return;
 
         const lastMessage = messages[messages.length - 1];
-        if (
-            lastMessage &&
-            lastMessage.type === 'bot' &&
-            !lastMessage.isStreaming &&
-            !lastMessage.isTyping &&
-            lastMessage.content.trim().length > 0 &&
-            !spokenMessageIds.has(lastMessage.id)
-        ) {
-            speak(lastMessage.content);
-            setSpokenMessageIds(prev => new Set(prev).add(lastMessage.id));
+        if (!lastMessage || lastMessage.type !== 'bot') return;
+
+        // Live streamed reply — open the voice stream once, then feed it the
+        // revealed text on every growth tick.
+        if (lastMessage.isStreaming) {
+            if (voiceStreamIdRef.current !== lastMessage.id) {
+                voiceStreamIdRef.current = lastMessage.id;
+                startStream();
+            }
+            feedStream(lastMessage.content);
+            return;
         }
-    }, [messages, voiceEnabled, isSupported, speak, spokenMessageIds]);
+
+        // Client-side typewriter (offline messages): wait until it's done.
+        if (lastMessage.isTyping) return;
+
+        if (lastMessage.content.trim().length === 0) return;
+        if (spokenMessageIds.has(lastMessage.id)) return;
+
+        if (voiceStreamIdRef.current === lastMessage.id) {
+            // a streamed reply just finished — flush the trailing sentence
+            endStream(lastMessage.content);
+            voiceStreamIdRef.current = null;
+        } else {
+            // non-streamed reply — speak the whole thing
+            speak(lastMessage.content);
+        }
+        setSpokenMessageIds(prev => new Set(prev).add(lastMessage.id));
+    }, [messages, voiceEnabled, isSupported, speak, startStream, feedStream, endStream, spokenMessageIds]);
 
     // Stop speaking when voice is disabled
     useEffect(() => {
-        if (!voiceEnabled && isSpeaking) {
-            stop();
+        if (!voiceEnabled) {
+            voiceStreamIdRef.current = null;
+            if (isSpeaking) stop();
         }
     }, [voiceEnabled, isSpeaking, stop]);
 

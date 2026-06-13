@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readResumeRequests, deleteResumeRequest } from '@/lib/resume-agents/orchestrator';
+import { readResumeRequests, deleteResumeRequest, hydrateResumeRequests } from '@/lib/resume-agents/orchestrator';
 
 const SESSION_NAME = 'admin_session';
 const SESSION_VALUE = 'authenticated';
@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '25');
 
+    await hydrateResumeRequests();
     const data = readResumeRequests();
     const start = (page - 1) * limit;
 
@@ -49,6 +50,7 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: 'id parameter required' }, { status: 400 });
     }
 
+    await hydrateResumeRequests();
     const deleted = deleteResumeRequest(id);
     return NextResponse.json({ success: deleted });
 }

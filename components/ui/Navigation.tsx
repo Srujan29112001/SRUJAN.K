@@ -93,7 +93,7 @@ export function Navigation() {
     );
 
     // Observe tunnel sections
-    const tunnelIds = ['warp-transition', 'wormhole-transition', 'compile-transition', 'uplink-transition'];
+    const tunnelIds = ['warp-transition', 'wormhole-transition', 'tunein-transition', 'compile-transition', 'bloom-transition', 'uplink-transition'];
     tunnelIds.forEach((id) => {
       const el = document.getElementById(id);
       if (el) tunnelObserver.observe(el);

@@ -64,11 +64,11 @@ function ByokBar() {
                 }`}
         >
             <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                <div className="flex items-center gap-2.5 lg:w-72 flex-shrink-0">
+                <div className="flex items-center gap-2.5 lg:w-60 lg:flex-shrink-0 min-w-0">
                     <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${saved ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
-                    <p className="text-xs sm:text-sm">
+                    <p className="text-xs sm:text-sm min-w-0">
                         {saved ? (
-                            <span className="text-emerald-400 font-mono">
+                            <span className="text-emerald-400 font-mono break-words">
                                 Connected · {BYOK_PROVIDERS.find(p => p.id === saved.provider)?.label || saved.provider}
                             </span>
                         ) : (
@@ -79,12 +79,15 @@ function ByokBar() {
                         )}
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                {/* min-w-0 + flex-wrap let every control shrink and, if space is
+                    truly tight, wrap onto a second line INSIDE the box rather
+                    than spilling past its border. */}
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch gap-2 flex-1 min-w-0">
                     <select
                         value={provider}
                         onChange={e => setProvider(e.target.value)}
                         aria-label="AI provider"
-                        className="bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 sm:w-56"
+                        className="bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 sm:w-44 sm:flex-shrink-0 min-w-0 truncate"
                     >
                         {BYOK_PROVIDERS.map(p => (
                             <option key={p.id} value={p.id}>
@@ -97,7 +100,7 @@ function ByokBar() {
                         value={model}
                         onChange={e => setModel(e.target.value)}
                         placeholder="Model (optional)"
-                        className="bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 sm:w-52 placeholder:text-text-muted/50"
+                        className="bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 sm:w-40 sm:flex-shrink-0 min-w-0 placeholder:text-text-muted/50"
                     />
                     <input
                         type="password"
@@ -105,20 +108,20 @@ function ByokBar() {
                         onChange={e => setKey(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') connect(); }}
                         placeholder={`API key (${BYOK_PROVIDERS.find(p => p.id === provider)?.keyHint || '…'}) — stays in your browser`}
-                        className="flex-1 bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 placeholder:text-text-muted/50"
+                        className="flex-1 min-w-0 sm:min-w-[8rem] bg-bg-base border border-white/10 rounded-lg px-3 py-2.5 text-xs text-text-primary font-mono outline-none focus:border-cyan-400/50 placeholder:text-text-muted/50"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                         <button
                             onClick={connect}
                             disabled={!key.trim()}
-                            className="px-4 py-2.5 rounded-lg bg-cyan-400 text-black font-mono text-xs font-bold hover:bg-cyan-300 transition-colors disabled:opacity-40 whitespace-nowrap"
+                            className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg bg-cyan-400 text-black font-mono text-xs font-bold hover:bg-cyan-300 transition-colors disabled:opacity-40 whitespace-nowrap"
                         >
                             {justSaved ? '✓ CONNECTED' : 'SAVE & CONNECT'}
                         </button>
                         {saved && (
                             <button
                                 onClick={disconnect}
-                                className="px-3 py-2.5 rounded-lg border border-red-400/40 text-red-400 font-mono text-xs hover:bg-red-400/10 transition-colors"
+                                className="px-3 py-2.5 rounded-lg border border-red-400/40 text-red-400 font-mono text-xs hover:bg-red-400/10 transition-colors whitespace-nowrap"
                             >
                                 DISCONNECT
                             </button>

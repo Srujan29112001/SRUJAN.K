@@ -111,12 +111,56 @@ async function vectorSearch(message: string, topK: number): Promise<KnowledgeHit
 }
 
 /**
- * Public deterministic search over the full knowledge base — used by the
- * 3D knowledge graph's query light-up so it matches EXACTLY what the chat
- * agent would retrieve. No embeddings, no keys, instant.
+ * Public search over the full knowledge base — used by the 3D knowledge
+ * graph's query light-up. Stricter than the chat retriever on purpose: the
+ * graph should highlight only genuinely relevant nodes, not the long tail of
+ * incidental single-word matches that made earlier results feel random.
+ *
+ * Scoring favours COVERAGE (how many of the distinct query terms a doc hits)
+ * over raw frequency, weights title matches heavily, and then drops anything
+ * far below the best match via a relative cutoff.
  */
 export function searchKnowledgePublic(query: string, topK = 12): KnowledgeHit[] {
-    return deterministicSearch(query, topK);
+    const queryTerms = terms(query);
+    if (queryTerms.length === 0) return [];
+
+    const scored = knowledgeDocs().map(doc => {
+        const content = doc.content.toLowerCase();
+        const title = (doc.metadata.title || '').toLowerCase();
+        let raw = 0;
+        let matched = 0; // distinct query terms this doc hits
+        for (const t of queryTerms) {
+            const inTitle = title.includes(t);
+            const cHits = Math.min(content.split(t).length - 1, 4);
+            if (inTitle) raw += 5;
+            raw += cHits;
+            if (inTitle || cHits > 0) matched++;
+        }
+        if (matched === 0) return { doc, score: 0 };
+        // coverage multiplier: a doc matching most of the query ranks far above
+        // one that merely repeats a single common word
+        const coverage = matched / queryTerms.length;
+        const score = raw * (0.4 + 0.6 * coverage);
+        return { doc, score };
+    }).filter(s => s.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+    if (scored.length === 0) return [];
+
+    // Relative + absolute cutoff: keep only nodes within striking distance of
+    // the best hit, so weak/incidental matches don't light up the whole graph.
+    const top = scored[0].score;
+    const cutoff = Math.max(3, top * 0.4);
+    return scored
+        .filter(s => s.score >= cutoff)
+        .slice(0, topK)
+        .map(({ doc, score }) => ({
+            id: doc.id,
+            title: doc.metadata.title || doc.id,
+            type: (doc.metadata as { type?: string }).type || 'doc',
+            content: doc.content,
+            score,
+        }));
 }
 
 export interface KnowledgeResult {

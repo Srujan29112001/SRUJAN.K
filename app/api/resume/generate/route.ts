@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { runResumePipeline, logResumeRequest } from '@/lib/resume-agents/orchestrator';
+import { runResumePipeline, logResumeRequest, hydrateResumeRequests } from '@/lib/resume-agents/orchestrator';
 import { getResumePreferences } from '@/lib/resume-preferences';
 import { renderResumeHTML } from '@/lib/resume-template';
 import { PROVIDER_IDS, PROVIDER_LABELS, type ProviderId } from '@/lib/ai-providers';
@@ -114,6 +114,8 @@ export async function POST(request: NextRequest) {
     try {
         const result = await runResumePipeline({ role, company, requirements }, llmBase, { ownerMode });
 
+        // pull durable log (KV) before appending so we don't clobber on Vercel
+        await hydrateResumeRequests();
         // log for the admin dashboard (never throws); tag owner runs
         logResumeRequest(
             { ...result, engine: (ownerMode ? `${result.engine}+owner` : result.engine) as typeof result.engine },

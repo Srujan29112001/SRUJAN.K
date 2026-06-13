@@ -17,6 +17,7 @@ import { assessFit } from './fit';
 import { tailorResume } from './tailor';
 import { generateOutreach } from './outreach';
 import { getResumePreferences } from '@/lib/resume-preferences';
+import { kvConfigAvailable, kvGetJSON, kvSetJSON } from '@/lib/ai-providers';
 import type { LLMBase, OutreachKit, ResumePipelineResult, ResumeRequestLog } from './types';
 
 export interface PipelineOptions {
@@ -103,12 +104,41 @@ interface RequestsFile {
     requests: ResumeRequestLog[];
 }
 
-export function readResumeRequests(): RequestsFile {
+const REQUESTS_KV_KEY = 'srujan:resume-requests';
+
+// Vercel's filesystem is read-only, so the JSON file write fails there and the
+// admin dashboard never sees new requests. When Upstash KV is connected we
+// write through to it (durable + shared across instances); the file stays the
+// local-dev store. A module snapshot keeps the sync API; hydrateResumeRequests()
+// refreshes it from KV at async entry points (generate + admin routes).
+let requestsSnapshot: RequestsFile | null = null;
+
+function readRequestsFile(): RequestsFile {
     try {
         return JSON.parse(fs.readFileSync(REQUESTS_FILE, 'utf-8')) as RequestsFile;
     } catch {
         return { requests: [] };
     }
+}
+
+export function readResumeRequests(): RequestsFile {
+    if (!requestsSnapshot) requestsSnapshot = readRequestsFile();
+    return requestsSnapshot;
+}
+
+/** Refresh the snapshot from the durable store. Call at async entry points. */
+export async function hydrateResumeRequests(): Promise<void> {
+    if (kvConfigAvailable()) {
+        const kv = await kvGetJSON<RequestsFile>(REQUESTS_KV_KEY);
+        if (kv) { requestsSnapshot = kv; return; }
+    }
+    if (!requestsSnapshot) requestsSnapshot = readRequestsFile();
+}
+
+function persistResumeRequests(data: RequestsFile): void {
+    requestsSnapshot = data;
+    if (kvConfigAvailable()) void kvSetJSON(REQUESTS_KV_KEY, data);
+    try { fs.writeFileSync(REQUESTS_FILE, JSON.stringify(data, null, 2)); } catch { /* read-only FS */ }
 }
 
 export function logResumeRequest(
@@ -133,7 +163,7 @@ export function logResumeRequest(
         });
         // keep the log bounded
         data.requests = data.requests.slice(0, 500);
-        fs.writeFileSync(REQUESTS_FILE, JSON.stringify(data, null, 2));
+        persistResumeRequests(data);
     } catch (e) {
         // Logging must never break the pipeline (read-only FS on Vercel etc.)
         console.warn('Resume request log skipped:', e instanceof Error ? e.message : e);
@@ -144,9 +174,9 @@ export function deleteResumeRequest(id: string): boolean {
     try {
         const data = readResumeRequests();
         const before = data.requests.length;
-        data.requests = data.requests.filter(r => r.id !== id);
-        fs.writeFileSync(REQUESTS_FILE, JSON.stringify(data, null, 2));
-        return data.requests.length < before;
+        const next: RequestsFile = { requests: data.requests.filter(r => r.id !== id) };
+        persistResumeRequests(next);
+        return next.requests.length < before;
     } catch {
         return false;
     }
