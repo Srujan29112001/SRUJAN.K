@@ -119,8 +119,8 @@ const storyPanels = [
     ],
     color: '#A855F7', // Violet
     image: '/images/experience/iiith-genai.png',
-    button: { text: 'Mentor — Prof. PK', link: 'https://www.linkedin.com/in/ponguru' },
-    // Gallery collage (campus visit + certificate) — populated later.
+    // No mentor button — the Gallery is the panel's primary (and only) action,
+    // styled like the other panels' buttons.
     gallery: [] as string[],
   },
 ];
@@ -236,165 +236,90 @@ export function About() {
   const trackRef = useRef<HTMLDivElement>(null);
   const panelsRef = useRef<HTMLDivElement[]>([]);
   const mobileCardsRef = useRef<HTMLDivElement[]>([]);
+  const pageLabelRef = useRef<HTMLSpanElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const scrollTo = useScrollTo();
   const [galleryPanel, setGalleryPanel] = useState<StoryPanel | null>(null);
+
+  // Panel button click: external links open normally; in-page anchors scroll
+  // (with the Testimonials pin special-case mirrored from Navigation).
+  const goPanelLink = (e: { preventDefault(): void }, link: string) => {
+    if (!link.startsWith('#')) return;
+    e.preventDefault();
+    setNavigating(true);
+    if (link === '#testimonials-content') {
+      const tSection = document.getElementById('testimonials');
+      if (tSection && tSection.getBoundingClientRect().top > 0) {
+        ['.portal-light-layer', '.portal-clouds-layer', '.portal-blur-layer'].forEach((s) => {
+          const el = document.querySelector(s) as HTMLElement | null;
+          if (el) gsap.set(el, { opacity: 0 });
+        });
+        const marquee = document.querySelector('.testimonial-marquee') as HTMLElement | null;
+        if (marquee) gsap.set(marquee, { opacity: 1, y: 0 });
+        const pinSpacer = tSection.parentElement;
+        const target = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : tSection;
+        const start = target.getBoundingClientRect().top + window.scrollY;
+        scrollTo(start + 1500, { immediate: true, duration: 0 });
+        setTimeout(() => ScrollTrigger.refresh(), 100);
+        return;
+      }
+    }
+    scrollTo(link, { offset: -80 });
+  };
 
   useEffect(() => {
     if (isMobile) return; // Skip horizontal scroll on mobile
 
     const ctx = gsap.context(() => {
-      const track = trackRef.current;
-      const panels = panelsRef.current;
-      if (!track || panels.length === 0) return;
+      const pages = panelsRef.current.filter(Boolean);
+      if (pages.length === 0) return;
 
-      const totalWidth = track.scrollWidth - window.innerWidth;
-      const exitZoomDistance = window.innerHeight;
-      const totalScrollDistance = totalWidth + exitZoomDistance;
+      // Stack the pages — first on top — each hinged on its LEFT edge (the
+      // book spine). Scrolling flips the top page leftward to reveal the next,
+      // exactly like turning the pages of a book.
+      pages.forEach((page, i) => {
+        gsap.set(page, {
+          zIndex: pages.length - i,
+          rotationY: 0,
+          transformOrigin: 'left center',
+        });
+      });
 
-      // Calculate how much of total scroll is for panels vs exit zoom
-      const panelScrollRatio = totalWidth / totalScrollDistance;
+      const flips = pages.length - 1; // the final page stays open
+      const PER_PAGE = 560;            // scroll px to turn one page
 
-      // Horizontal scroll Timeline
       const tl = gsap.timeline({
         scrollTrigger: {
-          id: 'about-horizontal-scroll',
-          trigger: sectionRef.current,
-          pin: true,
-          scrub: 1,
-          snap: {
-            // FIXED: With 5 panels, there are 4 intervals to snap between
-            // Panel 1 at 0%, Panel 2 at 25%, Panel 3 at 50%, Panel 4 at 75%, Panel 5 at 100%
-            snapTo: (progress) => {
-              const panelCount = panels.length;
-              const gaps = panelCount - 1; // 5 panels = 4 gaps
-
-              // If we're past the panel section (in exit zoom), don't snap
-              if (progress > panelScrollRatio) {
-                return progress; // No snapping during exit zoom
-              }
-
-              // Calculate snap interval: panelScrollRatio / (panelCount - 1)
-              const panelSnapInterval = panelScrollRatio / gaps;
-
-              // Round to nearest panel position
-              const nearestPanel = Math.round(progress / panelSnapInterval);
-              const snappedProgress = nearestPanel * panelSnapInterval;
-
-              // Clamp to valid range (0 to panelScrollRatio)
-              return Math.max(0, Math.min(snappedProgress, panelScrollRatio));
-            },
-            duration: { min: 0.15, max: 0.35 },
-            ease: 'power1.inOut',
-          },
-          // Add extra scroll distance for the exit zoom
-          end: () => `+=${totalScrollDistance}`,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      // 1. The Scroll (only takes portion of timeline, not full 1.0)
-      tl.to(track, {
-        x: -totalWidth,
-        ease: 'none',
-        duration: panelScrollRatio, // Proportional to scroll distance
-      });
-
-      // 2. The Exit Zoom (Last Panel) - takes remaining portion of timeline
-      const lastPanel = panels[panels.length - 1];
-      const exitZoomRatio = 1 - panelScrollRatio;
-      if (lastPanel) {
-        // Fade out the entire panel container to catch borders/decorations
-        tl.to(lastPanel, {
-          scale: 1.5, // Slightly reduced scale to prevent pixelation artifacts
-          opacity: 0,
-          filter: 'blur(10px)',
-          duration: exitZoomRatio,
-          ease: 'power2.in',
-        });
-
-        // Background color tween REMOVED - stayed at natural #0A0A12
-
-        // Also fade out the progress bar line at the bottom
-        tl.to('.story-progress', {
-          opacity: 0,
-          duration: exitZoomRatio * 0.4
-        }, "<"); // Start at same time
-      }
-
-      // Per-panel animations (Hooked to the timeline)
-      panels.forEach((panel) => {
-        const content = panel.querySelector('.panel-content');
-        const image = panel.querySelector('.panel-image');
-        const stats = panel.querySelectorAll('.stat-value');
-
-        // Content reveal - FIXED: Start earlier (100% = right edge of viewport)
-        if (content) {
-          gsap.from(content, {
-            opacity: 0,
-            y: 40,
-            duration: 0.8,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: panel,
-              containerAnimation: tl,
-              start: 'left 100%', // Trigger when panel enters viewport
-              toggleActions: 'play none none reverse',
-            },
-          });
-        }
-
-        // Image reveal (Parallax/Scale) - FIXED: Start earlier
-        if (image) {
-          gsap.from(image, {
-            scale: 1.1,
-            opacity: 0,
-            duration: 0.8,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: panel,
-              containerAnimation: tl,
-              start: 'left 95%', // Trigger slightly after content starts
-              toggleActions: 'play none none reverse',
-            }
-          });
-        }
-
-        // Stats counter - FIXED: Start earlier
-        stats.forEach((stat) => {
-          const target = parseFloat(stat.getAttribute('data-value') || '0');
-          const obj = { value: 0 };
-
-          gsap.to(obj, {
-            value: target,
-            duration: 0.6,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: panel,
-              containerAnimation: tl,
-              start: 'left 90%', // Trigger with content
-              toggleActions: 'play none none none',
-            },
-            onUpdate: () => {
-              const isDecimal = target % 1 !== 0;
-              (stat as HTMLElement).textContent = isDecimal
-                ? obj.value.toFixed(2)
-                : Math.round(obj.value).toString();
-            },
-          });
-        });
-      });
-
-      // Progress bar
-      gsap.to('.story-progress', {
-        scaleX: 1,
-        ease: 'none',
-        scrollTrigger: {
+          id: 'about-horizontal-scroll', // kept: Navigation jumps to this pin
           trigger: sectionRef.current,
           start: 'top top',
-          end: () => `+=${totalWidth}`,
-          scrub: true,
+          end: () => `+=${Math.max(1, flips) * PER_PAGE}`,
+          pin: true,
+          anticipatePin: 1,
+          scrub: 1,
+          invalidateOnRefresh: true,
+          snap: flips > 0
+            ? { snapTo: 1 / flips, duration: { min: 0.12, max: 0.3 }, ease: 'power1.inOut' }
+            : undefined,
+          onUpdate: (self) => {
+            const current = Math.min(flips, Math.round(self.progress * flips));
+            if (pageLabelRef.current) pageLabelRef.current.innerText = String(current + 1).padStart(2, '0');
+            if (progressBarRef.current) progressBarRef.current.style.transform = `scaleX(${self.progress})`;
+          },
         },
+      });
+
+      pages.forEach((page, i) => {
+        if (i >= flips) return; // the last page never turns
+        const shadow = page.querySelector('.page-shadow');
+        // Each page turns during its own 1-unit slice of the timeline. With
+        // backface-visibility hidden it vanishes past 90deg, revealing the next.
+        tl.to(page, { rotationY: -168, ease: 'power1.inOut', duration: 1 }, i);
+        if (shadow) {
+          tl.fromTo(shadow, { opacity: 0 }, { opacity: 0.5, duration: 0.5, ease: 'power1.in' }, i)
+            .to(shadow, { opacity: 0, duration: 0.5, ease: 'power1.out' }, i + 0.5);
+        }
       });
     }, sectionRef);
 
@@ -769,7 +694,7 @@ export function About() {
     );
   }
 
-  // Desktop layout - horizontal scroll
+  // Desktop layout — 3D book / page-turn
   return (
     <>
     {galleryPanel && <GalleryModal panel={galleryPanel} onClose={() => setGalleryPanel(null)} />}
@@ -778,204 +703,131 @@ export function About() {
       id="about"
       className="about-section relative h-screen overflow-hidden bg-bg-elevated"
     >
-      {/* Section label (HUD Style) */}
-      <div className="absolute top-12 sm:top-14 left-0 right-0 z-20 text-center pointer-events-none px-4">
-        {/* Blue Glow Effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-
-        <h2 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight pointer-events-auto">
+      {/* Section label */}
+      <div className="absolute top-9 sm:top-11 left-0 right-0 z-30 text-center pointer-events-none px-4">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[240px] sm:h-[320px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
+        <h2 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
           THE JOURNEY
         </h2>
+        <p className="mt-1.5 font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-cyan-400/70">
+          Scroll to turn the pages
+        </p>
       </div>
 
-      {/* Horizontal track */}
+      {/* Book stage */}
       <div
-        ref={trackRef}
-        className="story-track flex h-full pt-8 sm:pt-10"
-        style={{ width: `${storyPanels.length * 100}vw` }}
+        className="absolute inset-0 flex items-center justify-center px-4 pt-28 pb-20"
+        style={{ perspective: '2400px' }}
       >
-        {storyPanels.map((panel, i) => (
-          <div
-            key={panel.id}
-            ref={(el) => {
-              if (el) panelsRef.current[i] = el;
-            }}
-            className="story-panel relative flex h-full w-screen flex-shrink-0 items-center justify-center px-6 sm:px-10 md:px-16 lg:px-20"
-          >
-            <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
+        <div
+          className="book relative"
+          style={{ width: 'min(92vw, 1080px)', height: 'min(72vh, 640px)', transformStyle: 'preserve-3d' }}
+        >
+          {/* closed-book base + spine behind the leaf deck */}
+          <div className="absolute -inset-x-3 -inset-y-3 rounded-2xl bg-gradient-to-br from-[#16161f] to-[#0a0a12] border border-white/5 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]" />
+          <div className="absolute left-0 top-0 bottom-0 w-3 -ml-3 rounded-l-2xl bg-gradient-to-r from-black/80 to-transparent" />
 
-              {/* Left: Content */}
-              <div className="panel-content relative z-10">
-                {/* Number */}
-                <span
-                  className="mb-3 sm:mb-4 block font-mono leading-none opacity-10"
-                  style={{ color: panel.color, fontSize: 'clamp(4rem, 8vw, 8rem)' }}
-                >
-                  {panel.number}
-                </span>
-
-                {/* Title */}
-                <h2 className="mb-2 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white">
-                  {panel.title}
-                </h2>
-
-                {/* Subtitle */}
-                <p className="mb-4 sm:mb-6 font-mono text-sm sm:text-base lg:text-lg leading-relaxed" style={{ color: panel.color }}>
-                  {panel.subtitle}
-                </p>
-
-                {/* Content */}
-                <p className="mb-6 sm:mb-8 lg:mb-10 text-base sm:text-lg leading-relaxed text-text-secondary">
-                  {panel.content}
-                </p>
-
-                {/* Stats */}
-                <div className="flex gap-8 sm:gap-12 lg:gap-16 mb-6 sm:mb-8 flex-wrap">
-                  {panel.stats.map((stat, j) => (
-                    <div key={j} className="stat">
-                      <span
-                        className="stat-value block font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-white"
-                        data-value={stat.value}
-                      >
-                        0
-                      </span>
-                      <span className="text-xs sm:text-sm text-text-muted">
-                        {stat.suffix && (
-                          <span className="text-base sm:text-lg lg:text-xl font-bold">{stat.suffix}</span>
-                        )}{' '}
-                        {stat.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Buttons */}
-                <div className="flex flex-wrap items-center gap-3 pointer-events-auto">
-                {panel.button && (
-                  <a
-                    href={panel.button.link}
-                    onClick={(e) => {
-                      if (panel.button.link.startsWith('#')) {
-                        e.preventDefault();
-                        setNavigating(true);
-
-                        // Special handling for testimonials section (same as Navigation.tsx)
-                        if (panel.button.link === '#testimonials-content') {
-                          const testimonialsContent = document.getElementById('testimonials-content');
-                          const testimonialsSection = document.getElementById('testimonials');
-
-                          if (testimonialsContent && testimonialsSection) {
-                            // Check if we're above the testimonials section
-                            const testimonialsTop = testimonialsSection.getBoundingClientRect().top;
-
-                            if (testimonialsTop > 0) {
-                              // Force animation layers to completed state
-                              const portalLight = document.querySelector('.portal-light-layer') as HTMLElement;
-                              const portalClouds = document.querySelector('.portal-clouds-layer') as HTMLElement;
-                              const portalBlur = document.querySelector('.portal-blur-layer') as HTMLElement;
-                              const testimonialMarquee = document.querySelector('.testimonial-marquee') as HTMLElement;
-
-                              if (portalLight) gsap.set(portalLight, { opacity: 0 });
-                              if (portalClouds) gsap.set(portalClouds, { opacity: 0 });
-                              if (portalBlur) gsap.set(portalBlur, { opacity: 0, backdropFilter: 'blur(0px)' });
-
-                              // Make testimonial marquee visible
-                              if (testimonialMarquee) gsap.set(testimonialMarquee, { opacity: 1, y: 0 });
-
-                              // Calculate scroll position - account for pin-spacer
-                              const pinSpacer = testimonialsSection.parentElement;
-                              const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : testimonialsSection;
-
-                              // Scroll to END of pin (after animation completes)
-                              const sectionStart = targetElement.getBoundingClientRect().top + window.scrollY;
-                              const pinEndPosition = sectionStart + 1500; // Match ScrollTrigger end value
-
-                              // Use immediate scroll to jump past animation
-                              scrollTo(pinEndPosition, { immediate: true, duration: 0 });
-
-                              // Refresh ScrollTrigger after scroll
-                              setTimeout(() => {
-                                ScrollTrigger.refresh();
-                              }, 100);
-                            } else {
-                              // Below testimonials - smooth scroll is fine
-                              scrollTo(panel.button.link, { offset: -80 });
-                            }
-                          } else {
-                            scrollTo(panel.button.link, { offset: -80 });
-                          }
-                        } else {
-                          // Other links - normal scroll
-                          scrollTo(panel.button.link, { offset: -80 });
-                        }
-                      }
-                    }}
-                    className="inline-flex items-center gap-2 px-4 sm:px-5 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-full border font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95 pointer-events-auto"
-                    style={{
-                      borderColor: panel.color,
-                      color: panel.color,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = panel.color;
-                      e.currentTarget.style.color = '#000';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = panel.color;
-                    }}
-                  >
-                    {panel.button.text}
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </a>
-                )}
-                {panel.gallery && (
-                  <button
-                    onClick={() => setGalleryPanel(panel)}
-                    className="inline-flex items-center gap-2 px-4 sm:px-5 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-full border font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95 pointer-events-auto"
-                    style={{ borderColor: panel.color, color: panel.color }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = panel.color; e.currentTarget.style.color = '#000'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel.color; }}
-                  >
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-                    </svg>
-                    Gallery
-                  </button>
-                )}
-                </div>
-              </div>
-
-              {/* Right: Image */}
-              <div className="panel-image relative h-[40vh] sm:h-[50vh] lg:h-[60vh] w-full rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          {storyPanels.map((panel, i) => (
+            <div
+              key={panel.id}
+              ref={(el) => { if (el) panelsRef.current[i] = el; }}
+              className="book-page absolute inset-0 rounded-2xl overflow-hidden"
+              style={{
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+                transformStyle: 'preserve-3d',
+                willChange: 'transform',
+                background: 'linear-gradient(160deg, rgba(22,22,34,0.99) 0%, rgba(10,10,18,1) 100%)',
+                boxShadow: `0 30px 60px -20px rgba(0,0,0,0.7), 0 0 0 1px ${panel.color}30`,
+              }}
+            >
+              {/* page image banner */}
+              <div className="relative h-[42%] w-full overflow-hidden">
                 {panel.image ? (
                   <>
-                    <Image
-                      src={panel.image}
-                      alt={panel.title}
-                      fill
-                      className="object-cover"
-                    />
-                    {/* Overlay for text readability if needed, or just aesthetic */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <Image src={panel.image} alt={panel.title} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a12] via-transparent to-transparent" />
+                    <div className="absolute inset-0 opacity-30" style={{ background: `linear-gradient(135deg, ${panel.color}25 0%, transparent 60%)` }} />
                   </>
                 ) : (
                   <PanelImagePlaceholder panel={panel} />
                 )}
+                <div
+                  className="absolute top-4 left-4 px-3 py-1.5 rounded-full font-mono text-xs font-bold backdrop-blur-md"
+                  style={{ background: `${panel.color}20`, border: `1px solid ${panel.color}50`, color: panel.color }}
+                >
+                  {panel.number}
+                </div>
               </div>
 
+              {/* page content */}
+              <div className="relative h-[58%] p-5 sm:p-7 lg:p-9 flex flex-col">
+                <h3
+                  className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold mb-1.5 leading-tight"
+                  style={{ background: `linear-gradient(135deg,#fff 0%, ${panel.color} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+                >
+                  {panel.title}
+                </h3>
+                <p className="font-mono text-xs sm:text-sm mb-3 opacity-80" style={{ color: panel.color }}>{panel.subtitle}</p>
+                <p className="text-sm sm:text-base leading-relaxed text-text-secondary/90 mb-4 overflow-y-auto pr-1 flex-1 min-h-0">{panel.content}</p>
+                <div className="flex items-end justify-between gap-4 flex-wrap">
+                  <div className="flex gap-4 sm:gap-6 flex-wrap">
+                    {panel.stats.map((stat, j) => (
+                      <div key={j} className="relative px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${panel.color}30` }}>
+                        <span className="block font-display text-xl sm:text-2xl font-bold text-white">
+                          {stat.value}<span className="font-mono text-sm" style={{ color: panel.color }}>{stat.suffix}</span>
+                        </span>
+                        <span className="text-[10px] sm:text-xs text-text-muted">{stat.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {panel.button && (
+                      <a
+                        href={panel.button.link}
+                        onClick={(e) => goPanelLink(e, panel.button!.link)}
+                        target={panel.button.link.startsWith('#') ? undefined : '_blank'}
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
+                        style={{ borderColor: panel.color, color: panel.color }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = panel.color; e.currentTarget.style.color = '#000'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel.color; }}
+                      >
+                        {panel.button.text}
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                      </a>
+                    )}
+                    {panel.gallery && (
+                      <button
+                        onClick={() => setGalleryPanel(panel)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
+                        style={{ borderColor: panel.color, color: panel.color }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = panel.color; e.currentTarget.style.color = '#000'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel.color; }}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
+                        Gallery
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* turning shadow (opacity driven by GSAP during the flip) */}
+              <div className="page-shadow absolute inset-0 pointer-events-none opacity-0" style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.12) 40%, transparent 100%)' }} />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="absolute bottom-0 left-0 h-[2px] w-full bg-white/10">
-        <div
-          className="story-progress h-full origin-left bg-primary"
-          style={{ transform: 'scaleX(0)' }}
-        />
+      {/* Page indicator + progress */}
+      <div className="absolute bottom-5 left-0 right-0 z-30 flex flex-col items-center gap-2 pointer-events-none px-6">
+        <div className="font-mono text-xs text-text-muted tracking-widest">
+          PAGE <span ref={pageLabelRef} className="text-white">01</span> / {String(storyPanels.length).padStart(2, '0')}
+        </div>
+        <div className="w-40 sm:w-56 h-[2px] bg-white/10 rounded-full overflow-hidden">
+          <div ref={progressBarRef} className="h-full origin-left bg-gradient-to-r from-cyan-400 to-blue-500" style={{ transform: 'scaleX(0)' }} />
+        </div>
       </div>
     </section>
     </>

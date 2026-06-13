@@ -202,9 +202,8 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight tracking-tight">
                             {featuredProject.title}
                         </h1>
-                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/70 max-w-xl leading-relaxed">
-                            {featuredProject.longDescription || featuredProject.description}
-                        </p>
+                        {/* Description intentionally hidden on the cover — the full
+                            write-up is revealed in the detail page (View Details). */}
 
                         <div className="flex flex-wrap gap-2 sm:gap-3">
                             {featuredProject.tech.map((t) => (

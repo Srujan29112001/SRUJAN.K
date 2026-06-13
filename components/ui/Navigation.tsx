@@ -167,17 +167,10 @@ export function Navigation() {
     setNavigating(true);
 
     // If navigating to Journey (About section), we need special handling
-    // The About section has a horizontal scroll with pinned ScrollTrigger
-    // Using smooth scroll would pass through the ScrollTrigger range, animating to panel 06
-    // Solution: Use IMMEDIATE scroll to jump directly to the start without animating through
+    // The About section is a pinned 3D book (page-turn ScrollTrigger). Smooth
+    // scrolling would flip through the pages on the way in, so jump straight to
+    // the START of the pin (page 01).
     if (href === '#about') {
-      // Reset the horizontal track to panel 01
-      const storyTrack = document.querySelector('.story-track') as HTMLElement;
-      if (storyTrack) {
-        gsap.set(storyTrack, { x: 0 });
-      }
-
-      // Get the About section and its ScrollTrigger
       const aboutSection = document.getElementById('about');
       const aboutTrigger = ScrollTrigger.getById('about-horizontal-scroll');
 
