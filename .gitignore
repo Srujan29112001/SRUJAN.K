@@ -43,6 +43,11 @@ data/custom-knowledge.json
 .claude/settings.local.json
 .claude/launch.json
 
+# Workflow scratch files
+.enrich-workflow*.js
+.apply-enrich.js
+scripts/make-test-pdf.js
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

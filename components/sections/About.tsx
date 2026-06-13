@@ -118,10 +118,7 @@ const storyPanels = [
       { value: 4, suffix: ' Projects', label: '3 Minor + 1 Capstone' },
     ],
     color: '#A855F7', // Violet
-    // image intentionally omitted until the IIIT-H visual is generated — a
-    // themed placeholder renders in its place (see image blocks below). When
-    // the file arrives, set image: '/images/experience/iiith-genai.png'.
-    image: '',
+    image: '/images/experience/iiith-genai.png',
     button: { text: 'Mentor — Prof. PK', link: 'https://www.linkedin.com/in/ponguru' },
     // Gallery collage (campus visit + certificate) — populated later.
     gallery: [] as string[],
