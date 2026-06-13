@@ -820,8 +820,8 @@ export function About() {
                     {panel.gallery && (
                       <button
                         onClick={() => setGalleryPanel(panel)}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
-                        style={{ borderColor: panel.color, color: panel.color }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full font-mono text-xs sm:text-sm tracking-wider transition-all duration-300 hover:scale-105 active:scale-95"
+                        style={{ border: `1px solid ${panel.color}`, color: panel.color }}
                         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = panel.color; e.currentTarget.style.color = '#000'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel.color; }}
                       >
