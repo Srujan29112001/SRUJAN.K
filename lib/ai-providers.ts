@@ -156,15 +156,25 @@ const KV_TTL_MS = 30_000; // re-read from KV at most every 30s
 let kvCache: AIProvidersFile | null = null; // null = nothing stored in KV
 let kvFetchedAt = 0;
 
+// The Vercel ↔ Upstash integration may inject the credentials under either
+// the Upstash-native names (UPSTASH_REDIS_REST_*) or the Vercel-KV names
+// (KV_REST_API_*). Accept both so connecting the store is genuinely two clicks.
+function kvUrl(): string | undefined {
+    return process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+}
+function kvToken(): string | undefined {
+    return process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+}
+
 export function kvConfigAvailable(): boolean {
-    return !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+    return !!(kvUrl() && kvToken());
 }
 
 async function kvCommand(cmd: unknown[]): Promise<unknown> {
-    const res = await fetch(process.env.UPSTASH_REDIS_REST_URL!, {
+    const res = await fetch(kvUrl()!, {
         method: 'POST',
         headers: {
-            Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+            Authorization: `Bearer ${kvToken()}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(cmd),
