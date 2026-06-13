@@ -313,11 +313,28 @@ export function About() {
       pages.forEach((page, i) => {
         if (i >= flips) return; // the last page never turns
         const shadow = page.querySelector('.page-shadow');
-        // Each page turns during its own 1-unit slice of the timeline. With
-        // backface-visibility hidden it vanishes past 90deg, revealing the next.
-        tl.to(page, { rotationY: -168, ease: 'power1.inOut', duration: 1 }, i);
+        const curl = page.querySelector('.page-curl');
+
+        // The turn: eased like a real leaf falling over the spine. backface
+        // hidden makes it vanish past 90deg, revealing the next page beneath.
+        tl.to(page, { rotationY: -170, ease: 'power2.inOut', duration: 1 }, i);
+
+        // Flexibility: a gentle droop (skew) + the free edge rounding/curling
+        // up at mid-turn, then settling — so it reads as bending paper, not a
+        // rigid card. Peaks at the half-way point of the turn.
+        tl.to(page, { skewY: 1.6, borderTopRightRadius: 90, borderBottomRightRadius: 70, duration: 0.5, ease: 'sine.in' }, i)
+          .to(page, { skewY: 0, borderTopRightRadius: 16, borderBottomRightRadius: 16, duration: 0.5, ease: 'sine.out' }, i + 0.5);
+
+        // Curved-surface shading that catches light near the spine and darkens
+        // toward the lifting free edge — the core of the "paper" illusion.
+        if (curl) {
+          tl.fromTo(curl, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'sine.in' }, i)
+            .to(curl, { opacity: 0, duration: 0.5, ease: 'sine.out' }, i + 0.5);
+        }
+
+        // Soft self-shadow from the spine while the page is mid-air.
         if (shadow) {
-          tl.fromTo(shadow, { opacity: 0 }, { opacity: 0.5, duration: 0.5, ease: 'power1.in' }, i)
+          tl.fromTo(shadow, { opacity: 0 }, { opacity: 0.55, duration: 0.5, ease: 'power1.in' }, i)
             .to(shadow, { opacity: 0, duration: 0.5, ease: 'power1.out' }, i + 0.5);
         }
       });
@@ -703,25 +720,26 @@ export function About() {
       id="about"
       className="about-section relative h-screen overflow-hidden bg-bg-elevated"
     >
-      {/* Section label */}
-      <div className="absolute top-9 sm:top-11 left-0 right-0 z-30 text-center pointer-events-none px-4">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[240px] sm:h-[320px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-        <h2 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight">
+      {/* Section label — sits below the fixed navbar, in its own band ABOVE
+          the book (clears both the navbar and the page deck). */}
+      <div className="absolute top-16 sm:top-20 left-0 right-0 z-30 text-center pointer-events-none px-4">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[560px] h-[160px] sm:h-[200px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
+        <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
           THE JOURNEY
         </h2>
-        <p className="mt-1.5 font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-cyan-400/70">
+        <p className="mt-1 font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-cyan-400/70">
           Scroll to turn the pages
         </p>
       </div>
 
       {/* Book stage */}
       <div
-        className="absolute inset-0 flex items-center justify-center px-4 pt-28 pb-20"
-        style={{ perspective: '2400px' }}
+        className="absolute inset-0 flex items-center justify-center px-4 pt-40 sm:pt-44 pb-14"
+        style={{ perspective: '2600px' }}
       >
         <div
           className="book relative"
-          style={{ width: 'min(92vw, 1080px)', height: 'min(72vh, 640px)', transformStyle: 'preserve-3d' }}
+          style={{ width: 'min(92vw, 1060px)', height: 'min(70vh, 660px)', transformStyle: 'preserve-3d' }}
         >
           {/* closed-book base + spine behind the leaf deck */}
           <div className="absolute -inset-x-3 -inset-y-3 rounded-2xl bg-gradient-to-br from-[#16161f] to-[#0a0a12] border border-white/5 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)]" />
@@ -741,36 +759,38 @@ export function About() {
                 boxShadow: `0 30px 60px -20px rgba(0,0,0,0.7), 0 0 0 1px ${panel.color}30`,
               }}
             >
-              {/* page image banner */}
-              <div className="relative h-[42%] w-full overflow-hidden">
+              {/* page image banner — full image, never cropped (blurred fill
+                  behind a contained image fills the letterbox elegantly) */}
+              <div className="relative h-[40%] w-full overflow-hidden bg-[#070710]">
                 {panel.image ? (
                   <>
-                    <Image src={panel.image} alt={panel.title} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a12] via-transparent to-transparent" />
-                    <div className="absolute inset-0 opacity-30" style={{ background: `linear-gradient(135deg, ${panel.color}25 0%, transparent 60%)` }} />
+                    <Image src={panel.image} alt="" aria-hidden fill className="object-cover scale-110 blur-2xl opacity-40" />
+                    <Image src={panel.image} alt={panel.title} fill className="object-contain" />
+                    <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(135deg, ${panel.color}18 0%, transparent 55%)` }} />
+                    <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0e0e18] to-transparent" />
                   </>
                 ) : (
                   <PanelImagePlaceholder panel={panel} />
                 )}
                 <div
-                  className="absolute top-4 left-4 px-3 py-1.5 rounded-full font-mono text-xs font-bold backdrop-blur-md"
+                  className="absolute top-4 left-4 px-3 py-1.5 rounded-full font-mono text-xs font-bold backdrop-blur-md z-10"
                   style={{ background: `${panel.color}20`, border: `1px solid ${panel.color}50`, color: panel.color }}
                 >
                   {panel.number}
                 </div>
               </div>
 
-              {/* page content */}
-              <div className="relative h-[58%] p-5 sm:p-7 lg:p-9 flex flex-col">
+              {/* page content — full description shown (no inner scroll) */}
+              <div className="relative h-[60%] p-5 sm:p-6 lg:p-7 flex flex-col">
                 <h3
-                  className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold mb-1.5 leading-tight"
+                  className="font-display text-2xl sm:text-3xl font-bold mb-1 leading-tight"
                   style={{ background: `linear-gradient(135deg,#fff 0%, ${panel.color} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                 >
                   {panel.title}
                 </h3>
-                <p className="font-mono text-xs sm:text-sm mb-3 opacity-80" style={{ color: panel.color }}>{panel.subtitle}</p>
-                <p className="text-sm sm:text-base leading-relaxed text-text-secondary/90 mb-4 overflow-y-auto pr-1 flex-1 min-h-0">{panel.content}</p>
-                <div className="flex items-end justify-between gap-4 flex-wrap">
+                <p className="font-mono text-[11px] sm:text-xs mb-2.5 opacity-80" style={{ color: panel.color }}>{panel.subtitle}</p>
+                <p className="text-[13px] sm:text-sm leading-relaxed text-text-secondary/90">{panel.content}</p>
+                <div className="mt-auto pt-4 flex items-end justify-between gap-4 flex-wrap">
                   <div className="flex gap-4 sm:gap-6 flex-wrap">
                     {panel.stats.map((stat, j) => (
                       <div key={j} className="relative px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${panel.color}30` }}>
@@ -813,8 +833,10 @@ export function About() {
                 </div>
               </div>
 
-              {/* turning shadow (opacity driven by GSAP during the flip) */}
-              <div className="page-shadow absolute inset-0 pointer-events-none opacity-0" style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.12) 40%, transparent 100%)' }} />
+              {/* curved-surface shading (the "paper" look) + self-shadow,
+                  both driven by GSAP only during the turn */}
+              <div className="page-curl absolute inset-0 pointer-events-none opacity-0" style={{ background: 'linear-gradient(95deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 16%, rgba(0,0,0,0.08) 48%, rgba(0,0,0,0.28) 80%, rgba(0,0,0,0.5) 100%)' }} />
+              <div className="page-shadow absolute inset-0 pointer-events-none opacity-0" style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.12) 38%, transparent 100%)' }} />
             </div>
           ))}
         </div>
