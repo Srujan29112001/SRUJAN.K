@@ -30,8 +30,10 @@ export function Hero() {
   useEffect(() => {
     // If the video is already cached/ready before React attaches the handler.
     if (videoRef.current && videoRef.current.readyState >= 3) setVideoReady(true);
-    // Safety net: never let the loader stick (slow link, reduced-data, etc.)
-    const t = setTimeout(() => setVideoReady(true), 5000);
+    // Safety net: never let the loader stick (slow link, reduced-data, etc.).
+    // The video underneath is always rendered, so revealing it early just shows
+    // the poster/first frame — never black.
+    const t = setTimeout(() => setVideoReady(true), 2500);
     return () => clearTimeout(t);
   }, []);
 
@@ -90,6 +92,9 @@ export function Hero() {
 
       {/* Video Background Layer */}
       <div className="absolute inset-0 z-0">
+        {/* Video is ALWAYS rendered (poster shows until the first frame), so
+            the hero can never go black — the veil below only hides the brief
+            poster→video swap and always fades on ready or the timeout. */}
         <video
           ref={videoRef}
           autoPlay
@@ -100,7 +105,8 @@ export function Hero() {
           onCanPlay={() => setVideoReady(true)}
           onPlaying={() => setVideoReady(true)}
           onLoadedData={() => setVideoReady(true)}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${videoReady ? 'opacity-50 sm:opacity-60' : 'opacity-0'}`}
+          onError={() => setVideoReady(true)}
+          className="absolute inset-0 w-full h-full object-cover opacity-50 sm:opacity-60"
           poster="/images/projects/hero-ai.png" // Fallback image
         >
           <source src="/videos/hero-bg.mp4" type="video/mp4" />
@@ -109,10 +115,11 @@ export function Hero() {
         {/* Overlay Gradient for readability - Enhanced for mobile */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/80 sm:from-black/30 sm:via-transparent sm:to-black/80" />
 
-        {/* Loading veil — covers the static poster with a clean dark backdrop +
-            branded spinner until the video can play, then fades out. */}
+        {/* Loading veil — a clean dark backdrop + branded spinner over the
+            poster while the video buffers; fades the moment it can play (or
+            after the safety timeout). Pointer-events off so it never blocks. */}
         <div
-          className={`absolute inset-0 z-[1] flex flex-col items-center justify-center bg-[#0A0A12] transition-opacity duration-700 ${videoReady ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          className={`absolute inset-0 z-[1] flex flex-col items-center justify-center bg-[#0A0A12] transition-opacity duration-700 pointer-events-none ${videoReady ? 'opacity-0' : 'opacity-100'}`}
         >
           <div className="relative w-14 h-14">
             <div className="absolute inset-0 rounded-full border-2 border-cyan-500/15" />
