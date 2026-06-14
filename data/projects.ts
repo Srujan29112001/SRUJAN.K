@@ -19,6 +19,9 @@ export interface Project {
   featured: boolean;
   ongoing?: boolean;
   link?: string;
+  /** true → `link` is a real, usable deployed app (shows a red "Try it"
+   *  button) rather than a demo video/recording ("View Live Demo"). */
+  liveApp?: boolean;
   github?: string;
   documentation?: string;
   year?: string;
@@ -56,6 +59,7 @@ export const projects: Project[] = [
     "year": "2026",
     "role": "Multi-Agent Systems Lead",
     "link": "https://helix-henna.vercel.app/",
+    "liveApp": true,
     "github": "https://github.com/Srujan29112001/helix"
   },
   {
@@ -169,7 +173,8 @@ export const projects: Project[] = [
     "year": "2025",
     "role": "Lead AI Engineer",
     "github": "https://github.com/Srujan29112001/Clinical-AI-copilot",
-    "link": "https://clinical-ai-copilot.vercel.app/"
+    "link": "https://clinical-ai-copilot.vercel.app/",
+    "liveApp": true
   },
   {
     "id": "advisory-platform",

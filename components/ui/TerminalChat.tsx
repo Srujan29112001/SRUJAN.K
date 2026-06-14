@@ -103,6 +103,7 @@ export function TerminalChat({
     const [stopTypingTrigger, setStopTypingTrigger] = useState(0);
     const [lastTypingMessageId, setLastTypingMessageId] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     // id of the message whose voice we are currently streaming (sentence-by-sentence)
     const voiceStreamIdRef = useRef<string | null>(null);
@@ -190,11 +191,12 @@ export function TerminalChat({
         onVoiceSpeakingChange?.(isSpeaking);
     }, [isSpeaking, onVoiceSpeakingChange]);
 
-    // Auto-scroll to bottom (within chat only, not page)
+    // Auto-scroll to bottom — scroll the chat's OWN container only, never the
+    // page. (scrollIntoView used to pull the whole window down to the chat on
+    // mount, which is why fresh loads landed on the AI Chat section.)
     const scrollToBottom = useCallback(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        const container = messagesContainerRef.current;
+        if (container) container.scrollTop = container.scrollHeight;
     }, []);
 
     useEffect(() => {
@@ -207,10 +209,8 @@ export function TerminalChat({
         scrollToBottom();
     }, [lastContent, scrollToBottom]);
 
-    // Focus input on mount
-    useEffect(() => {
-        inputRef.current?.focus();
-    }, []);
+    // NOTE: no auto-focus on mount — focusing the input scrolled the whole
+    // page down to the AI Chat section on fresh loads. Users click to type.
 
     // Track BYOK status (the connect bar above the chat edits it)
     useEffect(() => {
@@ -337,6 +337,7 @@ export function TerminalChat({
 
             {/* Messages Area */}
             <div
+                ref={messagesContainerRef}
                 data-lenis-prevent
                 className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-cyan-900/30 scrollbar-track-transparent"
             >

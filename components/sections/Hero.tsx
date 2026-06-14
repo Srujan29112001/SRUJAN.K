@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -22,6 +22,18 @@ export function Hero() {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
+  // The bg video can take a moment to buffer on a fresh device; until it can
+  // play we cover the static poster with a clean branded loader and only then
+  // fade the video in.
+  const [videoReady, setVideoReady] = useState(false);
+
+  useEffect(() => {
+    // If the video is already cached/ready before React attaches the handler.
+    if (videoRef.current && videoRef.current.readyState >= 3) setVideoReady(true);
+    // Safety net: never let the loader stick (slow link, reduced-data, etc.)
+    const t = setTimeout(() => setVideoReady(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -84,17 +96,32 @@ export function Hero() {
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-50 sm:opacity-60"
+          preload="auto"
+          onCanPlay={() => setVideoReady(true)}
+          onPlaying={() => setVideoReady(true)}
+          onLoadedData={() => setVideoReady(true)}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${videoReady ? 'opacity-50 sm:opacity-60' : 'opacity-0'}`}
           poster="/images/projects/hero-ai.png" // Fallback image
         >
           <source src="/videos/hero-bg.mp4" type="video/mp4" />
-          {/* Fallback to 3D scene if video fails or isn't present?
-                For now, we assume user will drop the video.
-                If no video, the poster image shows. */}
         </video>
 
         {/* Overlay Gradient for readability - Enhanced for mobile */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/80 sm:from-black/30 sm:via-transparent sm:to-black/80" />
+
+        {/* Loading veil — covers the static poster with a clean dark backdrop +
+            branded spinner until the video can play, then fades out. */}
+        <div
+          className={`absolute inset-0 z-[1] flex flex-col items-center justify-center bg-[#0A0A12] transition-opacity duration-700 ${videoReady ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        >
+          <div className="relative w-14 h-14">
+            <div className="absolute inset-0 rounded-full border-2 border-cyan-500/15" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-400 animate-spin" />
+          </div>
+          <span className="mt-5 font-mono text-[10px] uppercase tracking-[0.35em] text-cyan-400/60">
+            Initializing
+          </span>
+        </div>
       </div>
 
       {/* Content Layer */}

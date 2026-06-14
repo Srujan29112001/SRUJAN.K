@@ -234,17 +234,32 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                 </h3>
                 <div className="flex flex-col gap-2 sm:gap-3">
                   {project.link ? (
-                    <a
-                      href={project.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-cyan-500 text-black font-bold text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-cyan-400 transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
-                    >
-                      <div className="p-0.5 sm:p-1 bg-black/10 rounded-full">
-                        <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
-                      </div>
-                      View Live Demo
-                    </a>
+                    project.liveApp ? (
+                      // Real, usable deployed app → red "Try it"
+                      <a
+                        href={project.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-red-500 text-white font-bold text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-red-400 transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.45)]"
+                      >
+                        <div className="p-0.5 sm:p-1 bg-black/15 rounded-full">
+                          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </div>
+                        Try it
+                      </a>
+                    ) : (
+                      <a
+                        href={project.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-cyan-500 text-black font-bold text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-cyan-400 transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                      >
+                        <div className="p-0.5 sm:p-1 bg-black/10 rounded-full">
+                          <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
+                        </div>
+                        View Live Demo
+                      </a>
+                    )
                   ) : (
                     <button
                       disabled
