@@ -211,14 +211,14 @@ JD RESPONSIBILITIES: ${intake.responsibilities.join('; ') || '—'}
 CANDIDATE PROJECTS (choose exactly ${rules.projectCount}, by id):
 ${candidates.map(p => `- id: ${p.id} | ${p.title} | tech: ${p.tech.join(', ')} | metric: ${p.metrics || '—'} | ${p.description}`).join('\n')}
 
-VERIFIED CAREER FACTS for the summary (only numeric claims allowed): freelance AI/ML engineer since Aug 2023; 40+ delivered projects; DRDO-DRDL internship — YOLOv7 on NVIDIA Jetson AGX Xavier, 89% mAP, 22 FPS, 95% field accuracy; 9 enterprise MVPs; 38-agent platform; B.E. ECE, Thapar (2019–2023).
+VERIFIED CAREER FACTS for the summary (only numeric claims allowed): freelance AI/ML & Robotics engineer since Aug 2023; 40+ delivered projects; DRDO-DRDL internship — YOLOv7 on NVIDIA Jetson AGX Xavier, 89% mAP, 22 FPS, 95% field accuracy; 9 enterprise MVPs; 38-agent platform; B.E. ECE, Thapar (2019–2023).
 
 CURRENT STATUS: ${prefs.currentStatus}
 
 Return JSON:
 {
   "roleLine": "header subtitle, format 'Role / Specialization', max 70 chars",
-  "summary": "max ${rules.summaryMaxWords} words, third-person-implied resume voice ('AI/ML Engineer focused on…'), angled at this JD, only verified numeric facts",
+  "summary": "max ${rules.summaryMaxWords} words, third-person-implied resume voice ('AI/ML & Robotics Engineer focused on…'), angled at this JD, only verified numeric facts",
   "skills": [up to ${rules.maxSkillRows} rows: {"category": "row label", "items": [{"name": "skill", "key": true-if-JD-critical}]} — 4-6 items per row, only real skills from the projects/facts above],
   "projects": [exactly ${rules.projectCount}: {"id": "candidate id", "title": "title (may sharpen wording, same meaning)", "bullets": [${rules.bulletsPerProject} bullets, each ≤ 30 words, grounded in that project's data]}]
 }`,
