@@ -220,10 +220,10 @@ Return JSON:
   "roleLine": "header subtitle, format 'Role / Specialization', max 70 chars",
   "summary": "max ${rules.summaryMaxWords} words, third-person-implied resume voice ('AI/ML & Robotics Engineer focused on…'), angled at this JD, only verified numeric facts",
   "skills": [up to ${rules.maxSkillRows} rows: {"category": "row label", "items": [{"name": "skill", "key": true-if-JD-critical}]} — 4-6 items per row, only real skills from the projects/facts above],
-  "projects": [exactly ${rules.projectCount}: {"id": "candidate id", "title": "title (may sharpen wording, same meaning)", "bullets": [${rules.bulletsPerProject} bullets, each ≤ 50 words, grounded in that project's data]}]
+  "projects": [exactly ${rules.projectCount}: {"id": "candidate id", "title": "title (may sharpen wording, same meaning)", "bullets": [${rules.bulletsPerProject} bullets, each ≤ 90 words, grounded in that project's data]}]
 }`,
             temperature: 0.4,
-            maxTokens: 4096,
+            maxTokens: 4500,
         });
 
         // ---- VALIDATE + REPAIR ----
