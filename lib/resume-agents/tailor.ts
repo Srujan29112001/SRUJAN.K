@@ -152,7 +152,7 @@ function deterministicTailor(
         : `${intake.role} / ${domainLabel}`;
 
     const summary = wordCap(
-        `AI/ML Engineer focused on ${domainLabel.toLowerCase()} with hands-on experience deploying deep learning in production — including YOLOv7 on NVIDIA Jetson at 89% mAP / 22 FPS for real-time aerial detection at DRDO-DRDL. As a freelance engineer, delivered 40+ projects across ${retrieval.matchedSkills.slice(0, 3).join(', ') || 'computer vision, agents, and reinforcement learning'} — owning each from model training to optimized deployment.`,
+        `AI/ML & Robotics Engineer focused on ${domainLabel.toLowerCase()} with hands-on experience deploying deep learning in production — including YOLOv7 on NVIDIA Jetson at 89% mAP / 22 FPS for real-time aerial detection at DRDO-DRDL. As a freelance engineer, delivered 40+ projects across ${retrieval.matchedSkills.slice(0, 3).join(', ') || 'computer vision, agents, and reinforcement learning'} — owning each from model training to optimized deployment.`,
         rules.summaryMaxWords,
     );
 
