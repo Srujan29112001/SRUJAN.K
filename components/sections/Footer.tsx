@@ -3,22 +3,25 @@
 import { useRef, useEffect } from 'react';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { useScrollTo } from '@/hooks/useLenis';
-import { setNavigating } from '@/lib/navigationState';
+import { usePageNav, type PageId } from '@/components/providers/PageNav';
 
-const footerLinks = {
+const footerLinks: { navigation: { label: string; page: PageId }[] } = {
   navigation: [
-    { label: 'Journey', href: '#about' },
-    { label: 'Skills', href: '#skills-content' },
-    { label: 'Projects', href: '#projects' },
-    { label: 'Blog', href: '#blog' },
-    { label: 'Testimonials', href: '#testimonials-content' },
-    { label: 'Contact', href: '#contact' },
+    { label: 'Journey', page: 'home' },
+    { label: 'Skills', page: 'skills' },
+    { label: 'Projects', page: 'projects' },
+    { label: 'Blog', page: 'blog' },
+    { label: 'Testimonials', page: 'testimonials' },
+    { label: 'AI', page: 'ai' },
+    { label: 'Resume', page: 'resume' },
+    { label: 'Contact', page: 'contact' },
   ],
 };
 
 export function Footer() {
   const footerRef = useRef<HTMLElement>(null);
   const scrollTo = useScrollTo();
+  const { page, goTo } = usePageNav();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -37,29 +40,9 @@ export function Footer() {
     return () => ctx.revert();
   }, []);
 
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
+  const handleNavClick = (e: React.MouseEvent, target: PageId) => {
     e.preventDefault();
-    setNavigating(true);
-
-    // Special handling for Journey (About) — it's a pinned 3D book, so jump to
-    // the START of the pin rather than smooth-scrolling through the page turns.
-    if (href === '#about') {
-      const aboutSection = document.getElementById('about');
-      const aboutTrigger = ScrollTrigger.getById('about-horizontal-scroll');
-      if (aboutSection && aboutTrigger) {
-        const pinSpacer = aboutSection.parentElement;
-        const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : aboutSection;
-        const sectionTop = targetElement.getBoundingClientRect().top + window.scrollY;
-        scrollTo(sectionTop - 80, { immediate: true, duration: 0 });
-        setTimeout(() => ScrollTrigger.refresh(), 100);
-      } else {
-        scrollTo(href, { offset: -80, immediate: true });
-      }
-      return;
-    }
-
-    // Everything else (Skills/Testimonials no longer pin) — plain smooth scroll.
-    scrollTo(href, { offset: -80 });
+    goTo(target);
   };
 
   return (
@@ -72,8 +55,8 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <a
-              href="#hero"
-              onClick={(e) => handleNavClick(e, '#hero')}
+              href="#home"
+              onClick={(e) => handleNavClick(e, 'home')}
               className="inline-block group"
             >
               <span className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-3xl font-bold text-white transition-colors group-hover:text-primary">
@@ -96,11 +79,11 @@ export function Footer() {
             </h3>
             <ul className="space-y-2 sm:space-y-2.5">
               {footerLinks.navigation.map((link) => (
-                <li key={link.href}>
+                <li key={link.page}>
                   <a
-                    href={link.href}
-                    onClick={(e) => handleNavClick(e, link.href)}
-                    className="text-sm sm:text-base text-text-secondary transition-colors hover:text-white active:text-primary"
+                    href={`#${link.page}`}
+                    onClick={(e) => handleNavClick(e, link.page)}
+                    className={cnActive(page === link.page)}
                   >
                     {link.label}
                   </a>
@@ -116,12 +99,9 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Srujan. All rights reserved.
           </p>
 
-          {/* Back to top */}
+          {/* Back to top (of the current page) */}
           <button
-            onClick={() => {
-              setNavigating(true);
-              scrollTo(0, { immediate: true, duration: 0 });
-            }}
+            onClick={() => scrollTo(0, { immediate: true, duration: 0 })}
             className="group flex items-center gap-2 font-mono text-[10px] sm:text-xs text-text-muted transition-colors hover:text-primary active:scale-95"
           >
             Back to top
@@ -143,4 +123,10 @@ export function Footer() {
       </div>
     </footer>
   );
+}
+
+function cnActive(active: boolean): string {
+  return active
+    ? 'text-sm sm:text-base text-white transition-colors'
+    : 'text-sm sm:text-base text-text-secondary transition-colors hover:text-white active:text-primary';
 }

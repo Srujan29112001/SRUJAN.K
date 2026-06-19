@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 import { Preloader } from '@/components/sections/Preloader';
 import { Hero } from '@/components/sections/Hero';
 import { About } from '@/components/sections/About';
@@ -12,8 +13,8 @@ import { Testimonials } from '@/components/sections/Testimonials';
 import { Contact } from '@/components/sections/Contact';
 import { Footer } from '@/components/sections/Footer';
 
-// AI Chat lives outside Contact so it can be its own #chat section, swappable
-// with Contact in page order, and reachable from the navbar.
+// AI Chat lives outside Contact so it can be its own section, swappable in
+// page order, and reachable from the navbar.
 const HolographicChat = dynamic(
   () => import('@/components/sections/HolographicChat'),
   { ssr: false }
@@ -37,9 +38,63 @@ import { ScrollProgress } from '@/components/ui/ScrollProgress';
 import { ScanlinesOverlay, VignetteOverlay } from '@/components/ui/AnimatedBackground';
 // CursorTrail disabled for performance - was causing continuous canvas redraws
 import { MotionProvider } from '@/components/ui/ResponsiveMotion';
+import { PageNavProvider, usePageNav } from '@/components/providers/PageNav';
 
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+// The active "page" group. Each is a full, standalone view; the navbar swaps
+// between them. The whole tree stays mounted under one route, so every smart
+// feature (AI chat + KB auto-sync, knowledge graph, resume) keeps its exact
+// props, providers and API wiring — only what's VISIBLE changes.
+function PagedMain({
+  activeCategory,
+  setActiveCategory,
+}: {
+  activeCategory: 'AI' | 'Robotics' | 'Research';
+  setActiveCategory: (c: 'AI' | 'Robotics' | 'Research') => void;
+}) {
+  const { page, goTo } = usePageNav();
+  // Chat "estimate / book a call" prompts send the visitor to the Contact page
+  // and land on the booking form there.
+  const goBooking = () => goTo('contact', 'booking');
+
+  return (
+    <>
+      <motion.div
+        key={page}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {page === 'home' && (
+          <>
+            <Hero />
+            <About />
+          </>
+        )}
+        {page === 'skills' && (
+          <Skills activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+        )}
+        {page === 'projects' && (
+          <ProjectsShowcase activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+        )}
+        {page === 'blog' && <Blog />}
+        {page === 'testimonials' && <Testimonials />}
+        {page === 'ai' && (
+          <>
+            <HolographicChat onEstimateRequest={goBooking} onBookingRequest={goBooking} />
+            <KnowledgeGraph3D />
+          </>
+        )}
+        {page === 'resume' && <ResumeGate />}
+        {page === 'contact' && <Contact />}
+      </motion.div>
+
+      <Footer />
+    </>
+  );
+}
 
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'AI' | 'Robotics' | 'Research'>('AI');
@@ -51,11 +106,11 @@ export default function Home() {
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
     }
-    
+
     // Clear GSAP scroll memory which often causes the page to jump on refresh
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.clearScrollMemory('manual');
-    
+
     const scrollToTop = () => {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       document.documentElement.scrollTop = 0;
@@ -117,57 +172,31 @@ export default function Home() {
 
   return (
     <MotionProvider>
-      {/* Custom Cursor (desktop only) */}
-      <CustomCursor />
+      <PageNavProvider>
+        {/* Custom Cursor (desktop only) */}
+        <CustomCursor />
 
-      {/* CursorTrail disabled for performance */}
+        {/* Scroll Progress (tracks scroll within the current page) */}
+        {!isLoading && <ScrollProgress />}
 
-      {/* Scroll Progress */}
-      {!isLoading && <ScrollProgress />}
+        {/* Preloader */}
+        {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
 
-      {/* Preloader */}
-      {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
+        {/* Navigation */}
+        {!isLoading && <Navigation />}
 
-      {/* Navigation */}
-      {!isLoading && <Navigation />}
+        {/* Global Overlays */}
+        <ScanlinesOverlay opacity={0.015} />
+        <VignetteOverlay intensity={0.3} />
 
-      {/* Global Overlays */}
-      <ScanlinesOverlay opacity={0.015} />
-      <VignetteOverlay intensity={0.3} />
-
-      {/* Main Content */}
-      <main
-        className={`transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'
-          }`}
-      >
-        {/* Inter-section scroll transitions removed (they were heavy R3F/video
-            interstitials that hurt performance and pulled focus from content).
-            Sections now flow directly; the Hero keeps its own scroll-zoom. */}
-        <Hero />
-        <About />
-        <Skills activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
-        <ProjectsShowcase activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
-        <Blog />
-        <Testimonials />
-        {/* AI Chat moved ABOVE Contact ("Get in Touch") per design — chat is the
-            first thing visitors see in the connect block, then the form/booking below */}
-        <HolographicChat
-          onEstimateRequest={() => {
-            // The "estimate / cost" prompt should take the user to the booking
-            // section so they can schedule a call. AI assistant page is for
-            // detailed quotation work, reached separately from the support page.
-            document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-          onBookingRequest={() => {
-            document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-        />
-        <ResumeGate />
-        <KnowledgeGraph3D />
-        <Contact />
-        <Footer />
-      </main>
+        {/* Main Content — one nav-controlled page at a time */}
+        <main
+          className={`transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'
+            }`}
+        >
+          <PagedMain activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+        </main>
+      </PageNavProvider>
     </MotionProvider>
   );
 }
-

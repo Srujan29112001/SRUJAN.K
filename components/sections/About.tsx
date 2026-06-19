@@ -3,11 +3,9 @@
 import { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion, useScroll } from 'framer-motion';
-import { gsap, ScrollTrigger } from '@/lib/gsap';
-import { useScrollTo } from '@/hooks/useLenis';
-import { setNavigating } from '@/lib/navigationState';
 import { cn } from '@/lib/utils';
 import { Reveal } from '@/components/ui/Reveal';
+import { usePageNav, resolveHashToPage } from '@/components/providers/PageNav';
 
 const storyPanels = [
   {
@@ -229,8 +227,8 @@ function GalleryModal({ panel, onClose }: { panel: StoryPanel; onClose: () => vo
 
 export function About() {
   const timelineRef = useRef<HTMLDivElement>(null);
-  const scrollTo = useScrollTo();
   const [galleryPanel, setGalleryPanel] = useState<StoryPanel | null>(null);
+  const { goTo } = usePageNav();
 
   // Spine progress fill — fills as the timeline scrolls through the viewport.
   const { scrollYProgress } = useScroll({
@@ -238,30 +236,13 @@ export function About() {
     offset: ['start 70%', 'end 70%'],
   });
 
-  // Panel button click: external links open normally; in-page anchors scroll
-  // (with the Testimonials pin special-case mirrored from Navigation).
+  // Panel button click: external URLs / routes use the <a> default; in-page
+  // anchors (e.g. the Testimonials button) switch to the matching page.
   const goPanelLink = (e: { preventDefault(): void }, link: string) => {
     if (!link.startsWith('#')) return;
     e.preventDefault();
-    setNavigating(true);
-    if (link === '#testimonials-content') {
-      const tSection = document.getElementById('testimonials');
-      if (tSection && tSection.getBoundingClientRect().top > 0) {
-        ['.portal-light-layer', '.portal-clouds-layer', '.portal-blur-layer'].forEach((s) => {
-          const el = document.querySelector(s) as HTMLElement | null;
-          if (el) gsap.set(el, { opacity: 0 });
-        });
-        const marquee = document.querySelector('.testimonial-marquee') as HTMLElement | null;
-        if (marquee) gsap.set(marquee, { opacity: 1, y: 0 });
-        const pinSpacer = tSection.parentElement;
-        const target = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : tSection;
-        const start = target.getBoundingClientRect().top + window.scrollY;
-        scrollTo(start + 1500, { immediate: true, duration: 0 });
-        setTimeout(() => ScrollTrigger.refresh(), 100);
-        return;
-      }
-    }
-    scrollTo(link, { offset: -80 });
+    const target = resolveHashToPage(link);
+    if (target) goTo(target);
   };
 
   return (

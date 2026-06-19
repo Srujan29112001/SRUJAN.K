@@ -13,6 +13,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ResumePipelineResult } from '@/lib/resume-agents/types';
 import { getByokConfig, BYOK_PROVIDERS, BYOK_CHANGED_EVENT, type ByokConfig } from '@/components/ui/TerminalChat';
+import { usePageNav } from '@/components/providers/PageNav';
 
 const STAGES = [
     'Parsing the job description…',
@@ -46,6 +47,7 @@ export function ResumeGate() {
     const [ownerAuthError, setOwnerAuthError] = useState<string | null>(null);
     const [ownerAuthBusy, setOwnerAuthBusy] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
+    const { goTo } = usePageNav();
 
     // The resume engine runs on the SAME key the visitor set in the chat's 🔑
     // panel. Re-read it whenever this tab regains focus so changes apply.
@@ -231,7 +233,7 @@ export function ResumeGate() {
                         {byok ? (
                             <>ENGINE: <span className="text-emerald-400">your {BYOK_PROVIDERS.find(p => p.id === byok.provider)?.label || byok.provider} key</span>{byok.model ? <span className="text-text-secondary"> · {byok.model}</span> : ''} — AI tailoring on</>
                         ) : (
-                            <>ENGINE: deterministic matching — add your API key in the <a href="#chat" className="text-cyan-400 hover:underline">AI Chat 🔑 panel</a> for AI-tailored output</>
+                            <>ENGINE: deterministic matching — add your API key in the <button type="button" onClick={() => goTo('ai')} className="text-cyan-400 hover:underline">AI Chat 🔑 panel</button> for AI-tailored output</>
                         )}
                     </span>
                 </motion.div>
@@ -497,8 +499,8 @@ export function ResumeGate() {
                                     <p className="text-sm text-text-secondary max-w-md mx-auto">
                                         The fit score is below my threshold for this one, so I won&apos;t hand you a stretched resume.
                                         If you think the agents missed something, {' '}
-                                        <a href="#chat" className="text-cyan-400 hover:underline">ask my AI twin</a> or {' '}
-                                        <a href="#contact" className="text-cyan-400 hover:underline">reach out directly</a> — the real me might disagree with them.
+                                        <button type="button" onClick={() => goTo('ai')} className="text-cyan-400 hover:underline">ask my AI twin</button> or {' '}
+                                        <button type="button" onClick={() => goTo('contact')} className="text-cyan-400 hover:underline">reach out directly</button> — the real me might disagree with them.
                                     </p>
                                 </div>
                             )}

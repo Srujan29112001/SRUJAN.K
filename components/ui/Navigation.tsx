@@ -2,23 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useScrollTo } from '@/hooks/useLenis';
-import { setNavigating } from '@/lib/navigationState';
 import { cn } from '@/lib/utils';
+import { usePageNav, type PageId } from '@/components/providers/PageNav';
 
-gsap.registerPlugin(ScrollTrigger);
-
-const navLinks = [
-  { label: 'Journey', href: '#about' },
-  { label: 'Skills', href: '#skills-content' },
-  { label: 'Projects', href: '#projects' },
-  { label: 'Blog', href: '#blog' },
-  { label: 'Testimonials', href: '#testimonials-content' },
-  // AI Chat, Resume and the Neural Map sit between Testimonials and Contact
-  { label: 'AI Chat', href: '#chat' },
-  { label: 'Resume', href: '#resume' },
-  { label: 'Neural Map', href: '#knowledge' },
+const navLinks: { label: string; page: PageId }[] = [
+  { label: 'Home', page: 'home' },        // Hero + Journey
+  { label: 'Skills', page: 'skills' },
+  { label: 'Projects', page: 'projects' },
+  { label: 'Blog', page: 'blog' },
+  { label: 'Testimonials', page: 'testimonials' },
+  { label: 'AI', page: 'ai' },            // AI Chat + Neural Map
+  { label: 'Resume', page: 'resume' },
 ];
 
 // Rotating roles for the logo area
@@ -36,142 +30,38 @@ export function Navigation() {
   const navRef = useRef<HTMLElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('');
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
-  const lastScrollY = useRef(0);
-  const scrollTo = useScrollTo();
+  const { page, goTo } = usePageNav();
 
   // Role rotation effect
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentRoleIndex((prev) => (prev + 1) % roles.length);
-    }, 3000); // Change role every 3 seconds
-
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll handling for visibility and background
+  // Nav entrance + background-on-scroll (scroll is per-page now)
   useEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
 
-    // Initial animation
-    gsap.fromTo(nav,
+    gsap.fromTo(
+      nav,
       { y: -100, opacity: 0 },
       { y: 0, opacity: 1, duration: 1, delay: 0.5, ease: 'power3.out' }
     );
 
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // Background change
-      setIsScrolled(currentScrollY > 50);
-
-      lastScrollY.current = currentScrollY;
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Section detection for active nav highlighting - using viewport position
-  useEffect(() => {
-    const sections = navLinks.map(link => link.href.replace('#', ''));
-
-    const handleSectionDetection = () => {
-      const viewportHeight = window.innerHeight;
-      let bestMatch = '';
-      let bestScore = -Infinity;
-
-      // First check if hero section is visible (user is at top/home)
-      const heroEl = document.getElementById('hero');
-      if (heroEl) {
-        const heroRect = heroEl.getBoundingClientRect();
-        // If hero section top is near the top of viewport, user is on home
-        if (heroRect.top > -100 && heroRect.top < viewportHeight * 0.5) {
-          if (activeSection !== '') {
-            setActiveSection('');
-          }
-          return;
-        }
-      }
-
-      for (const sectionId of sections) {
-        const el = document.getElementById(sectionId);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-
-          // Calculate how much of the section is in the top half of viewport
-          const sectionTop = rect.top;
-          const sectionBottom = rect.bottom;
-
-          // A section is "active" when it's in the top portion of the viewport
-          // Score based on how close the section top is to the top of the viewport
-          // Prefer sections that have their top above the center line
-          if (sectionTop < viewportHeight * 0.5 && sectionBottom > 100) {
-            const score = viewportHeight - Math.abs(sectionTop);
-            if (score > bestScore) {
-              bestScore = score;
-              bestMatch = sectionId;
-            }
-          }
-        }
-      }
-
-      if (bestMatch !== activeSection) {
-        setActiveSection(bestMatch);
-      }
-    };
-
-    window.addEventListener('scroll', handleSectionDetection, { passive: true });
-    handleSectionDetection(); // Initial check
-
-    return () => window.removeEventListener('scroll', handleSectionDetection);
-  }, [activeSection]);
-
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
+  const handleNavClick = (e: React.MouseEvent, target: PageId) => {
     e.preventDefault();
     setIsMenuOpen(false);
-    // Set navigating state to bypass video transitions during programmatic scroll
-    setNavigating(true);
-
-    // If navigating to Journey (About section), we need special handling
-    // The About section is a pinned 3D book (page-turn ScrollTrigger). Smooth
-    // scrolling would flip through the pages on the way in, so jump straight to
-    // the START of the pin (page 01).
-    if (href === '#about') {
-      const aboutSection = document.getElementById('about');
-      const aboutTrigger = ScrollTrigger.getById('about-horizontal-scroll');
-
-      if (aboutSection && aboutTrigger) {
-        // Calculate the exact scroll position for the START of About section
-        // We need to account for the pin-spacer that GSAP creates
-        const pinSpacer = aboutSection.parentElement;
-        const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : aboutSection;
-        const sectionTop = targetElement.getBoundingClientRect().top + window.scrollY;
-
-        // Use IMMEDIATE scroll (no smooth animation) to jump directly
-        // This prevents passing through the ScrollTrigger range
-        scrollTo(sectionTop - 80, { immediate: true, duration: 0 });
-
-        // Refresh ScrollTrigger after the immediate scroll
-        setTimeout(() => {
-          ScrollTrigger.refresh();
-        }, 100);
-      } else {
-        // Fallback if elements not found
-        scrollTo(href, { offset: -80, immediate: true });
-      }
-      return;
-    }
-
-    // Skills and Testimonials no longer pin (the warp/portal emergence intros
-    // were removed along with the transitions), so a plain smooth scroll works.
-    scrollTo(href, { offset: -80 });
+    goTo(target);
   };
 
   return (
@@ -195,11 +85,10 @@ export function Navigation() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           {/* Logo with rotating role */}
           <a
-            href="#"
-            onClick={(e) => handleNavClick(e, '#hero')}
+            href="#home"
+            onClick={(e) => handleNavClick(e, 'home')}
             className="group flex items-center gap-3"
           >
-            {/* Animated Logo Container */}
             <div className="relative">
               <div className="absolute inset-0 bg-cyan-500/30 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden group-hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-300">
@@ -214,7 +103,6 @@ export function Navigation() {
               <span className="font-display text-xs sm:text-sm font-semibold text-white tracking-wide">
                 SRUJAN
               </span>
-              {/* Rotating role text */}
               <span
                 key={currentRoleIndex}
                 className="font-mono text-[8px] sm:text-[9px] text-cyan-400/80 tracking-wider uppercase truncate animate-fade-in max-w-[100px] sm:max-w-none"
@@ -228,34 +116,36 @@ export function Navigation() {
           <div className="hidden items-center gap-1 lg:flex">
             {navLinks.map((link) => (
               <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
+                key={link.page}
+                href={`#${link.page}`}
+                onClick={(e) => handleNavClick(e, link.page)}
                 className={cn(
                   'relative px-3 py-2 font-mono text-[11px] uppercase tracking-wider transition-all duration-300',
-                  activeSection === link.href.replace('#', '')
-                    ? 'text-cyan-400'
-                    : 'text-white/50 hover:text-white'
+                  page === link.page ? 'text-cyan-400' : 'text-white/50 hover:text-white'
                 )}
               >
                 {link.label}
-                {/* Active indicator */}
                 <span
                   className={cn(
                     'absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] bg-cyan-400 rounded-full transition-all duration-300',
-                    activeSection === link.href.replace('#', '') ? 'w-3' : 'w-0'
+                    page === link.page ? 'w-3' : 'w-0'
                   )}
                 />
               </a>
             ))}
           </div>
 
-          {/* CTA Button — jumps to the Get in Touch section (form + booking) */}
+          {/* CTA Button — the Contact ("Get in Touch") page */}
           <div className="hidden md:block">
             <a
               href="#contact"
-              onClick={(e) => handleNavClick(e, '#contact')}
-              className="group relative inline-flex items-center gap-2 px-4 py-2 overflow-hidden rounded-full border border-cyan-500/40 bg-cyan-500/10 font-mono text-[10px] uppercase tracking-wider text-cyan-400 transition-all duration-300 hover:border-cyan-400 hover:bg-cyan-500/20 hover:text-white hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+              onClick={(e) => handleNavClick(e, 'contact')}
+              className={cn(
+                'group relative inline-flex items-center gap-2 px-4 py-2 overflow-hidden rounded-full border font-mono text-[10px] uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]',
+                page === 'contact'
+                  ? 'border-cyan-400 bg-cyan-500/20 text-white'
+                  : 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 hover:border-cyan-400 hover:bg-cyan-500/20 hover:text-white'
+              )}
             >
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               <span className="relative z-10">Let&apos;s Connect</span>
@@ -272,24 +162,9 @@ export function Navigation() {
             aria-label="Toggle menu"
             style={{ zIndex: 100000 }}
           >
-            <span
-              className={cn(
-                'h-0.5 w-6 bg-white transition-all duration-300',
-                isMenuOpen && 'translate-y-2 rotate-45 bg-cyan-400'
-              )}
-            />
-            <span
-              className={cn(
-                'h-0.5 w-6 bg-white transition-all duration-300',
-                isMenuOpen && 'opacity-0'
-              )}
-            />
-            <span
-              className={cn(
-                'h-0.5 w-6 bg-white transition-all duration-300',
-                isMenuOpen && '-translate-y-2 -rotate-45 bg-cyan-400'
-              )}
-            />
+            <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && 'translate-y-2 rotate-45 bg-cyan-400')} />
+            <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && 'opacity-0')} />
+            <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && '-translate-y-2 -rotate-45 bg-cyan-400')} />
           </button>
         </div>
       </nav>
@@ -307,7 +182,6 @@ export function Navigation() {
           isMenuOpen ? 'opacity-100' : 'opacity-0'
         )}
       >
-        {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px]" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px]" />
@@ -316,18 +190,15 @@ export function Navigation() {
         <div className="relative flex h-full flex-col items-center justify-center gap-5 pt-20">
           {navLinks.map((link, index) => (
             <a
-              key={link.href}
-              href={link.href}
-              onClick={(e) => handleNavClick(e, link.href)}
+              key={link.page}
+              href={`#${link.page}`}
+              onClick={(e) => handleNavClick(e, link.page)}
               className={cn(
-                'font-display text-2xl font-bold text-white transition-all duration-300 hover:text-cyan-400',
-                isMenuOpen
-                  ? 'translate-y-0 opacity-100'
-                  : 'translate-y-8 opacity-0'
+                'font-display text-2xl font-bold transition-all duration-300 hover:text-cyan-400',
+                page === link.page ? 'text-cyan-400' : 'text-white',
+                isMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
               )}
-              style={{
-                transitionDelay: isMenuOpen ? `${index * 60}ms` : '0ms',
-              }}
+              style={{ transitionDelay: isMenuOpen ? `${index * 60}ms` : '0ms' }}
             >
               <span className="mr-3 font-mono text-xs text-cyan-400/50">0{index + 1}</span>
               {link.label}
@@ -336,16 +207,12 @@ export function Navigation() {
 
           <a
             href="#contact"
-            onClick={(e) => handleNavClick(e, '#contact')}
+            onClick={(e) => handleNavClick(e, 'contact')}
             className={cn(
               'mt-4 inline-flex items-center gap-2 px-6 py-3 rounded-full border border-cyan-500/50 bg-cyan-500/10 font-mono text-sm uppercase tracking-wider text-cyan-400 transition-all duration-300 hover:bg-cyan-500/20',
-              isMenuOpen
-                ? 'translate-y-0 opacity-100'
-                : 'translate-y-8 opacity-0'
+              isMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
             )}
-            style={{
-              transitionDelay: isMenuOpen ? `${navLinks.length * 60}ms` : '0ms',
-            }}
+            style={{ transitionDelay: isMenuOpen ? `${navLinks.length * 60}ms` : '0ms' }}
           >
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
             Let&apos;s Connect
@@ -354,7 +221,6 @@ export function Navigation() {
             </svg>
           </a>
 
-          {/* Current role display on mobile */}
           <div className="mt-8 text-center">
             <span className="font-mono text-[10px] text-cyan-400/60 tracking-widest uppercase">
               {roles[currentRoleIndex]}
