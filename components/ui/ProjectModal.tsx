@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { gsap } from 'gsap';
-import { X, Github, ExternalLink, Play, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, ArrowLeft, Github, ExternalLink, Play, FileText, ArrowUpRight } from 'lucide-react';
 import { Project } from '@/data/projects';
-import { cn } from '@/lib/utils';
 import { useSmoothScroll } from '@/components/providers/SmoothScrollProvider';
+
+// The draggable 3D image cluster is client-only (R3F) and only worth loading
+// once a project is actually opened.
+const ProjectGallery3D = dynamic(() => import('@/components/ui/ProjectGallery3D'), { ssr: false });
 
 interface ProjectModalProps {
   project: Project | null;
@@ -17,7 +21,6 @@ interface ProjectModalProps {
 export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { lenis } = useSmoothScroll();
 
   useEffect(() => {
@@ -26,16 +29,11 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
       if (lenis) lenis.stop();
 
       const ctx = gsap.context(() => {
-        gsap.fromTo(
-          modalRef.current,
-          { opacity: 0 },
-          { opacity: 1, duration: 0.3, ease: 'power2.out' }
-        );
-
+        gsap.fromTo(modalRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out' });
         gsap.fromTo(
           contentRef.current,
-          { scale: 0.95, opacity: 0, y: 20 },
-          { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: 'back.out(1.2)', delay: 0.1 }
+          { y: 26, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out', delay: 0.05 }
         );
       }, modalRef);
 
@@ -49,321 +47,223 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
     }
   }, [isOpen, project, lenis]);
 
+  // Esc to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !project) return null;
 
-  // Each project's detail page is themed to its own colour.
   const accent = project.color || '#06b6d4';
+  const images = Array.from(
+    new Set(
+      [project.image, project.architectureImage, ...((project.gallery || []).map((g) => g.src))].filter(Boolean)
+    )
+  ) as string[];
 
-  // Combine main image and gallery for the carousel
-  const slides = [
-    { src: project.image, alt: project.title, caption: 'Project Preview' },
-    ...(project.gallery || [])
-  ];
-
-  const nextSlide = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % slides.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + slides.length) % slides.length);
-  };
+  const overview = (project.longDescription || project.description)
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean);
 
   return (
     <div
       ref={modalRef}
-      className="fixed inset-0 z-[100] overflow-y-auto"
+      data-lenis-prevent
+      className="fixed inset-0 z-[100] overflow-y-auto bg-[#070708] custom-scrollbar"
     >
-      {/* Backdrop */}
+      {/* themed ambient glow */}
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-md -z-10"
-        onClick={onClose}
+        className="pointer-events-none fixed inset-0"
+        style={{ background: `radial-gradient(circle at 72% 38%, ${accent}24, transparent 58%)` }}
+      />
+      {/* faint grid */}
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+        }}
       />
 
-      {/* Modal Content */}
-      <div className="min-h-screen flex items-start sm:items-center justify-center px-2 sm:px-4 md:px-6 pt-16 pb-48 sm:pt-4 sm:pb-12 md:py-0">
-        <div
-          ref={contentRef}
-          data-lenis-prevent
-          style={{ borderColor: `${accent}4d`, boxShadow: `0 0 60px ${accent}26` }}
-          className="relative w-full max-w-6xl my-2 sm:my-auto bg-black/90 border rounded-lg sm:rounded-2xl custom-scrollbar"
-        >
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            style={{ backgroundColor: accent }}
-            className="fixed top-4 right-4 sm:top-24 sm:right-8 md:right-12 z-[10000] p-3 sm:p-4 rounded-full transition-all duration-300 border-2 border-white shadow-2xl hover:brightness-110 hover:scale-110 group"
-            aria-label="Close modal"
-          >
-            <X className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:rotate-90 transition-transform duration-300 stroke-[3]" />
+      <div ref={contentRef} className="relative min-h-screen flex flex-col text-white">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-5 sm:px-8 lg:px-12 py-5 sm:py-6">
+          <button onClick={onClose} className="group inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="font-mono text-xs uppercase tracking-[0.22em]">Back</span>
           </button>
 
-          {/* Carousel Section */}
-          <div className="relative w-full h-[30vh] sm:h-[40vh] md:h-[50vh] min-h-[250px] sm:min-h-[300px] md:min-h-[400px] overflow-hidden group bg-black">
-            {/* Images */}
-            {slides.map((slide, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "absolute inset-0 transition-opacity duration-500 ease-in-out",
-                  index === currentImageIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-                )}
-              >
-                <Image
-                  src={slide.src}
-                  alt={slide.alt || project.title}
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-              </div>
-            ))}
+          <div
+            className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full border"
+            style={{ borderColor: `${accent}4d`, backgroundColor: `${accent}14` }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
+            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-wider" style={{ color: accent }}>
+              {project.category} System
+            </span>
+          </div>
 
-            {/* Ongoing Badge */}
-            {project.ongoing && (
-              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30 flex items-center gap-2 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-red-500/40 rounded-full shadow-[0_0_12px_rgba(239,68,68,0.25)]">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="p-2.5 rounded-full border border-white/15 text-white/70 hover:text-white hover:border-white/40 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 px-5 sm:px-8 lg:px-12 pb-10">
+          {/* LEFT — text */}
+          <div className="order-2 lg:order-1 max-w-xl lg:py-6">
+            <p className="font-mono text-[11px] uppercase tracking-[0.25em] mb-3" style={{ color: accent }}>
+              {project.category}{project.year ? ` · ${project.year}` : ''}
+            </p>
+            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-[1.03] tracking-tight mb-5">
+              {project.title}
+            </h1>
+
+            {/* tag pills */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {project.tech.slice(0, 6).map((t) => (
+                <span
+                  key={t}
+                  className="px-3 py-1.5 rounded-full text-[11px] font-mono uppercase tracking-wider text-white/70 bg-white/[0.04] border border-white/10"
+                >
+                  {t}
                 </span>
-                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-red-400">Ongoing</span>
+              ))}
+            </div>
+
+            {project.metric && (
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-mono mb-6"
+                style={{ borderColor: `${accent}55`, backgroundColor: `${accent}14`, color: accent }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accent }} />
+                {project.metric}
               </div>
             )}
 
-            {/* Navigation Arrows */}
-            {slides.length > 1 && (
-              <>
-                <button
-                  onClick={(e) => { e.stopPropagation(); prevSlide(); }}
-                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/50 border border-white/10 text-white hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all backdrop-blur-sm group/nav"
-                >
-                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 group-hover/nav:-translate-x-0.5 transition-transform" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); nextSlide(); }}
-                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 p-2 sm:p-3 rounded-full bg-black/50 border border-white/10 text-white hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all backdrop-blur-sm group/nav"
-                >
-                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover/nav:translate-x-0.5 transition-transform" />
-                </button>
-
-                {/* Slide Indicators */}
-                <div className="absolute bottom-4 sm:bottom-8 right-4 sm:right-8 z-30 flex gap-1.5 sm:gap-2">
-                  {slides.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
-                      style={idx === currentImageIndex ? { backgroundColor: accent } : undefined}
-                      className={cn(
-                        "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300",
-                        idx === currentImageIndex
-                          ? "w-6 sm:w-8"
-                          : "bg-white/30 hover:bg-white/50"
-                      )}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Project Title Overlay (Always visible) */}
-            <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-8 w-full z-20 pointer-events-none">
-              <div
-                className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 mb-2 sm:mb-4 rounded-full border backdrop-blur-sm"
-                style={{ borderColor: `${accent}4d`, backgroundColor: `${accent}1a` }}
-              >
-                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
-                <span className="text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase" style={{ color: accent }}>
-                  {project.category} System
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl md:text-5xl font-display font-bold text-white mb-1 sm:mb-2 leading-tight">
-                {project.title}
-              </h2>
-              <div className="flex flex-col md:flex-row md:items-center gap-2 sm:gap-4">
-                {project.metric && (
-                  <p className="text-sm sm:text-base md:text-lg font-mono flex items-center gap-2" style={{ color: accent }}>
-                    <span className="w-4 sm:w-8 h-[1px]" style={{ backgroundColor: `${accent}80` }} />
-                    {project.metric}
+            {/* overview */}
+            <div className="space-y-4 mb-8">
+              {overview.map((block, i) => {
+                const m = block.match(/^([A-Za-z][A-Za-z0-9 &/'+-]{1,30}?)\s*([—–:])\s+([\s\S]+)$/);
+                return (
+                  <p key={i} className="text-white/70 leading-relaxed text-sm sm:text-base">
+                    {m ? (
+                      <>
+                        <span className="font-semibold" style={{ color: accent }}>{m[1].trim()}</span>
+                        <span className="text-white/40">{m[2] === ':' ? ': ' : ' — '}</span>
+                        {m[3].trim()}
+                      </>
+                    ) : (
+                      block
+                    )}
                   </p>
-                )}
-                {/* Current Slide Caption */}
-                {slides[currentImageIndex].caption && (
-                  <div className="flex items-center gap-2">
-                    <span className="hidden md:block w-1 h-1 rounded-full bg-white/30" />
-                    <p className="text-xs sm:text-sm text-white/60 font-mono bg-black/50 px-2 sm:px-3 py-0.5 sm:py-1 rounded border border-white/10 backdrop-blur-md">
-                      {slides[currentImageIndex].caption}
-                    </p>
-                  </div>
-                )}
+                );
+              })}
+            </div>
+
+            {/* actions */}
+            <div className="flex flex-wrap items-center gap-3">
+              {project.link && (
+                <a
+                  href={project.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm transition-all hover:brightness-110"
+                  style={
+                    project.liveApp
+                      ? { backgroundColor: '#ef4444', color: '#fff', boxShadow: '0 0 20px rgba(239,68,68,0.4)' }
+                      : { backgroundColor: accent, color: '#000', boxShadow: `0 0 20px ${accent}55` }
+                  }
+                >
+                  {project.liveApp ? <ExternalLink className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+                  {project.liveApp ? 'Try it' : 'See Project'}
+                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </a>
+              )}
+              {project.github && (
+                <a
+                  href={project.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-white/15 text-white font-medium text-sm hover:border-white/40 hover:bg-white/5 transition-all"
+                >
+                  <Github className="w-4 h-4" /> Source
+                </a>
+              )}
+              {project.documentation && (
+                <a
+                  href={project.documentation}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-white/15 text-white font-medium text-sm hover:border-white/40 hover:bg-white/5 transition-all"
+                >
+                  <FileText className="w-4 h-4" /> Docs
+                </a>
+              )}
+            </div>
+
+            {/* meta */}
+            <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-x-10 gap-y-3 text-sm">
+              {project.year && (
+                <div>
+                  <span className="block text-white/40 text-xs font-mono uppercase tracking-wider mb-1">Year</span>
+                  <span className="text-white">{project.year}</span>
+                </div>
+              )}
+              {project.role && (
+                <div>
+                  <span className="block text-white/40 text-xs font-mono uppercase tracking-wider mb-1">Role</span>
+                  <span className="text-white">{project.role}</span>
+                </div>
+              )}
+              <div>
+                <span className="block text-white/40 text-xs font-mono uppercase tracking-wider mb-1">Status</span>
+                <span className="text-white inline-flex items-center gap-1.5">
+                  {project.ongoing ? (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      Ongoing
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Completed
+                    </>
+                  )}
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="p-4 sm:p-6 md:p-8 lg:p-10 pb-8 sm:pb-6 md:pb-8 lg:pb-10 grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
-            {/* Main Content Column */}
-            <div className="lg:col-span-2 space-y-6 sm:space-y-8 lg:space-y-10">
-              {/* Description */}
-              <div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2">
-                  <FileText className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: accent }} />
-                  Project Overview
-                </h3>
-                <div className="space-y-4">
-                  {(project.longDescription || project.description)
-                    .split(/\n{2,}/)
-                    .map((block) => block.trim())
-                    .filter(Boolean)
-                    .map((block, i) => {
-                      // Pull out a leading section label ("ARCHITECTURE — …",
-                      // "Workflow: …", "Tech stack: …") and style it, so the
-                      // overview reads as organised paragraphs, not a wall.
-                      const m = block.match(/^([A-Za-z][A-Za-z0-9 &/'+-]{1,30}?)\s*([—–:])\s+([\s\S]+)$/);
-                      return (
-                        <p key={i} className="text-white/70 leading-relaxed text-sm sm:text-base lg:text-lg">
-                          {m ? (
-                            <>
-                              <span className="font-semibold" style={{ color: accent }}>{m[1].trim()}</span>
-                              <span className="text-white/40">{m[2] === ':' ? ': ' : ' — '}</span>
-                              {m[3].trim()}
-                            </>
-                          ) : block}
-                        </p>
-                      );
-                    })}
-                </div>
+          {/* RIGHT — 3D cluster (desktop) / tilted stack (mobile) */}
+          <div className="order-1 lg:order-2 relative">
+            {/* desktop: draggable 3D cluster */}
+            <div className="hidden md:block lg:sticky lg:top-6 h-[58vh] lg:h-[calc(100vh-8rem)] relative">
+              {images.length > 0 && <ProjectGallery3D images={images} color={accent} />}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.25em] text-white/30 pointer-events-none">
+                Drag to orbit
               </div>
             </div>
-
-            {/* Sidebar Column */}
-            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-              {/* Actions Card */}
-              <div className="p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                <h3 className="text-xs sm:text-sm font-mono uppercase tracking-wider text-white/50 mb-4 sm:mb-6">
-                  Project Actions
-                </h3>
-                <div className="flex flex-col gap-2 sm:gap-3">
-                  {project.link ? (
-                    project.liveApp ? (
-                      // Real, usable deployed app → red "Try it"
-                      <a
-                        href={project.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-red-500 text-white font-bold text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-red-400 transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.45)]"
-                      >
-                        <div className="p-0.5 sm:p-1 bg-black/15 rounded-full">
-                          <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </div>
-                        Try it
-                      </a>
-                    ) : (
-                      <a
-                        href={project.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ backgroundColor: accent, boxShadow: `0 0 20px ${accent}40` }}
-                        className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 text-black font-bold text-sm sm:text-base rounded-lg sm:rounded-xl transition-all hover:brightness-110"
-                      >
-                        <div className="p-0.5 sm:p-1 bg-black/10 rounded-full">
-                          <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
-                        </div>
-                        View Live Demo
-                      </a>
-                    )
-                  ) : (
-                    <button
-                      disabled
-                      className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 text-white/30 font-bold text-sm sm:text-base rounded-lg sm:rounded-xl cursor-not-allowed border border-white/5"
-                    >
-                      <Play className="w-3 h-3 sm:w-4 sm:h-4" />
-                      Demo Unavailable
-                    </button>
-                  )}
-
-                  {project.github && (
-                    <a
-                      href={project.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-black/40 border border-white/10 text-white font-medium text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-white/5 transition-all hover:border-white/30"
-                    >
-                      <Github className="w-4 h-4 sm:w-5 sm:h-5" />
-                      View Source Code
-                    </a>
-                  )}
-
-                  {project.documentation ? (
-                    <a
-                      href={project.documentation}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-black/40 border border-white/10 text-white font-medium text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-white/5 transition-all hover:border-white/30"
-                    >
-                      <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                      View Documentation
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      className="flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-white/5 text-white/30 font-medium text-sm sm:text-base rounded-lg sm:rounded-xl cursor-not-allowed border border-white/5"
-                    >
-                      <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                      Documentation
-                    </button>
-                  )}
+            {/* mobile: light tilted image stack */}
+            <div className="md:hidden flex flex-col gap-4">
+              {images.slice(0, 5).map((src, i) => (
+                <div
+                  key={i}
+                  className="relative aspect-video rounded-2xl overflow-hidden border shadow-xl"
+                  style={{ borderColor: `${accent}40`, transform: `rotate(${i % 2 ? 1.4 : -1.4}deg)` }}
+                >
+                  <Image src={src} alt={project.title} fill className="object-cover" sizes="100vw" />
                 </div>
-              </div>
-
-              {/* Tech Stack */}
-              <div className="p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10">
-                <h4 className="text-xs sm:text-sm font-mono uppercase tracking-wider text-white/50 mb-3 sm:mb-4">
-                  Tech Stack
-                </h4>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {project.tech.map((t) => (
-                    <span
-                      key={t}
-                      style={{ color: accent }}
-                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-black/50 border border-white/10 rounded-md sm:rounded-lg hover:border-white/30 transition-colors cursor-default"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Meta Info */}
-              <div className="p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 space-y-3 sm:space-y-4">
-                {project.year && (
-                  <div className="flex justify-between items-center border-b border-white/5 pb-2 sm:pb-3">
-                    <span className="text-xs sm:text-sm text-white/50">Year</span>
-                    <span className="font-mono text-sm sm:text-base text-white">{project.year}</span>
-                  </div>
-                )}
-                {project.role && (
-                  <div className="flex justify-between items-center border-b border-white/5 pb-2 sm:pb-3">
-                    <span className="text-xs sm:text-sm text-white/50">Role</span>
-                    <span className="font-mono text-sm sm:text-base text-white">{project.role}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-white/50">Status</span>
-                  {project.ongoing ? (
-                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] sm:text-xs font-medium border border-red-500/30">
-                      <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-red-500" />
-                      </span>
-                      Ongoing
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] sm:text-xs font-medium border border-emerald-500/30">
-                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Completed
-                    </span>
-                  )}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
