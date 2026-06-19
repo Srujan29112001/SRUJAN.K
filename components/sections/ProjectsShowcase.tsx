@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { ArrowUpRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { ProjectModal, useProjectModal } from '@/components/ui/ProjectModal';
 import { Reveal } from '@/components/ui/Reveal';
+import { HighlightsFan } from '@/components/ui/HighlightsFan';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -134,11 +135,15 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
             return 0;
         });
 
-    const visibleProjects = isExpanded ? remainingProjects : remainingProjects.slice(0, 6);
+    // First six (featured first, then by priority) become the Highlights fan;
+    // the rest fall through to the editorial list below it.
+    const ordered = [featuredProject, ...remainingProjects];
+    const highlights = ordered.slice(0, 6);
+    const listProjects = ordered.slice(6);
+    const visibleList = isExpanded ? listProjects : listProjects.slice(0, 6);
 
     const accent = CAT_COLOR[activeCategory];
     const story = STORY[activeCategory];
-    const fAccent = featuredProject.color || accent;
     const heroSrc =
         activeCategory === 'AI'
             ? '/images/projects/hero-ai.png'
@@ -267,100 +272,20 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                     </div>
                 </Reveal>
 
-                {/* Featured editorial block (re-animates on category change) */}
-                <motion.div
-                    key={`feat-${activeCategory}`}
-                    initial={{ opacity: 0, y: 36 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center mb-16 sm:mb-20 md:mb-28"
-                >
-                    {/* Left: story + title + actions */}
-                    <div className="space-y-4 sm:space-y-5 md:space-y-6 order-2 lg:order-1">
-                        <div className="flex items-center gap-3">
-                            <span className="font-display text-5xl sm:text-6xl font-bold leading-none" style={{ color: fAccent }}>
-                                01
-                            </span>
-                            <div className="leading-tight">
-                                <p className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.25em]" style={{ color: fAccent }}>
-                                    {story.chapter}
-                                </p>
-                                <div className="inline-flex items-center gap-2 mt-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                    <span className="text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
-                                        Featured Project
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                {/* Highlights — the first six projects as a fanned, themed gallery */}
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.25em]" style={{ color: accent }}>
+                        {story.chapter}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">Highlights</span>
+                    </span>
+                </div>
+                <HighlightsFan key={activeCategory} projects={highlights} accent={accent} onOpen={openModal} />
 
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold leading-[1.05] tracking-tight">
-                            {featuredProject.title}
-                        </h1>
-
-                        {featuredProject.metric && (
-                            <div
-                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-mono"
-                                style={{ borderColor: `${fAccent}55`, backgroundColor: `${fAccent}14`, color: fAccent }}
-                            >
-                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: fAccent }} />
-                                {featuredProject.metric}
-                            </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2 sm:gap-3">
-                            {featuredProject.tech.slice(0, 6).map((t) => (
-                                <span key={t} className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-white/10 border border-white/10 rounded-md">
-                                    {t}
-                                </span>
-                            ))}
-                        </div>
-
-                        <div className="flex gap-3 sm:gap-4 pt-2">
-                            <button
-                                onClick={() => openModal(featuredProject)}
-                                className="group flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-black rounded-full font-medium hover:bg-white/90 transition-colors active:scale-95 text-sm sm:text-base"
-                            >
-                                View Details <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Right: large image */}
-                    <div
-                        className="relative aspect-video rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 shadow-2xl group cursor-pointer order-1 lg:order-2"
-                        onClick={() => openModal(featuredProject)}
-                    >
-                        <Image
-                            src={featuredProject.architectureImage || featuredProject.image}
-                            alt={featuredProject.title}
-                            fill
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                        <div
-                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                            style={{ background: `linear-gradient(to top, ${fAccent}40, transparent 60%)` }}
-                        />
-
-                        {featuredProject.ongoing && (
-                            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30 flex items-center gap-2 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-red-500/40 rounded-full shadow-[0_0_12px_rgba(239,68,68,0.25)]">
-                                <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-                                </span>
-                                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-red-400">Ongoing</span>
-                            </div>
-                        )}
-
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black/60 backdrop-blur-md rounded-full text-white text-xs sm:text-sm border border-white/20">
-                                Click to Expand
-                            </span>
-                        </div>
-                    </div>
-                </motion.div>
-
+                {listProjects.length > 0 && (
+                <>
                 {/* List header */}
                 <div
                     ref={projectsHeaderRef}
@@ -383,7 +308,7 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                     onMouseMove={handleListMove}
                     onMouseLeave={() => setHovered(null)}
                 >
-                    {visibleProjects.map((project, i) => {
+                    {visibleList.map((project, i) => {
                         const pAccent = project.color || accent;
                         return (
                             <Reveal key={project.id} delay={Math.min(i, 6) * 0.04} amount={0.2}>
@@ -401,7 +326,7 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
 
                                     {/* index */}
                                     <span className="font-mono text-[11px] sm:text-sm text-white/30 w-7 sm:w-10 shrink-0 tabular-nums group-hover:[color:var(--accent)] transition-colors">
-                                        {String(i + 2).padStart(2, '0')}
+                                        {String(i + 7).padStart(2, '0')}
                                     </span>
 
                                     {/* mobile thumbnail (no hover on touch) */}
@@ -452,7 +377,7 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                 </div>
 
                 {/* See More / Show Less Button */}
-                {remainingProjects.length > 3 && (
+                {listProjects.length > 6 && (
                     <div className="flex justify-center mt-8 sm:mt-10 md:mt-12">
                         <button
                             onClick={handleToggle}
@@ -461,10 +386,12 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                             {isExpanded ? (
                                 <>Show Less <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" /></>
                             ) : (
-                                <>See all {remainingProjects.length} projects <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" /></>
+                                <>See all {filteredProjects.length} projects <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" /></>
                             )}
                         </button>
                     </div>
+                )}
+                </>
                 )}
             </div>
 
