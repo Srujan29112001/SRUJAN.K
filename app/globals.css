@@ -327,6 +327,26 @@
   animation: gradient 3s ease infinite;
 }
 
+/* Custom cursor — hide the native cursor only on fine-pointer devices while
+   the CustomCursor component is mounted (it adds .has-custom-cursor to <html>).
+   Inputs / textareas keep their caret so typing and the AI chat stay usable. */
+@media (hover: hover) and (pointer: fine) {
+  html.has-custom-cursor,
+  html.has-custom-cursor a,
+  html.has-custom-cursor button,
+  html.has-custom-cursor [data-cursor='pointer'],
+  html.has-custom-cursor [role='button'] {
+    cursor: none;
+  }
+
+  html.has-custom-cursor input,
+  html.has-custom-cursor textarea,
+  html.has-custom-cursor select,
+  html.has-custom-cursor [contenteditable='true'] {
+    cursor: auto;
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

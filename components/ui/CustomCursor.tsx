@@ -18,10 +18,15 @@ export function CustomCursor() {
     const dot = dotRef.current;
     if (!cursor || !dot) return;
 
+    // Hide the native cursor only while this component is mounted, so no-JS /
+    // touch always keep the system cursor (inputs keep their caret via CSS).
+    document.documentElement.classList.add('has-custom-cursor');
+
     let mouseX = 0;
     let mouseY = 0;
     let cursorX = 0;
     let cursorY = 0;
+    let shown = false;
 
     const onMouseMove = (e: MouseEvent) => {
       mouseX = e.clientX;
@@ -30,7 +35,8 @@ export function CustomCursor() {
       // Move dot immediately
       gsap.set(dot, { x: mouseX, y: mouseY });
 
-      if (!isVisible) {
+      if (!shown) {
+        shown = true;
         setIsVisible(true);
       }
     };
@@ -47,43 +53,29 @@ export function CustomCursor() {
 
     gsap.ticker.add(ticker);
 
-    // Hover states for interactive elements
+    // Hover states for interactive elements — neutral/editorial (white).
+    const onElEnter = () => {
+      gsap.to(cursor, { scale: 1.8, backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.6)', duration: 0.3 });
+      gsap.to(dot, { scale: 0.4, duration: 0.3 });
+    };
+    const onElLeave = () => {
+      gsap.to(cursor, { scale: 1, backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.3)', duration: 0.3 });
+      gsap.to(dot, { scale: 1, duration: 0.3 });
+    };
+
+    const bound: Element[] = [];
     const setupHoverEffects = () => {
-      const interactives = document.querySelectorAll(
-        'a, button, [data-cursor="pointer"], input, textarea, select'
-      );
-
-      interactives.forEach((el) => {
-        el.addEventListener('mouseenter', () => {
-          gsap.to(cursor, {
-            scale: 2,
-            backgroundColor: 'rgba(109, 100, 163, 0.1)',
-            borderColor: 'rgba(109, 100, 163, 0.5)',
-            duration: 0.3,
-          });
-          gsap.to(dot, {
-            scale: 0.5,
-            duration: 0.3,
-          });
+      document
+        .querySelectorAll('a, button, [data-cursor="pointer"], input, textarea, select')
+        .forEach((el) => {
+          el.addEventListener('mouseenter', onElEnter);
+          el.addEventListener('mouseleave', onElLeave);
+          bound.push(el);
         });
-
-        el.addEventListener('mouseleave', () => {
-          gsap.to(cursor, {
-            scale: 1,
-            backgroundColor: 'transparent',
-            borderColor: 'rgba(255, 255, 255, 0.3)',
-            duration: 0.3,
-          });
-          gsap.to(dot, {
-            scale: 1,
-            duration: 0.3,
-          });
-        });
-      });
     };
 
     // Setup hover effects after a delay to ensure DOM is ready
-    const timeout = setTimeout(setupHoverEffects, 100);
+    const timeout = setTimeout(setupHoverEffects, 200);
 
     // Event listeners
     window.addEventListener('mousemove', onMouseMove);
@@ -96,8 +88,13 @@ export function CustomCursor() {
       window.removeEventListener('mousemove', onMouseMove);
       document.body.removeEventListener('mouseenter', onMouseEnter);
       document.body.removeEventListener('mouseleave', onMouseLeave);
+      bound.forEach((el) => {
+        el.removeEventListener('mouseenter', onElEnter);
+        el.removeEventListener('mouseleave', onElLeave);
+      });
+      document.documentElement.classList.remove('has-custom-cursor');
     };
-  }, [isMobile, isVisible]);
+  }, [isMobile]);
 
   // Don't render on mobile
   if (isMobile) return null;
@@ -107,7 +104,7 @@ export function CustomCursor() {
       {/* Main cursor ring */}
       <div
         ref={cursorRef}
-        className={`pointer-events-none fixed left-0 top-0 z-[9999] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30 mix-blend-difference transition-opacity duration-300 ${
+        className={`pointer-events-none fixed left-0 top-0 z-[999999] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/30 mix-blend-difference transition-opacity duration-300 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ willChange: 'transform' }}
@@ -116,7 +113,7 @@ export function CustomCursor() {
       {/* Center dot */}
       <div
         ref={dotRef}
-        className={`pointer-events-none fixed left-0 top-0 z-[9999] h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white mix-blend-difference transition-opacity duration-300 ${
+        className={`pointer-events-none fixed left-0 top-0 z-[999999] h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white mix-blend-difference transition-opacity duration-300 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
         style={{ willChange: 'transform' }}
