@@ -14,64 +14,8 @@ export function Testimonials() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // =========== PINNED PORTAL EMERGENCE SEQUENCE ===========
-      // Same pattern as Skills section but with violet theme
-      const revealTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: '+=1500',
-          pin: true,
-          scrub: 1,
-          anticipatePin: 1,
-        }
-      });
-
-      // Phase 1 → 2: Light fades, clouds appear
-      revealTl.to('.portal-light-layer', {
-        opacity: 0,
-        duration: 0.3,
-        ease: 'power2.out',
-      })
-        .to('.portal-clouds-layer', {
-          opacity: 1,
-          duration: 0.2,
-        }, '<0.1');
-
-      // Phase 2 → 3: Clouds fade, revealing blurred content
-      revealTl.to('.portal-clouds-layer', {
-        opacity: 0,
-        duration: 0.3,
-        ease: 'power2.out',
-      }, '>0.1')
-        .to('.portal-blur-layer', {
-          opacity: 1,
-          duration: 0.1,
-        }, '<');
-
-      // Phase 3 → 4: Blur clears to show crisp content
-      revealTl.to('.portal-blur-layer', {
-        backdropFilter: 'blur(0px)',
-        webkitBackdropFilter: 'blur(0px)',
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power2.out',
-      }, '>0.1');
-
-      // Content animations (after blur clears)
-      revealTl.from(headerRef.current, {
-        y: 30,
-        opacity: 0,
-        duration: 0.2,
-      }, '>-0.1')
-        .to('.testimonial-marquee', {
-          opacity: 1,
-          y: 0,
-          duration: 0.3,
-        }, '<0.1');
-
-      // Initialize as hidden
-      gsap.set('.testimonial-marquee', { opacity: 0, y: 30 });
+      // Portal-emergence intro removed along with the transitions — the section
+      // now appears directly (header animates in via whileInView elsewhere).
 
       // GSAP Marquee
       const marquee = marqueeRef.current;
@@ -263,45 +207,7 @@ export function Testimonials() {
       ref={sectionRef}
       id="testimonials"
       className="relative min-h-screen overflow-hidden bg-bg-elevated py-24 md:py-32"
-      style={{ marginTop: '-60px', paddingTop: '60px' }} // Overlap to hide any border line
     >
-      {/* ========== PORTAL EMERGENCE LAYERS ========== */}
-
-      {/* Layer 1: BRIGHT LIGHT - MUST MATCH WormholeTransition flash-portal (cyan-50 = #ecfeff) */}
-      <div
-        className="portal-light-layer absolute inset-0 z-[60] pointer-events-none bg-cyan-50"
-        style={{ top: '-60px' }} // Extend upward to cover any gap
-      />
-
-      {/* Layer 2: CLOUDS/FOG (appears after light fades) - blue/cyan tint */}
-      <div
-        className="portal-clouds-layer absolute inset-0 z-[55] pointer-events-none opacity-0"
-        style={{
-          backgroundImage: `
-            radial-gradient(ellipse at 30% 20%, rgba(96, 165, 250, 0.4) 0%, transparent 50%),
-            radial-gradient(ellipse at 70% 60%, rgba(59, 130, 246, 0.3) 0%, transparent 40%),
-            radial-gradient(ellipse at 50% 80%, rgba(37, 99, 235, 0.3) 0%, transparent 45%),
-            radial-gradient(ellipse at 20% 70%, rgba(96, 165, 250, 0.25) 0%, transparent 35%),
-            radial-gradient(ellipse at 80% 30%, rgba(59, 130, 246, 0.3) 0%, transparent 40%),
-            linear-gradient(to bottom, rgba(10, 20, 40, 0.6) 0%, rgba(0, 0, 0, 0.8) 100%)
-          `,
-          backdropFilter: 'blur(30px)',
-          WebkitBackdropFilter: 'blur(30px)',
-        }}
-      />
-
-      {/* Layer 3: BLUR (shows blurred content, then clears) */}
-      <div
-        className="portal-blur-layer absolute inset-0 z-[50] pointer-events-none opacity-0"
-        style={{
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          background: 'rgba(0, 0, 0, 0.2)',
-        }}
-      />
-
-      {/* ========== END PORTAL EMERGENCE LAYERS ========== */}
-
       {/* Uniform Particle Network Background */}
       <canvas ref={canvasRef} className="absolute inset-0 z-[1] opacity-60 pointer-events-none" />
 

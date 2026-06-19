@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useScrollTo } from '@/hooks/useLenis';
-import { setNavigating, subscribeToVideoPlaying } from '@/lib/navigationState';
+import { setNavigating } from '@/lib/navigationState';
 import { cn } from '@/lib/utils';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -38,18 +38,8 @@ export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const lastScrollY = useRef(0);
   const scrollTo = useScrollTo();
-
-  // Subscribe to video playing state to hide navbar during transitions
-  useEffect(() => {
-    const unsubscribe = subscribeToVideoPlaying((playing) => {
-      setIsVideoPlaying(playing);
-    });
-    return () => unsubscribe();
-  }, []);
 
   // Role rotation effect
   useEffect(() => {
@@ -83,25 +73,8 @@ export function Navigation() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Initial check
 
-    // Detect when user is in tunnel transitions and hide navbar
-    const tunnelObserver = new IntersectionObserver(
-      (entries) => {
-        const isInTunnel = entries.some(entry => entry.isIntersecting);
-        setIsVisible(!isInTunnel);
-      },
-      { threshold: 0.3 }
-    );
-
-    // Observe tunnel sections
-    const tunnelIds = ['warp-transition', 'wormhole-transition', 'tunein-transition', 'compile-transition', 'bloom-transition', 'uplink-transition'];
-    tunnelIds.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) tunnelObserver.observe(el);
-    });
-
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      tunnelObserver.disconnect();
     };
   }, []);
 
@@ -196,114 +169,8 @@ export function Navigation() {
       return;
     }
 
-    // If navigating to Skills, we need special handling
-    // The Skills section has a pinned "warp emergence" animation at the top
-    // Smooth scrolling from above would pass through the animation range
-    // Solution: Use IMMEDIATE scroll AND force animation layers to completed state
-    if (href === '#skills-content') {
-      const skillsContent = document.getElementById('skills-content');
-      const skillsSection = document.getElementById('skills');
-
-      if (skillsContent && skillsSection) {
-        // Check if we're above the skills section (need immediate scroll)
-        const skillsTop = skillsSection.getBoundingClientRect().top;
-
-        if (skillsTop > 0) {
-          // We're above Skills - force animation layers to their "completed" state
-          // This hides the warp emergence overlays that would otherwise be visible
-          const warpLight = document.querySelector('.warp-light-layer') as HTMLElement;
-          const warpClouds = document.querySelector('.warp-clouds-layer') as HTMLElement;
-          const warpBlur = document.querySelector('.warp-blur-layer') as HTMLElement;
-          const skillGroups = document.querySelectorAll('.skill-group');
-
-          if (warpLight) gsap.set(warpLight, { opacity: 0 });
-          if (warpClouds) gsap.set(warpClouds, { opacity: 0 });
-          if (warpBlur) gsap.set(warpBlur, { opacity: 0, backdropFilter: 'blur(0px)' });
-
-          // Make skill groups visible
-          skillGroups.forEach(group => {
-            gsap.set(group, { opacity: 1, y: 0 });
-          });
-
-          // Calculate scroll position - account for pin-spacer if it exists
-          const pinSpacer = skillsSection.parentElement;
-          const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : skillsSection;
-
-          // We want to scroll to the END of the pin (after the animation would have completed)
-          // The pin end is: skillsSection start + 1500 (the end value from ScrollTrigger)
-          const sectionStart = targetElement.getBoundingClientRect().top + window.scrollY;
-          const pinEndPosition = sectionStart + 1500; // Match the ScrollTrigger end value
-
-          // Use immediate scroll to jump past the animation
-          scrollTo(pinEndPosition, { immediate: true, duration: 0 });
-
-          // Refresh ScrollTrigger after the immediate scroll
-          setTimeout(() => {
-            ScrollTrigger.refresh();
-          }, 100);
-        } else {
-          // We're below or in Skills - smooth scroll is fine
-          scrollTo(href, { offset: -80 });
-        }
-      } else {
-        scrollTo(href, { offset: -80 });
-      }
-      return;
-    }
-
-    // If navigating to Testimonials, we need special handling
-    // The Testimonials section has a pinned "portal emergence" animation at the top
-    // Smooth scrolling from above would pass through the animation range
-    // Solution: Use IMMEDIATE scroll AND force animation layers to completed state
-    if (href === '#testimonials-content') {
-      const testimonialsContent = document.getElementById('testimonials-content');
-      const testimonialsSection = document.getElementById('testimonials');
-
-      if (testimonialsContent && testimonialsSection) {
-        // Check if we're above the testimonials section (need immediate scroll)
-        const testimonialsTop = testimonialsSection.getBoundingClientRect().top;
-
-        if (testimonialsTop > 0) {
-          // We're above Testimonials - force animation layers to their "completed" state
-          // This hides the portal emergence overlays that would otherwise be visible
-          const portalLight = document.querySelector('.portal-light-layer') as HTMLElement;
-          const portalClouds = document.querySelector('.portal-clouds-layer') as HTMLElement;
-          const portalBlur = document.querySelector('.portal-blur-layer') as HTMLElement;
-          const testimonialMarquee = document.querySelector('.testimonial-marquee') as HTMLElement;
-
-          if (portalLight) gsap.set(portalLight, { opacity: 0 });
-          if (portalClouds) gsap.set(portalClouds, { opacity: 0 });
-          if (portalBlur) gsap.set(portalBlur, { opacity: 0, backdropFilter: 'blur(0px)' });
-
-          // Make testimonial marquee visible
-          if (testimonialMarquee) gsap.set(testimonialMarquee, { opacity: 1, y: 0 });
-
-          // Calculate scroll position - account for pin-spacer if it exists
-          const pinSpacer = testimonialsSection.parentElement;
-          const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : testimonialsSection;
-
-          // We want to scroll to the END of the pin (after the animation would have completed)
-          // The pin end is: section start + 1500 (the end value from ScrollTrigger)
-          const sectionStart = targetElement.getBoundingClientRect().top + window.scrollY;
-          const pinEndPosition = sectionStart + 1500; // Match the ScrollTrigger end value
-
-          // Use immediate scroll to jump past the animation
-          scrollTo(pinEndPosition, { immediate: true, duration: 0 });
-
-          // Refresh ScrollTrigger after the immediate scroll
-          setTimeout(() => {
-            ScrollTrigger.refresh();
-          }, 100);
-        } else {
-          // We're below or in Testimonials - smooth scroll is fine
-          scrollTo(href, { offset: -80 });
-        }
-      } else {
-        scrollTo(href, { offset: -80 });
-      }
-      return;
-    }
-
+    // Skills and Testimonials no longer pin (the warp/portal emergence intros
+    // were removed along with the transitions), so a plain smooth scroll works.
     scrollTo(href, { offset: -80 });
   };
 
@@ -317,10 +184,7 @@ export function Navigation() {
           left: 0,
           right: 0,
           zIndex: 99999, // Maximum z-index to ensure visibility
-          transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
-          opacity: isVideoPlaying ? 0 : 1,
-          pointerEvents: isVideoPlaying ? 'none' : 'auto',
-          transition: 'transform 0.3s ease, background-color 0.3s ease, opacity 0.3s ease',
+          transition: 'background-color 0.3s ease',
         }}
         className={cn(
           isScrolled

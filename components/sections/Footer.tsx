@@ -41,15 +41,11 @@ export function Footer() {
     e.preventDefault();
     setNavigating(true);
 
-    // Special handling for Journey (About section)
+    // Special handling for Journey (About) — it's a pinned 3D book, so jump to
+    // the START of the pin rather than smooth-scrolling through the page turns.
     if (href === '#about') {
-      const storyTrack = document.querySelector('.story-track') as HTMLElement;
-      if (storyTrack) {
-        gsap.set(storyTrack, { x: 0 });
-      }
       const aboutSection = document.getElementById('about');
       const aboutTrigger = ScrollTrigger.getById('about-horizontal-scroll');
-
       if (aboutSection && aboutTrigger) {
         const pinSpacer = aboutSection.parentElement;
         const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : aboutSection;
@@ -62,67 +58,7 @@ export function Footer() {
       return;
     }
 
-    // Special handling for Skills
-    if (href === '#skills-content') {
-      const skillsSection = document.getElementById('skills');
-      if (skillsSection) {
-        const skillsTop = skillsSection.getBoundingClientRect().top;
-        if (skillsTop > 0) {
-          // Force animation layers to completed state
-          const warpLight = document.querySelector('.warp-light-layer') as HTMLElement;
-          const warpClouds = document.querySelector('.warp-clouds-layer') as HTMLElement;
-          const warpBlur = document.querySelector('.warp-blur-layer') as HTMLElement;
-          const skillGroups = document.querySelectorAll('.skill-group');
-          if (warpLight) gsap.set(warpLight, { opacity: 0 });
-          if (warpClouds) gsap.set(warpClouds, { opacity: 0 });
-          if (warpBlur) gsap.set(warpBlur, { opacity: 0, backdropFilter: 'blur(0px)' });
-          skillGroups.forEach(group => gsap.set(group, { opacity: 1, y: 0 }));
-
-          const pinSpacer = skillsSection.parentElement;
-          const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : skillsSection;
-          const sectionStart = targetElement.getBoundingClientRect().top + window.scrollY;
-          scrollTo(sectionStart + 1500, { immediate: true, duration: 0 });
-          setTimeout(() => ScrollTrigger.refresh(), 100);
-        } else {
-          scrollTo(href, { offset: -80 });
-        }
-      } else {
-        scrollTo(href, { offset: -80 });
-      }
-      return;
-    }
-
-    // Special handling for Testimonials
-    if (href === '#testimonials-content') {
-      const testimonialsSection = document.getElementById('testimonials');
-      if (testimonialsSection) {
-        const testimonialsTop = testimonialsSection.getBoundingClientRect().top;
-        if (testimonialsTop > 0) {
-          // Force animation layers to completed state
-          const portalLight = document.querySelector('.portal-light-layer') as HTMLElement;
-          const portalClouds = document.querySelector('.portal-clouds-layer') as HTMLElement;
-          const portalBlur = document.querySelector('.portal-blur-layer') as HTMLElement;
-          const testimonialMarquee = document.querySelector('.testimonial-marquee') as HTMLElement;
-          if (portalLight) gsap.set(portalLight, { opacity: 0 });
-          if (portalClouds) gsap.set(portalClouds, { opacity: 0 });
-          if (portalBlur) gsap.set(portalBlur, { opacity: 0, backdropFilter: 'blur(0px)' });
-          if (testimonialMarquee) gsap.set(testimonialMarquee, { opacity: 1, y: 0 });
-
-          const pinSpacer = testimonialsSection.parentElement;
-          const targetElement = pinSpacer?.classList.contains('pin-spacer') ? pinSpacer : testimonialsSection;
-          const sectionStart = targetElement.getBoundingClientRect().top + window.scrollY;
-          scrollTo(sectionStart + 1500, { immediate: true, duration: 0 });
-          setTimeout(() => ScrollTrigger.refresh(), 100);
-        } else {
-          scrollTo(href, { offset: -80 });
-        }
-      } else {
-        scrollTo(href, { offset: -80 });
-      }
-      return;
-    }
-
-    // Default scroll
+    // Everything else (Skills/Testimonials no longer pin) — plain smooth scroll.
     scrollTo(href, { offset: -80 });
   };
 

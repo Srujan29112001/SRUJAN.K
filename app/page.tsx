@@ -5,18 +5,10 @@ import dynamic from 'next/dynamic';
 import { Preloader } from '@/components/sections/Preloader';
 import { Hero } from '@/components/sections/Hero';
 import { About } from '@/components/sections/About';
-import { WarpTransition } from '@/components/sections/WarpTransition';
 import { Skills } from '@/components/sections/Skills';
 import ProjectsShowcase from '@/components/sections/ProjectsShowcase';
 import { Blog } from '@/components/sections/Blog';
-import { WormholeTransition } from '@/components/sections/WormholeTransition';
-import { VideoTransition } from '@/components/sections/VideoTransition';
-import { VideoTransition2 } from '@/components/sections/VideoTransition2';
 import { Testimonials } from '@/components/sections/Testimonials';
-import { TuneInTransition } from '@/components/sections/TuneInTransition';
-import { CompileTransition } from '@/components/sections/CompileTransition';
-import { BloomTransition } from '@/components/sections/BloomTransition';
-import { UplinkTransition } from '@/components/sections/UplinkTransition';
 import { Contact } from '@/components/sections/Contact';
 import { Footer } from '@/components/sections/Footer';
 
@@ -148,18 +140,15 @@ export default function Home() {
         className={`transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'
           }`}
       >
+        {/* Inter-section scroll transitions removed (they were heavy R3F/video
+            interstitials that hurt performance and pulled focus from content).
+            Sections now flow directly; the Hero keeps its own scroll-zoom. */}
         <Hero />
         <About />
-        <WarpTransition />
         <Skills activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
-        <VideoTransition />
         <ProjectsShowcase activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
-        <VideoTransition2 />
         <Blog />
-        <WormholeTransition />
         <Testimonials />
-        {/* Client voices converge into the AI twin you're about to talk to */}
-        <TuneInTransition />
         {/* AI Chat moved ABOVE Contact ("Get in Touch") per design — chat is the
             first thing visitors see in the connect block, then the form/booking below */}
         <HolographicChat
@@ -173,14 +162,8 @@ export default function Home() {
             document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
         />
-        {/* The chat above forges itself into the resume below */}
-        <CompileTransition />
         <ResumeGate />
-        {/* The one-page resume blooms into the full knowledge constellation */}
-        <BloomTransition />
         <KnowledgeGraph3D />
-        {/* The neural map transmits its signal into Get in Touch */}
-        <UplinkTransition />
         <Contact />
         <Footer />
       </main>
