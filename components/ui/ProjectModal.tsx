@@ -51,6 +51,9 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
 
   if (!isOpen || !project) return null;
 
+  // Each project's detail page is themed to its own colour.
+  const accent = project.color || '#06b6d4';
+
   // Combine main image and gallery for the carousel
   const slides = [
     { src: project.image, alt: project.title, caption: 'Project Preview' },
@@ -81,12 +84,14 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
         <div
           ref={contentRef}
           data-lenis-prevent
-          className="relative w-full max-w-6xl my-2 sm:my-auto bg-black/90 border border-cyan-500/30 rounded-lg sm:rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] custom-scrollbar"
+          style={{ borderColor: `${accent}4d`, boxShadow: `0 0 60px ${accent}26` }}
+          className="relative w-full max-w-6xl my-2 sm:my-auto bg-black/90 border rounded-lg sm:rounded-2xl custom-scrollbar"
         >
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="fixed top-4 right-4 sm:top-24 sm:right-8 md:right-12 z-[10000] p-3 sm:p-4 rounded-full bg-cyan-500 hover:bg-cyan-400 transition-all duration-300 border-2 border-white shadow-2xl hover:shadow-cyan-500/80 hover:scale-110 group"
+            style={{ backgroundColor: accent }}
+            className="fixed top-4 right-4 sm:top-24 sm:right-8 md:right-12 z-[10000] p-3 sm:p-4 rounded-full transition-all duration-300 border-2 border-white shadow-2xl hover:brightness-110 hover:scale-110 group"
             aria-label="Close modal"
           >
             <X className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:rotate-90 transition-transform duration-300 stroke-[3]" />
@@ -147,10 +152,11 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                     <button
                       key={idx}
                       onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                      style={idx === currentImageIndex ? { backgroundColor: accent } : undefined}
                       className={cn(
                         "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300",
                         idx === currentImageIndex
-                          ? "w-6 sm:w-8 bg-cyan-400"
+                          ? "w-6 sm:w-8"
                           : "bg-white/30 hover:bg-white/50"
                       )}
                     />
@@ -161,9 +167,12 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
 
             {/* Project Title Overlay (Always visible) */}
             <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-8 w-full z-20 pointer-events-none">
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 mb-2 sm:mb-4 rounded-full border border-cyan-500/30 bg-cyan-500/10 backdrop-blur-sm">
-                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-cyan-400 animate-pulse" />
-                <span className="text-[10px] sm:text-xs font-mono font-medium tracking-wider text-cyan-300 uppercase">
+              <div
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 mb-2 sm:mb-4 rounded-full border backdrop-blur-sm"
+                style={{ borderColor: `${accent}4d`, backgroundColor: `${accent}1a` }}
+              >
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
+                <span className="text-[10px] sm:text-xs font-mono font-medium tracking-wider uppercase" style={{ color: accent }}>
                   {project.category} System
                 </span>
               </div>
@@ -172,8 +181,8 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
               </h2>
               <div className="flex flex-col md:flex-row md:items-center gap-2 sm:gap-4">
                 {project.metric && (
-                  <p className="text-sm sm:text-base md:text-lg text-cyan-400 font-mono flex items-center gap-2">
-                    <span className="w-4 sm:w-8 h-[1px] bg-cyan-500/50" />
+                  <p className="text-sm sm:text-base md:text-lg font-mono flex items-center gap-2" style={{ color: accent }}>
+                    <span className="w-4 sm:w-8 h-[1px]" style={{ backgroundColor: `${accent}80` }} />
                     {project.metric}
                   </p>
                 )}
@@ -196,7 +205,7 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
               {/* Description */}
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2">
-                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: accent }} />
                   Project Overview
                 </h3>
                 <div className="space-y-4">
@@ -213,7 +222,7 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                         <p key={i} className="text-white/70 leading-relaxed text-sm sm:text-base lg:text-lg">
                           {m ? (
                             <>
-                              <span className="font-semibold text-cyan-300">{m[1].trim()}</span>
+                              <span className="font-semibold" style={{ color: accent }}>{m[1].trim()}</span>
                               <span className="text-white/40">{m[2] === ':' ? ': ' : ' — '}</span>
                               {m[3].trim()}
                             </>
@@ -252,7 +261,8 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                         href={project.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-cyan-500 text-black font-bold text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-cyan-400 transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                        style={{ backgroundColor: accent, boxShadow: `0 0 20px ${accent}40` }}
+                        className="group flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 text-black font-bold text-sm sm:text-base rounded-lg sm:rounded-xl transition-all hover:brightness-110"
                       >
                         <div className="p-0.5 sm:p-1 bg-black/10 rounded-full">
                           <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
@@ -313,7 +323,8 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                   {project.tech.map((t) => (
                     <span
                       key={t}
-                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-black/50 border border-white/10 rounded-md sm:rounded-lg text-cyan-300/80 hover:border-cyan-500/30 transition-colors cursor-default"
+                      style={{ color: accent }}
+                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-black/50 border border-white/10 rounded-md sm:rounded-lg hover:border-white/30 transition-colors cursor-default"
                     >
                       {t}
                     </span>

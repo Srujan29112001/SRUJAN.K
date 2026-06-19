@@ -1,12 +1,16 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { projects, Project } from '@/data/projects';
 import { getLenis } from '@/lib/lenis';
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, Github, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { ProjectModal, useProjectModal } from '@/components/ui/ProjectModal';
+import { Reveal } from '@/components/ui/Reveal';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -14,7 +18,33 @@ type Category = 'AI' | 'Robotics' | 'Research';
 
 const categories: Category[] = ['AI', 'Robotics', 'Research'];
 
-// Define priority projects to be shown first in the grid
+// The narrative spine — same three "chapters" as the Skills section, so the
+// portfolio reads as one continuous story (the Mind / the Body / the Why).
+const STORY: Record<Category, { chapter: string; tagline: string; line: string }> = {
+    AI: {
+        chapter: 'Chapter I — The Mind',
+        tagline: 'Intelligence, architected',
+        line: 'Systems that see, read, reason and decide — multimodal copilots, RAG pipelines and autonomous agents that turn raw data into action.',
+    },
+    Robotics: {
+        chapter: 'Chapter II — The Body',
+        tagline: 'Intelligence, made physical',
+        line: 'Perception, control and edge inference that leave the screen — vision, gesture and motion running in the real world.',
+    },
+    Research: {
+        chapter: 'Chapter III — The Why',
+        tagline: 'Intelligence, questioned',
+        line: 'Curiosity as a discipline — chaos, consciousness, quantum and cosmos, explored in code for the sake of understanding.',
+    },
+};
+
+const CAT_COLOR: Record<Category, string> = {
+    AI: '#3B82F6',
+    Robotics: '#F59E0B',
+    Research: '#8B7EC8',
+};
+
+// Define priority projects to be shown first in the list
 const PRIORITY_IDS: Record<Category, string[]> = {
     AI: ['clinical-ai-copilot', 'neuropsych-trading', 'advisory-platform'],
     Robotics: ['internship-semester', 'hand-gesture-cursor', 'bicep-curl-counter'],
@@ -29,23 +59,30 @@ interface ProjectsShowcaseProps {
 export default function ProjectsShowcase({ activeCategory, setActiveCategory }: ProjectsShowcaseProps) {
     const { selectedProject, isOpen, openModal, closeModal } = useProjectModal();
     const containerRef = useRef<HTMLDivElement>(null);
-    const heroRef = useRef<HTMLDivElement>(null);
-    const gridRef = useRef<HTMLDivElement>(null);
     const projectsHeaderRef = useRef<HTMLDivElement>(null);
 
     // State to toggle "See More"
     const [isExpanded, setIsExpanded] = useState(false);
 
+    // Editorial hover-reveal list: which row is hovered + a cursor-following
+    // preview image. `preview` keeps the last image so it can fade out cleanly.
+    const [hovered, setHovered] = useState<Project | null>(null);
+    const [preview, setPreview] = useState<Project | null>(null);
+    const mx = useMotionValue(0);
+    const my = useMotionValue(0);
+    const px = useSpring(mx, { stiffness: 350, damping: 30, mass: 0.4 });
+    const py = useSpring(my, { stiffness: 350, damping: 30, mass: 0.4 });
+
     // Reset expansion when category changes
     useEffect(() => {
         setIsExpanded(false);
+        setHovered(null);
     }, [activeCategory]);
 
     // Custom category change handler that preserves scroll position
     const handleCategoryChange = (category: 'AI' | 'Robotics' | 'Research') => {
         const scrollPos = window.scrollY;
         setActiveCategory(category);
-        // Restore scroll position after React re-render
         requestAnimationFrame(() => {
             window.scrollTo(0, scrollPos);
         });
@@ -54,10 +91,9 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
     const handleToggle = () => {
         if (isExpanded) {
             // Collapse FIRST, then jump back up to the "More in …" header. The
-            // grid shrinks a lot, so we hand Lenis the target ELEMENT (it computes
+            // list shrinks a lot, so we hand Lenis the target ELEMENT (it computes
             // the position itself), resize() it so it knows the new page height,
-            // and force the jump — plain window.scrollTo is overridden by Lenis,
-            // which is why the page used to stay put while the content shrank.
+            // and force the jump — plain window.scrollTo is overridden by Lenis.
             setIsExpanded(false);
             setTimeout(() => {
                 const headerEl = projectsHeaderRef.current;
@@ -68,7 +104,6 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                 } else if (headerEl) {
                     window.scrollTo(0, headerEl.getBoundingClientRect().top + window.scrollY - 100);
                 }
-                // re-measure pinned triggers below now that the grid collapsed
                 setTimeout(() => ScrollTrigger.refresh(), 60);
             }, 120);
         } else {
@@ -87,139 +122,213 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
     const filteredProjects = projects.filter((p) => p.category === activeCategory);
     const featuredProject = filteredProjects.find((p) => p.featured) || filteredProjects[0];
 
-    // Process remaining projects: Sort by priority, then filter out the featured one
     const remainingProjects = filteredProjects
         .filter((p) => p.id !== featuredProject.id)
         .sort((a, b) => {
             const priorities = PRIORITY_IDS[activeCategory] || [];
             const indexA = priorities.indexOf(a.id);
             const indexB = priorities.indexOf(b.id);
-
-            // If both are in priority list, sort by index
             if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            // If only A is in list, it comes first
             if (indexA !== -1) return -1;
-            // If only B is in list, it comes first
             if (indexB !== -1) return 1;
-            // Otherwise maintain original order
             return 0;
         });
 
     const visibleProjects = isExpanded ? remainingProjects : remainingProjects.slice(0, 6);
 
-    // Initial mount animation only (no re-run on category change to avoid scroll jumps)
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            // Hero Animation
-            gsap.from(heroRef.current, {
-                opacity: 0,
-                y: 50,
-                duration: 1.5,
-                ease: "power3.out"
-            });
-        }, containerRef);
+    const accent = CAT_COLOR[activeCategory];
+    const story = STORY[activeCategory];
+    const fAccent = featuredProject.color || accent;
+    const heroSrc =
+        activeCategory === 'AI'
+            ? '/images/projects/hero-ai.png'
+            : activeCategory === 'Robotics'
+                ? '/images/projects/hero-robotics.png'
+                : '/images/projects/hero-research.png';
 
-        return () => ctx.revert();
-    }, []); // Only run once on mount
+    const handleListMove = (e: React.MouseEvent) => {
+        mx.set(e.clientX - 170);
+        my.set(e.clientY - 115);
+    };
 
     return (
-        <div id="projects" ref={containerRef} className="relative min-h-screen bg-black text-white overflow-hidden">
-            {/* Header & Navigation (Sci-Fi HUD Style) */}
-            <div className="absolute top-6 sm:top-8 left-0 right-0 z-50 text-center pointer-events-none px-4">
-                {/* Blue Glow Effect behind entire header area */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-10 pointer-events-none" />
-
-                {/* Centered header content */}
-                <div className="flex flex-col items-center">
-                    <div className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md pointer-events-auto">
-                        <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-                            Innovation Lab
-                        </span>
-                    </div>
-
-                    <h2 className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight pointer-events-auto px-2">
-                        PROJECT ARCHIVES
-                    </h2>
-
-                    <div className="mt-6 sm:mt-7 md:mt-8 pointer-events-auto flex flex-wrap justify-center gap-3 sm:gap-4">
-                        {categories.map((cat) => (
-                            <button
-                                key={cat}
-                                onClick={() => handleCategoryChange(cat)}
-                                className={cn(
-                                    "group relative px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 overflow-hidden rounded-none skew-x-[-10deg] border border-white/10 transition-all duration-300 backdrop-blur-md active:scale-95",
-                                    activeCategory === cat
-                                        ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                                        : "bg-black/50 text-white/50 hover:text-white hover:border-white/50"
-                                )}
-                            >
-                                <div className={cn(
-                                    "absolute inset-0 bg-cyan-400/20 translate-y-full transition-transform duration-300 group-hover:translate-y-0",
-                                    activeCategory === cat && "hidden"
-                                )} />
-                                <span className="relative inline-block skew-x-[10deg] font-bold tracking-wider text-xs sm:text-sm">
-                                    {cat}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
+        <div
+            id="projects"
+            ref={containerRef}
+            className="relative bg-black text-white overflow-hidden pt-28 sm:pt-32 md:pt-36 pb-16 sm:pb-20 md:pb-24"
+        >
+            {/* Category backdrop image (crossfades on category change) + grid + glow */}
+            <div className="absolute inset-0 pointer-events-none">
+                <AnimatePresence mode="sync">
+                    <motion.div
+                        key={activeCategory}
+                        className="absolute inset-0"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.12 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.9, ease: 'easeInOut' }}
+                    >
+                        <Image src={heroSrc} alt="" fill className="object-cover" priority />
+                    </motion.div>
+                </AnimatePresence>
+                <div className="absolute inset-0 bg-gradient-to-b from-black via-black/85 to-black" />
+                <div
+                    className="absolute inset-0 opacity-[0.04]"
+                    style={{
+                        backgroundImage:
+                            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+                        backgroundSize: '64px 64px',
+                    }}
+                />
+                <div
+                    className="absolute top-[12%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[150px] mix-blend-screen transition-colors duration-700"
+                    style={{ backgroundColor: `${accent}22` }}
+                />
             </div>
 
-            {/* Featured Hero Section */}
-            <div ref={heroRef} className="relative min-h-screen flex justify-center overflow-hidden pb-6 sm:pb-8 pt-48 sm:pt-40 md:pt-48">
-                {/* Background Image with Parallax */}
-                <div className="absolute inset-0 hero-bg">
-                    <Image
-                        src={
-                            activeCategory === 'AI'
-                                ? '/images/projects/hero-ai.png'
-                                : activeCategory === 'Robotics'
-                                    ? '/images/projects/hero-robotics.png'
-                                    : '/images/projects/hero-research.png'
-                        }
-                        alt={`${activeCategory} Hero`}
-                        fill
-                        className="object-cover opacity-40"
-                        priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black via-black/50 to-black" />
-                </div>
+            {/* Cursor-following preview (desktop only) */}
+            <motion.div
+                className="hidden lg:block pointer-events-none fixed top-0 left-0 z-[60] w-[340px] h-[230px] rounded-2xl overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]"
+                style={{ x: px, y: py }}
+                animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1 : 0.82 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+                {preview && (
+                    <Image src={preview.image} alt="" fill className="object-cover" sizes="340px" />
+                )}
+                <div
+                    className="absolute inset-0 rounded-2xl"
+                    style={{ boxShadow: `inset 0 0 0 1.5px ${preview?.color || accent}99` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            </motion.div>
 
-                {/* Featured Project Content */}
-                <div className="relative z-10 container mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center mt-8 sm:mt-10 md:mt-12">
-                    <div className="space-y-4 sm:space-y-5 md:space-y-6">
-                        <div className="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm">
-                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[10px] sm:text-xs font-medium tracking-wider uppercase">Featured Project</span>
+            <div className="container mx-auto px-4 sm:px-6 relative z-10">
+                {/* Header */}
+                <Reveal className="mb-10 sm:mb-12 md:mb-16" amount={0.4}>
+                    <div className="flex items-center gap-3 mb-5 sm:mb-6">
+                        <span className="font-mono text-[11px] sm:text-xs uppercase tracking-[0.3em]" style={{ color: accent }}>
+                            ( Selected Work )
+                        </span>
+                        <span className="h-px flex-grow bg-white/10" />
+                        <span className="font-mono text-[11px] sm:text-xs text-white/30 tabular-nums">
+                            {String(filteredProjects.length).padStart(2, '0')} Projects
+                        </span>
+                    </div>
+                    <h2 className="font-display text-5xl sm:text-6xl md:text-7xl xl:text-8xl font-bold text-white tracking-[-0.03em] leading-[0.9]">
+                        PROJECT<br className="sm:hidden" /> ARCHIVES
+                    </h2>
+
+                    {/* Per-category narrative */}
+                    <div className="mt-4 sm:mt-5 min-h-[3.5rem] sm:min-h-[3rem] max-w-2xl">
+                        <AnimatePresence mode="wait">
+                            <motion.p
+                                key={activeCategory}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.35, ease: 'easeOut' }}
+                                className="text-base sm:text-lg text-text-secondary"
+                            >
+                                {story.line}
+                            </motion.p>
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Category tabs — editorial underline toggles */}
+                    <div className="mt-7 sm:mt-9 flex items-center gap-6 sm:gap-10">
+                        {categories.map((cat) => {
+                            const isActive = activeCategory === cat;
+                            return (
+                                <button
+                                    key={cat}
+                                    onClick={() => handleCategoryChange(cat)}
+                                    className="relative group pb-2"
+                                >
+                                    <span
+                                        className={cn(
+                                            'font-display text-lg sm:text-2xl font-bold tracking-tight transition-colors duration-300',
+                                            isActive ? 'text-white' : 'text-white/35 group-hover:text-white/70'
+                                        )}
+                                    >
+                                        {cat}
+                                    </span>
+                                    {isActive && (
+                                        <motion.span
+                                            layoutId="cat-underline"
+                                            className="absolute left-0 right-0 -bottom-px h-[2px]"
+                                            style={{ backgroundColor: accent }}
+                                            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                                        />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </Reveal>
+
+                {/* Featured editorial block (re-animates on category change) */}
+                <motion.div
+                    key={`feat-${activeCategory}`}
+                    initial={{ opacity: 0, y: 36 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center mb-16 sm:mb-20 md:mb-28"
+                >
+                    {/* Left: story + title + actions */}
+                    <div className="space-y-4 sm:space-y-5 md:space-y-6 order-2 lg:order-1">
+                        <div className="flex items-center gap-3">
+                            <span className="font-display text-5xl sm:text-6xl font-bold leading-none" style={{ color: fAccent }}>
+                                01
+                            </span>
+                            <div className="leading-tight">
+                                <p className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.25em]" style={{ color: fAccent }}>
+                                    {story.chapter}
+                                </p>
+                                <div className="inline-flex items-center gap-2 mt-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    <span className="text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
+                                        Featured Project
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight tracking-tight">
+
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold leading-[1.05] tracking-tight">
                             {featuredProject.title}
                         </h1>
-                        {/* Description intentionally hidden on the cover — the full
-                            write-up is revealed in the detail page (View Details). */}
+
+                        {featuredProject.metric && (
+                            <div
+                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-mono"
+                                style={{ borderColor: `${fAccent}55`, backgroundColor: `${fAccent}14`, color: fAccent }}
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: fAccent }} />
+                                {featuredProject.metric}
+                            </div>
+                        )}
 
                         <div className="flex flex-wrap gap-2 sm:gap-3">
-                            {featuredProject.tech.map((t) => (
+                            {featuredProject.tech.slice(0, 6).map((t) => (
                                 <span key={t} className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-white/10 border border-white/10 rounded-md">
                                     {t}
                                 </span>
                             ))}
                         </div>
 
-                        <div className="flex gap-3 sm:gap-4 pt-2 sm:pt-4">
+                        <div className="flex gap-3 sm:gap-4 pt-2">
                             <button
                                 onClick={() => openModal(featuredProject)}
-                                className="group flex items-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-white text-black rounded-full font-medium hover:bg-white/90 transition-colors active:scale-95 text-sm sm:text-base"
+                                className="group flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-black rounded-full font-medium hover:bg-white/90 transition-colors active:scale-95 text-sm sm:text-base"
                             >
                                 View Details <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Architecture/Visual Display */}
+                    {/* Right: large image */}
                     <div
-                        className="relative aspect-video rounded-lg sm:rounded-xl overflow-hidden border border-white/10 shadow-2xl group cursor-pointer"
+                        className="relative aspect-video rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 shadow-2xl group cursor-pointer order-1 lg:order-2"
                         onClick={() => openModal(featuredProject)}
                     >
                         <Image
@@ -228,10 +337,12 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                             fill
                             className="object-cover transition-transform duration-700 group-hover:scale-105"
                         />
-                        {/* Overlay Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+                        <div
+                            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                            style={{ background: `linear-gradient(to top, ${fAccent}40, transparent 60%)` }}
+                        />
 
-                        {/* Ongoing Badge */}
                         {featuredProject.ongoing && (
                             <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-30 flex items-center gap-2 px-3 py-1.5 bg-black/70 backdrop-blur-md border border-red-500/40 rounded-full shadow-[0_0_12px_rgba(239,68,68,0.25)]">
                                 <span className="relative flex h-2.5 w-2.5">
@@ -242,118 +353,102 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                             </div>
                         )}
 
-                        {/* Hover Hint */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black/60 backdrop-blur-md rounded-full text-white text-xs sm:text-sm border border-white/20">
                                 Click to Expand
                             </span>
                         </div>
-
-                        {/* Floating Stats/Metrics if available */}
-                        {featuredProject.metric && (
-                            <div className="absolute bottom-3 sm:bottom-4 md:bottom-6 left-3 sm:left-4 md:left-6 right-3 sm:right-4 md:right-6 p-3 sm:p-4 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg">
-                                <p className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">Key Metric</p>
-                                <p className="text-base sm:text-lg md:text-xl font-semibold text-white">{featuredProject.metric}</p>
-                            </div>
-                        )}
                     </div>
+                </motion.div>
+
+                {/* List header */}
+                <div
+                    ref={projectsHeaderRef}
+                    className="flex items-end justify-between mb-2 sm:mb-4 gap-4"
+                >
+                    <Reveal direction="right" amount={0.6}>
+                        <p className="font-mono text-xs uppercase tracking-[0.25em] mb-2" style={{ color: accent }}>
+                            {story.tagline}
+                        </p>
+                        <h3 className="text-2xl sm:text-3xl font-bold">The {activeCategory} index</h3>
+                    </Reveal>
+                    <span className="hidden sm:block font-mono text-xs text-white/30 pb-1">
+                        Hover to preview · click to open
+                    </span>
                 </div>
 
-                {/* Scroll Indicator */}
-                <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 sm:gap-2 opacity-50 animate-bounce z-20">
-                    <span className="text-[10px] sm:text-xs uppercase tracking-widest">Scroll to Explore</span>
-                    <div className="w-[1px] h-8 sm:h-10 md:h-12 bg-gradient-to-b from-white to-transparent" />
-                </div>
-            </div>
-
-            {/* Project Grid */}
-            <div className="container mx-auto px-4 sm:px-6 pt-0 pb-16 sm:pb-20 md:pb-24">
-                <div ref={projectsHeaderRef} className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 sm:mb-10 md:mb-12 gap-4 sm:gap-0">
-                    <div>
-                        <h2 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">More in {activeCategory}</h2>
-                        <p className="text-sm sm:text-base text-white/50">Exploring the frontiers of {activeCategory.toLowerCase()}</p>
-                    </div>
-                    <div className="text-left sm:text-right">
-                        <span className="text-3xl sm:text-4xl font-bold text-white/10">{remainingProjects.length}</span>
-                        <span className="text-xs sm:text-sm text-white/30 block uppercase tracking-wider">Projects</span>
-                    </div>
-                </div>
-
-                <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-                    {visibleProjects.map((project) => {
-                        // 3D Tilt card with cursor tracking
+                {/* Editorial hover-reveal list */}
+                <div
+                    className="relative"
+                    onMouseMove={handleListMove}
+                    onMouseLeave={() => setHovered(null)}
+                >
+                    {visibleProjects.map((project, i) => {
+                        const pAccent = project.color || accent;
                         return (
-                            <div
-                                key={project.id}
-                                className="group relative perspective-1000 h-full"
-                                onClick={() => openModal(project)}
-                            >
-                                <div
-                                    className="relative h-full flex flex-col bg-white/5 border border-white/5 rounded-xl overflow-hidden hover:border-white/20 cursor-pointer transform-gpu"
-                                    style={{ transformStyle: 'preserve-3d', transition: 'transform 0.1s ease-out, border-color 0.3s' }}
-                                    onMouseMove={(e) => {
-                                        const card = e.currentTarget;
-                                        const rect = card.getBoundingClientRect();
-                                        const x = e.clientX - rect.left;
-                                        const y = e.clientY - rect.top;
-                                        const centerX = rect.width / 2;
-                                        const centerY = rect.height / 2;
-                                        const rotateX = ((y - centerY) / centerY) * -15;
-                                        const rotateY = ((x - centerX) / centerX) * 15;
-                                        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
-                                        // Update shine position
-                                        const shine = card.querySelector('.card-shine') as HTMLElement;
-                                        if (shine) {
-                                            shine.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.15) 0%, transparent 60%)`;
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        const card = e.currentTarget;
-                                        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
-                                        const shine = card.querySelector('.card-shine') as HTMLElement;
-                                        if (shine) {
-                                            shine.style.background = 'transparent';
-                                        }
-                                    }}
+                            <Reveal key={project.id} delay={Math.min(i, 6) * 0.04} amount={0.2}>
+                                <button
+                                    onClick={() => openModal(project)}
+                                    onMouseEnter={() => { setHovered(project); setPreview(project); }}
+                                    style={{ '--accent': pAccent } as React.CSSProperties}
+                                    className="group relative w-full text-left border-t border-white/10 py-5 sm:py-7 flex items-center gap-3 sm:gap-6"
                                 >
-                                    {/* Shine overlay */}
-                                    <div className="card-shine absolute inset-0 z-20 pointer-events-none transition-all duration-150" />
+                                    {/* hover fill */}
+                                    <span
+                                        className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                        style={{ background: `linear-gradient(90deg, ${pAccent}1f, transparent 70%)` }}
+                                    />
 
-                                    <div className="relative h-40 sm:h-44 md:h-48 flex-shrink-0 overflow-hidden">
-                                        <Image
-                                            src={project.image}
-                                            alt={project.title}
-                                            fill
-                                            className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                                    {/* index */}
+                                    <span className="font-mono text-[11px] sm:text-sm text-white/30 w-7 sm:w-10 shrink-0 tabular-nums group-hover:[color:var(--accent)] transition-colors">
+                                        {String(i + 2).padStart(2, '0')}
+                                    </span>
 
-                                        {/* Ongoing Badge */}
+                                    {/* mobile thumbnail (no hover on touch) */}
+                                    <span className="lg:hidden relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-white/10">
+                                        <Image src={project.image} alt={project.title} fill className="object-cover" sizes="56px" />
                                         {project.ongoing && (
-                                            <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-30 flex items-center gap-1.5 px-2.5 py-1 bg-black/70 backdrop-blur-md border border-red-500/40 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                                                <span className="relative flex h-2 w-2">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                                                </span>
-                                                <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-red-400">Ongoing</span>
-                                            </div>
+                                            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-black" />
                                         )}
-                                    </div>
-                                    <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-grow">
-                                        <h3 className="text-lg sm:text-xl font-bold mb-2 group-hover:text-cyan-400 transition-colors line-clamp-1">{project.title}</h3>
-                                        <p className="text-white/50 text-xs sm:text-sm line-clamp-2 flex-grow">{project.description}</p>
-                                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3 sm:mt-4">
-                                            {project.tech.slice(0, 3).map((t) => (
-                                                <span key={t} className="px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-white/5 border border-white/10 rounded">
-                                                    {t}
+                                    </span>
+
+                                    {/* title + meta */}
+                                    <span className="flex-grow min-w-0">
+                                        <span className="flex items-center gap-2 sm:gap-3">
+                                            <span className="block font-display font-bold text-xl sm:text-3xl lg:text-4xl xl:text-5xl leading-[1.05] tracking-tight truncate transition-all duration-300 group-hover:translate-x-1.5 sm:group-hover:translate-x-3 group-hover:[color:var(--accent)]">
+                                                {project.title}
+                                            </span>
+                                            {project.ongoing && (
+                                                <span className="hidden sm:inline-flex shrink-0 items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/40 text-[10px] font-semibold uppercase tracking-wider text-red-400">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                    Ongoing
                                                 </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                            )}
+                                        </span>
+                                        <span className="mt-1.5 sm:mt-2 flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-white/40 font-mono uppercase tracking-wider">
+                                            <span>{project.category}</span>
+                                            {project.year && (<><span className="text-white/20">/</span><span>{project.year}</span></>)}
+                                            {project.metric && (<><span className="hidden sm:inline text-white/20">/</span><span className="hidden sm:inline truncate max-w-[16rem]">{project.metric}</span></>)}
+                                        </span>
+                                    </span>
+
+                                    {/* tech (wide screens) */}
+                                    <span className="hidden xl:flex gap-2 shrink-0">
+                                        {project.tech.slice(0, 3).map((t) => (
+                                            <span key={t} className="px-2.5 py-1 text-[11px] font-mono text-white/50 bg-white/[0.04] border border-white/10 rounded-md">
+                                                {t}
+                                            </span>
+                                        ))}
+                                    </span>
+
+                                    {/* arrow */}
+                                    <ArrowUpRight className="shrink-0 w-5 h-5 sm:w-7 sm:h-7 text-white/25 transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:[color:var(--accent)]" />
+                                </button>
+                            </Reveal>
                         );
                     })}
+                    {/* closing rule */}
+                    <div className="border-t border-white/10" />
                 </div>
 
                 {/* See More / Show Less Button */}
@@ -364,13 +459,9 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                             className="group flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 border border-white/20 rounded-full text-white/70 hover:text-white hover:border-white/50 transition-colors active:scale-95 text-sm sm:text-base"
                         >
                             {isExpanded ? (
-                                <>
-                                    Show Less <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" />
-                                </>
+                                <>Show Less <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" /></>
                             ) : (
-                                <>
-                                    See More Projects <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
-                                </>
+                                <>See all {remainingProjects.length} projects <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" /></>
                             )}
                         </button>
                     </div>
