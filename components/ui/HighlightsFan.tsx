@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, type CSSProperties } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import {
   motion,
@@ -14,11 +14,12 @@ import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Project } from '@/data/projects';
 
 /**
- * HighlightsFan — the category's first projects as a hover-driven coverflow
- * deck. Move the cursor across the deck (or hover a card) and that card glides
- * to the centre, ZOOMS UP and sharpens while the rest recede and soften. Click
- * the focused card (or "View Project") to open its detail page. The whole deck
- * parallaxes gently to the cursor. Mobile falls back to a snap-scroll row.
+ * HighlightsFan — the category's first projects as a spread fan. Hovering a
+ * card makes it ZOOM UP in place and go crisp (it does NOT slide to the centre,
+ * so the cards never move out from under the cursor and the focused card stays
+ * an easy, stable click target). The rest recede and soften. Click the focused
+ * card (or "View Project") to open it. A very subtle cursor parallax (translate
+ * only — no rotation, so nothing blurs). Mobile falls back to a snap-scroll row.
  *
  * Original implementation themed to each project's own colour + imagery.
  */
@@ -32,33 +33,31 @@ function shortLabel(title: string): string {
 function FanCard({
   project,
   index,
-  pos,
+  center,
   spacing,
   cardW,
   cardH,
+  isFocus,
+  someHovered,
   onEnter,
   onClick,
 }: {
   project: Project;
   index: number;
-  pos: MotionValue<number>;
-  spacing: MotionValue<number>;
+  center: number;
+  spacing: number;
   cardW: number;
   cardH: number;
+  isFocus: boolean;
+  someHovered: boolean;
   onEnter: () => void;
   onClick: () => void;
 }) {
-  const off = useTransform(pos, (p) => index - p);
-  const x = useTransform([off, spacing] as [MotionValue<number>, MotionValue<number>], ([o, s]: number[]) => o * s);
-  const y = useTransform(off, (o) => Math.abs(o) * 15);
-  const rotate = useTransform(off, (o) => o * 7);
-  // Centre card zooms up + crisp; cards recede, shrink and soften with distance.
-  const scale = useTransform(off, (o) => clamp(1.18 - Math.abs(o) * 0.16, 0.64, 1.18));
-  const zIndex = useTransform(off, (o) => Math.round(60 - Math.abs(o) * 8));
-  const opacity = useTransform(off, (o) => (Math.abs(o) > 3.6 ? 0 : clamp(1 - Math.abs(o) * 0.15, 0.4, 1)));
-  const filter = useTransform(off, (o) => `blur(${clamp((Math.abs(o) - 0.6) * 1.9, 0, 4)}px)`);
-  const ringOpacity = useTransform(off, (o) => clamp(1 - Math.abs(o) * 2, 0, 1));
   const accent = project.color || '#22d3ee';
+  const rel = index - center;
+  const baseX = rel * spacing;
+  const baseRot = rel * 6;
+  const baseY = Math.abs(rel) * 14;
 
   return (
     <motion.button
@@ -66,28 +65,32 @@ function FanCard({
       onFocus={onEnter}
       onClick={onClick}
       aria-label={project.title}
+      initial={false}
+      animate={{
+        x: baseX, // constant per card → cards never slide on hover
+        y: isFocus ? baseY - 30 : baseY,
+        rotate: isFocus ? 0 : baseRot,
+        scale: isFocus ? 1.2 : someHovered ? 0.9 : 0.97,
+        opacity: isFocus ? 1 : someHovered ? 0.5 : 0.82,
+        filter: isFocus ? 'blur(0px)' : someHovered ? 'blur(1.6px)' : 'blur(0.55px)',
+        zIndex: isFocus ? 60 : 30 - Math.abs(rel),
+      }}
+      transition={{ type: 'spring', stiffness: 220, damping: 28, mass: 0.8 }}
       style={{
-        x,
-        y,
-        rotate,
-        scale,
-        zIndex,
-        opacity,
-        filter,
         width: cardW,
         height: cardH,
         marginLeft: -cardW / 2,
         marginTop: -cardH / 2,
-        boxShadow: `0 44px 90px -26px rgba(0,0,0,0.95)`,
+        boxShadow: isFocus ? `0 50px 100px -24px ${accent}cc` : '0 30px 60px -30px rgba(0,0,0,0.9)',
       }}
       className="group absolute left-1/2 top-1/2 rounded-2xl overflow-hidden border border-white/10 will-change-transform"
     >
-      <Image src={project.image} alt={project.title} fill className="object-cover" sizes="260px" draggable={false} />
+      <Image src={project.image} alt={project.title} fill className="object-cover" sizes="280px" draggable={false} />
       <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-      {/* focus ring (fades in as the card reaches centre) */}
-      <motion.span
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={{ opacity: ringOpacity, boxShadow: `inset 0 0 0 2px ${accent}, 0 0 30px ${accent}55` }}
+      {/* focus ring */}
+      <span
+        className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
+        style={{ opacity: isFocus ? 1 : 0, boxShadow: `inset 0 0 0 2px ${accent}, 0 0 30px ${accent}55` }}
       />
       {project.ongoing && (
         <span className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-red-500/40 text-[8px] font-semibold uppercase tracking-wider text-red-400">
@@ -95,13 +98,13 @@ function FanCard({
           Live
         </span>
       )}
-      {/* "view" affordance on the focused card */}
-      <motion.span
-        style={{ opacity: ringOpacity }}
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-mono uppercase tracking-wider text-white"
+      {/* view affordance on the focused card */}
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-mono uppercase tracking-wider text-white transition-opacity duration-300"
+        style={{ opacity: isFocus ? 1 : 0 }}
       >
         View Project <ArrowUpRight className="w-3.5 h-3.5" />
-      </motion.span>
+      </span>
     </motion.button>
   );
 }
@@ -116,30 +119,22 @@ export function HighlightsFan({
   onOpen: (p: Project) => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
-  const [focus, setFocus] = useState(0); // which card is centred / selected
-  const [dims, setDims] = useState({ spacing: 150, cardW: 190, cardH: 253 });
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [selected, setSelected] = useState(0);
+  const [dims, setDims] = useState({ spacing: 160, cardW: 190, cardH: 253 });
 
   const len = projects.length;
+  const center = (len - 1) / 2;
+  const focus = hovered ?? selected;
 
-  // Centre position → spring (the glide).
-  const pos = useMotionValue(0);
-  const posSpring = useSpring(pos, { stiffness: 170, damping: 24, mass: 0.7 });
-  const spacingMV = useMotionValue(150);
-
-  // Cursor parallax for the whole deck.
+  // Very subtle translate-only parallax (no rotation → nothing blurs).
   const pxRaw = useMotionValue(0);
   const pyRaw = useMotionValue(0);
-  const px = useSpring(pxRaw, { stiffness: 80, damping: 18 });
-  const py = useSpring(pyRaw, { stiffness: 80, damping: 18 });
-  const rotY = useTransform(px, (v) => v * 6);
-  const rotX = useTransform(py, (v) => v * -4);
-  const shiftX = useTransform(px, (v) => v * 14);
-  const ghostShift = useTransform(px, (v) => v * -26);
-
-  // Drive the spring whenever focus changes (hover / arrows / dots).
-  useEffect(() => {
-    pos.set(clamp(focus, 0, len - 1));
-  }, [focus, len, pos]);
+  const px = useSpring(pxRaw, { stiffness: 70, damping: 18 });
+  const py = useSpring(pyRaw, { stiffness: 70, damping: 18 });
+  const shiftX = useTransformMul(px, 10);
+  const shiftY = useTransformMul(py, 6);
+  const ghostShift = useTransformMul(px, -24);
 
   // Responsive sizing.
   useEffect(() => {
@@ -147,19 +142,21 @@ export function HighlightsFan({
     if (!el) return;
     const measure = () => {
       const w = el.clientWidth || 900;
-      const spacing = clamp(w * 0.135, 104, 184);
-      const cardW = clamp(w * 0.155, 150, 224);
+      const cardW = clamp(w * 0.15, 152, 224);
       const cardH = cardW * (4 / 3);
+      const spacing = cardW * 0.86;
       setDims({ spacing, cardW, cardH });
-      spacingMV.set(spacing);
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [spacingMV]);
+  }, []);
 
-  const go = (i: number) => setFocus(clamp(i, 0, len - 1));
+  const go = (i: number) => {
+    setHovered(null);
+    setSelected(clamp(i, 0, len - 1));
+  };
 
   const onStageMove = (e: React.PointerEvent) => {
     const r = stageRef.current?.getBoundingClientRect();
@@ -170,6 +167,7 @@ export function HighlightsFan({
   const onStageLeave = () => {
     pxRaw.set(0);
     pyRaw.set(0);
+    setHovered(null);
   };
 
   if (!len) return null;
@@ -177,13 +175,13 @@ export function HighlightsFan({
 
   return (
     <div className="mb-14 sm:mb-20">
-      {/* Desktop / tablet: the hover-driven coverflow */}
+      {/* Desktop / tablet: hover-to-zoom fan */}
       <div className="hidden sm:block">
         <div
           ref={stageRef}
           onPointerMove={onStageMove}
           onPointerLeave={onStageLeave}
-          className="relative h-[clamp(420px,58vh,640px)] select-none [perspective:1500px]"
+          className="relative h-[clamp(420px,58vh,640px)] select-none"
         >
           {/* giant ghosted title */}
           <AnimatePresence mode="wait">
@@ -200,40 +198,39 @@ export function HighlightsFan({
             </motion.span>
           </AnimatePresence>
 
-          {/* cards on a parallax plane */}
-          <motion.div
-            style={{ rotateX: rotX, rotateY: rotY, x: shiftX, transformPerspective: 1500 }}
-            className="absolute inset-0 [transform-style:preserve-3d]"
-          >
+          {/* cards (subtle translate parallax) */}
+          <motion.div style={{ x: shiftX, y: shiftY }} className="absolute inset-0">
             <div className="absolute inset-x-0 top-[6%] bottom-[20%]">
               {projects.map((p, i) => (
                 <FanCard
                   key={p.id}
                   project={p}
                   index={i}
-                  pos={posSpring}
-                  spacing={spacingMV}
+                  center={center}
+                  spacing={dims.spacing}
                   cardW={dims.cardW}
                   cardH={dims.cardH}
-                  onEnter={() => setFocus(i)}
-                  onClick={() => (i === focus ? onOpen(p) : setFocus(i))}
+                  isFocus={i === focus}
+                  someHovered={hovered !== null}
+                  onEnter={() => { setHovered(i); setSelected(i); }}
+                  onClick={() => onOpen(p)}
                 />
               ))}
             </div>
           </motion.div>
 
-          {/* prev / next (still here for keyboard + as a fallback) */}
+          {/* prev / next (keyboard + fallback) */}
           <button
-            onClick={() => go(focus - 1)}
-            disabled={focus === 0}
+            onClick={() => go(selected - 1)}
+            disabled={selected === 0}
             aria-label="Previous"
             className="absolute left-2 sm:left-6 top-[42%] z-40 p-2.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-sm text-white/70 hover:text-white hover:border-white/40 transition disabled:opacity-20 disabled:pointer-events-none"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={() => go(focus + 1)}
-            disabled={focus === len - 1}
+            onClick={() => go(selected + 1)}
+            disabled={selected === len - 1}
             aria-label="Next"
             className="absolute right-2 sm:right-6 top-[42%] z-40 p-2.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-sm text-white/70 hover:text-white hover:border-white/40 transition disabled:opacity-20 disabled:pointer-events-none"
           >
@@ -284,8 +281,8 @@ export function HighlightsFan({
             {projects.map((p, i) => (
               <button
                 key={p.id}
-                onPointerEnter={() => setFocus(i)}
-                onClick={() => setFocus(i)}
+                onPointerEnter={() => { setHovered(i); setSelected(i); }}
+                onClick={() => go(i)}
                 aria-label={`Go to ${p.title}`}
                 className="h-1.5 rounded-full transition-all duration-300"
                 style={{ width: i === focus ? 22 : 7, backgroundColor: i === focus ? accent : 'rgba(255,255,255,0.25)' }}
@@ -295,7 +292,7 @@ export function HighlightsFan({
 
           {/* hint */}
           <div className="absolute bottom-2 right-4 z-40 font-mono text-[10px] uppercase tracking-[0.25em] text-white/25 pointer-events-none">
-            Hover to browse · click to open
+            Hover to focus · click to open
           </div>
         </div>
       </div>
@@ -330,6 +327,11 @@ export function HighlightsFan({
       </div>
     </div>
   );
+}
+
+// tiny helper: multiply a motion value by a factor
+function useTransformMul(mv: MotionValue<number>, factor: number) {
+  return useTransform(mv, (v) => v * factor);
 }
 
 export default HighlightsFan;
