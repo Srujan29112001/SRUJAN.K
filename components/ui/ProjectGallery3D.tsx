@@ -6,20 +6,23 @@ import { Image, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 
 /**
- * ProjectGallery3D — a 3D radial page-fan, like a book opened completely back on
- * itself so the covers touch. A fixed number of rounded, thick cards are hinged
- * on a central vertical spine and fanned 360° around it. Each card carries one
- * of the project's images on its face; cards beyond the available images stay
- * white. The whole fan auto-rotates and spins smoothly on drag / scroll.
- * Original R3F implementation, themed to each project's colour.
+ * ProjectGallery3D — a 3D radial page-fan: a thick book opened completely back
+ * on itself so the covers touch. Rounded cards are hinged on a central vertical
+ * spine and fanned evenly 360° around it. Each card carries one of the project's
+ * images on its face; cards beyond the available images stay white.
+ *
+ * Controls: drag left/right to spin around the spine, drag up/down to tilt to
+ * the top / bottom views, scroll to spin, and +/- to zoom. Original R3F build,
+ * themed to each project's colour.
  */
 
-const COUNT = 17;       // number of pages in the fan
+const COUNT = 10;       // number of pages in the fan (evenly spaced)
 const INNER_R = 0.32;   // gap between the spine and a page's inner edge
 const W = 2.05;         // page width (radial)
 const H = 2.95;         // page height (along the spine)
 const D = 0.07;         // page thickness
 const lerp = THREE.MathUtils.lerp;
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 function Page({ angle, url, accent }: { angle: number; url: string | null; accent: string }) {
   const hasImg = !!url;
@@ -47,22 +50,27 @@ function Page({ angle, url, accent }: { angle: number; url: string | null; accen
   );
 }
 
-function Book({ images, accent }: { images: string[]; accent: string }) {
-  const ref = useRef<THREE.Group>(null);
+function Book({ images, accent, zoomRef }: { images: string[]; accent: string; zoomRef: { current: number } }) {
+  const tiltGroup = useRef<THREE.Group>(null); // up/down → top / bottom view
+  const spinGroup = useRef<THREE.Group>(null); // left/right → spin around spine
   const { gl } = useThree();
-  const target = useRef(0);
-  const cur = useRef(0);
-  const drag = useRef({ down: false, lastX: 0 });
+
+  const spinTarget = useRef(0);
+  const spinCur = useRef(0);
+  const tiltTarget = useRef(-0.3);
+  const tiltCur = useRef(-0.3);
+  const drag = useRef({ down: false, lastX: 0, lastY: 0 });
 
   useEffect(() => {
     const el = gl.domElement;
-    const onWheel = (e: WheelEvent) => { target.current += e.deltaY * 0.0022; };
-    const onDown = (e: PointerEvent) => { drag.current.down = true; drag.current.lastX = e.clientX; };
+    const onWheel = (e: WheelEvent) => { spinTarget.current += e.deltaY * 0.0022; };
+    const onDown = (e: PointerEvent) => { drag.current.down = true; drag.current.lastX = e.clientX; drag.current.lastY = e.clientY; };
     const onMove = (e: PointerEvent) => {
-      if (drag.current.down) {
-        target.current += (e.clientX - drag.current.lastX) * 0.009;
-        drag.current.lastX = e.clientX;
-      }
+      if (!drag.current.down) return;
+      spinTarget.current += (e.clientX - drag.current.lastX) * 0.009;       // horizontal → spin
+      tiltTarget.current = clamp(tiltTarget.current + (e.clientY - drag.current.lastY) * 0.009, -1.5, 1.5); // vertical → tilt
+      drag.current.lastX = e.clientX;
+      drag.current.lastY = e.clientY;
     };
     const onUp = () => { drag.current.down = false; };
     el.addEventListener('wheel', onWheel, { passive: true });
@@ -78,17 +86,25 @@ function Book({ images, accent }: { images: string[]; accent: string }) {
   }, [gl]);
 
   useFrame((_, delta) => {
-    if (!drag.current.down) target.current += delta * 0.12; // gentle auto-spin
-    cur.current = lerp(cur.current, target.current, 0.08);
-    if (ref.current) ref.current.rotation.y = cur.current;
+    if (!drag.current.down) spinTarget.current += delta * 0.12; // gentle auto-spin
+    spinCur.current = lerp(spinCur.current, spinTarget.current, 0.08);
+    tiltCur.current = lerp(tiltCur.current, tiltTarget.current, 0.1);
+    if (spinGroup.current) spinGroup.current.rotation.y = spinCur.current;
+    if (tiltGroup.current) {
+      tiltGroup.current.rotation.x = tiltCur.current;
+      const z = lerp(tiltGroup.current.scale.x, zoomRef.current, 0.14);
+      tiltGroup.current.scale.setScalar(z);
+    }
   });
 
   const step = (Math.PI * 2) / COUNT;
   return (
-    <group ref={ref} rotation={[-0.32, 0, 0]}>
-      {Array.from({ length: COUNT }).map((_, i) => (
-        <Page key={i} angle={i * step} url={images[i] ?? null} accent={accent} />
-      ))}
+    <group ref={tiltGroup}>
+      <group ref={spinGroup}>
+        {Array.from({ length: COUNT }).map((_, i) => (
+          <Page key={i} angle={i * step} url={images[i] ?? null} accent={accent} />
+        ))}
+      </group>
     </group>
   );
 }
@@ -101,21 +117,38 @@ export default function ProjectGallery3D({
   color?: string;
 }) {
   const imgs = (images && images.length ? images : []).slice(0, COUNT);
+  const zoomRef = useRef(1);
+  const zoomBy = (f: number) => { zoomRef.current = clamp(zoomRef.current * f, 0.45, 2.6); };
+
+  const btn =
+    'flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/50 backdrop-blur-sm text-white/80 text-lg leading-none hover:text-white hover:border-white/50 transition active:scale-95';
 
   return (
-    <Canvas
-      dpr={[1, 1.8]}
-      camera={{ position: [0, 0.6, 7.6], fov: 42 }}
-      gl={{ antialias: true, alpha: true }}
-      style={{ touchAction: 'none' }}
-    >
-      <ambientLight intensity={0.75} />
-      <directionalLight position={[4, 6, 5]} intensity={1.15} />
-      <directionalLight position={[-5, -1, 2]} intensity={0.4} />
-      <pointLight position={[-3, 2, 4]} intensity={0.5} color={color} />
-      <Suspense fallback={null}>
-        <Book images={imgs} accent={color} />
-      </Suspense>
-    </Canvas>
+    <div className="relative w-full h-full">
+      <Canvas
+        dpr={[1, 1.8]}
+        camera={{ position: [0, 0.6, 7.6], fov: 42 }}
+        gl={{ antialias: true, alpha: true }}
+        style={{ touchAction: 'none' }}
+      >
+        <ambientLight intensity={0.75} />
+        <directionalLight position={[4, 6, 5]} intensity={1.15} />
+        <directionalLight position={[-5, -1, 2]} intensity={0.4} />
+        <pointLight position={[-3, 2, 4]} intensity={0.5} color={color} />
+        <Suspense fallback={null}>
+          <Book images={imgs} accent={color} zoomRef={zoomRef} />
+        </Suspense>
+      </Canvas>
+
+      {/* zoom controls */}
+      <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-2">
+        <button type="button" aria-label="Zoom in" className={btn} onPointerDown={(e) => e.stopPropagation()} onClick={() => zoomBy(1.18)}>
+          +
+        </button>
+        <button type="button" aria-label="Zoom out" className={btn} onPointerDown={(e) => e.stopPropagation()} onClick={() => zoomBy(0.85)}>
+          −
+        </button>
+      </div>
+    </div>
   );
 }
