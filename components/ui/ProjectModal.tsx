@@ -250,7 +250,7 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
             <div className="hidden md:block lg:sticky lg:top-6 h-[58vh] lg:h-[calc(100vh-8rem)] relative">
               {images.length > 0 && <ProjectGallery3D images={images} color={accent} />}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.25em] text-white/30 pointer-events-none">
-                Drag to orbit
+                Scroll or drag to flip
               </div>
             </div>
             {/* mobile: light tilted image stack */}
