@@ -151,12 +151,20 @@ export function HighlightsFan({
   );
 
   // ---- drag-to-fling physics ----
-  const drag = useRef({ on: false, startX: 0, startPos: 0, lastX: 0, lastT: 0, vel: 0, moved: false });
+  // `down` = pointer held on the deck; `dragging` only flips true after the
+  // pointer passes a threshold — so taps and the controls (prev/next/dots/
+  // buttons, marked data-control) keep working and the pointer is never
+  // captured for a simple click.
+  const drag = useRef({ down: false, dragging: false, startX: 0, startPos: 0, lastX: 0, lastT: 0, vel: 0 });
   const draggedRecently = useRef(false);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    drag.current = { on: true, startX: e.clientX, startPos: pos.get(), lastX: e.clientX, lastT: e.timeStamp, vel: 0, moved: false };
+    // Never hijack the interactive controls.
+    if ((e.target as HTMLElement).closest('[data-control]')) return;
+    drag.current = {
+      down: true, dragging: false,
+      startX: e.clientX, startPos: pos.get(), lastX: e.clientX, lastT: e.timeStamp, vel: 0,
+    };
   };
   const onPointerMove = (e: React.PointerEvent) => {
     // parallax (always)
@@ -166,34 +174,39 @@ export function HighlightsFan({
       pyRaw.set(clamp((e.clientY - (r.top + r.height / 2)) / (r.height / 2), -1, 1));
     }
     const d = drag.current;
-    if (!d.on) return;
+    if (!d.down) return;
     const dx = e.clientX - d.startX;
-    if (Math.abs(dx) > 5) d.moved = true;
-    const next = clamp(d.startPos - dx / dims.spacing, -0.4, len - 0.6);
-    pos.set(next);
+    if (!d.dragging && Math.abs(dx) > 6) {
+      d.dragging = true;
+      try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    if (!d.dragging) return;
+    pos.set(clamp(d.startPos - dx / dims.spacing, -0.45, len - 0.55));
     const dt = e.timeStamp - d.lastT || 16;
     d.vel = (e.clientX - d.lastX) / dt; // px per ms
     d.lastX = e.clientX;
     d.lastT = e.timeStamp;
-    const r2 = clamp(Math.round(next), 0, len - 1);
+    const r2 = clamp(Math.round(pos.get()), 0, len - 1);
     if (r2 !== active) setActive(r2);
   };
-  const endDrag = () => {
+  const onPointerUp = (e: React.PointerEvent) => {
     const d = drag.current;
-    if (!d.on) return;
-    d.on = false;
-    // project momentum into index space, then snap.
-    const projected = pos.get() - (d.vel * 140) / dims.spacing;
-    goTo(Math.round(projected));
-    if (d.moved) {
+    if (!d.down) return;
+    d.down = false;
+    if (d.dragging) {
+      d.dragging = false;
+      try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      // project momentum into index space, then snap.
+      const projected = pos.get() - (d.vel * 150) / dims.spacing;
+      goTo(Math.round(projected));
       draggedRecently.current = true;
-      setTimeout(() => (draggedRecently.current = false), 60);
+      setTimeout(() => (draggedRecently.current = false), 80);
     }
   };
-  const onPointerLeave = () => {
+  const onPointerLeave = (e: React.PointerEvent) => {
     pxRaw.set(0);
     pyRaw.set(0);
-    endDrag();
+    onPointerUp(e);
   };
 
   const handleCardClick = (i: number, p: Project) => {
@@ -213,7 +226,7 @@ export function HighlightsFan({
           ref={stageRef}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
+          onPointerUp={onPointerUp}
           onPointerLeave={onPointerLeave}
           className="relative h-[clamp(420px,58vh,640px)] select-none cursor-grab active:cursor-grabbing [perspective:1400px]"
           style={{ touchAction: 'pan-y' }}
@@ -256,6 +269,7 @@ export function HighlightsFan({
 
           {/* prev / next */}
           <button
+            data-control
             onClick={() => goTo(active - 1)}
             disabled={active === 0}
             aria-label="Previous"
@@ -264,6 +278,7 @@ export function HighlightsFan({
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
+            data-control
             onClick={() => goTo(active + 1)}
             disabled={active === len - 1}
             aria-label="Next"
@@ -284,6 +299,7 @@ export function HighlightsFan({
                 className="flex flex-col items-center pointer-events-auto"
               >
                 <button
+                  data-control
                   onClick={() => onOpen(current)}
                   className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-white hover:opacity-90 transition-opacity max-w-[80vw] truncate"
                 >
@@ -301,6 +317,7 @@ export function HighlightsFan({
                   )}
                 </div>
                 <button
+                  data-control
                   onClick={() => onOpen(current)}
                   className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all hover:brightness-110"
                   style={{ backgroundColor: accent, color: '#000', boxShadow: `0 0 18px ${accent}55` }}
@@ -316,6 +333,7 @@ export function HighlightsFan({
             {projects.map((p, i) => (
               <button
                 key={p.id}
+                data-control
                 onClick={() => goTo(i)}
                 aria-label={`Go to ${p.title}`}
                 className="h-1.5 rounded-full transition-all duration-300"
