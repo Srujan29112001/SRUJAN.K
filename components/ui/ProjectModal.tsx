@@ -73,7 +73,7 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
     <div
       ref={modalRef}
       data-lenis-prevent
-      className="fixed inset-0 z-[100] overflow-y-auto bg-[#070708] custom-scrollbar"
+      className="fixed inset-0 z-[100000] overflow-y-auto bg-[#070708] custom-scrollbar"
     >
       {/* themed ambient glow */}
       <div

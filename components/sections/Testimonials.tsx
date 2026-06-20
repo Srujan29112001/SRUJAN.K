@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { testimonials } from '@/data/testimonials';
 import { Quote } from 'lucide-react';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 export function Testimonials() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -216,21 +217,12 @@ export function Testimonials() {
 
       <div id="testimonials-content" className="container-custom relative z-10">
         {/* Section header */}
-        <div ref={headerRef} className="testimonials-header mb-12 sm:mb-16 md:mb-20 text-center relative px-4">
-          {/* Blue Glow Effect (same as other sections) */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-
-          <div className="inline-block bg-black/50 px-4 sm:px-6 py-1 border border-cyan-500/30 rounded-full backdrop-blur-md">
-            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-              Social Proof
-            </span>
-          </div>
-          <h2 className="mt-4 sm:mt-6 font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white tracking-tight">
-            TESTIMONIALS
-          </h2>
-          <p className="mx-auto mt-3 sm:mt-4 max-w-2xl text-base sm:text-lg text-text-secondary px-4">
-            Trusted by founders and enterprises across the globe.
-          </p>
+        <div ref={headerRef} className="testimonials-header mb-12 sm:mb-16 md:mb-20 relative px-4">
+          <SectionHeading
+            eyebrow="Social Proof"
+            title="TESTIMONIALS"
+            subtitle="Trusted by founders and enterprises across the globe."
+          />
         </div>
       </div>
 

@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { ResumePipelineResult } from '@/lib/resume-agents/types';
 import { getByokConfig, BYOK_PROVIDERS, BYOK_CHANGED_EVENT, type ByokConfig } from '@/components/ui/TerminalChat';
 import { usePageNav } from '@/components/providers/PageNav';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 const STAGES = [
     'Parsing the job description…',
@@ -185,40 +186,12 @@ export function ResumeGate() {
             />
 
             {/* Section header — canonical portfolio pattern */}
-            <div className="max-w-6xl mx-auto mb-12 sm:mb-16 md:mb-20 text-center relative z-10">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md"
-                >
-                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-                        AI Resume Engine
-                    </span>
-                </motion.div>
-
-                <motion.h2
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.1 }}
-                    className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight px-2"
-                >
-                    HIRING? GET MY RESUME
-                </motion.h2>
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4"
-                >
-                    Tell my agents about your role. They&apos;ll scan everything I&apos;ve built, score the
-                    fit honestly, and assemble a one-page resume tailored to your exact requirements.
-                </motion.p>
+            <div className="max-w-6xl mx-auto mb-12 sm:mb-16 md:mb-20 relative z-10">
+                <SectionHeading
+                    eyebrow="AI Resume Engine"
+                    title="HIRING? GET MY RESUME"
+                    subtitle="Tell my agents about your role. They'll scan everything I've built, score the fit honestly, and assemble a one-page resume tailored to your exact requirements."
+                />
 
                 {/* Engine transparency badge — driven by the visitor's own 🔑 key */}
                 <motion.div

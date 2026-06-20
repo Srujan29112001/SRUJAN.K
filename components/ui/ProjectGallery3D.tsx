@@ -17,9 +17,9 @@ import * as THREE from 'three';
  */
 
 const COUNT = 10;       // number of pages in the fan (evenly spaced)
-const INNER_R = 0.32;   // gap between the spine and a page's inner edge
-const W = 2.05;         // page width (radial)
-const H = 2.95;         // page height (along the spine)
+const INNER_R = 0.28;   // gap between the spine and a page's inner edge
+const W = 3.3;          // page width (radial) — landscape 16:9
+const H = 1.86;         // page height (along the spine) — landscape 16:9
 const D = 0.07;         // page thickness
 const lerp = THREE.MathUtils.lerp;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -127,7 +127,7 @@ export default function ProjectGallery3D({
     <div className="relative w-full h-full">
       <Canvas
         dpr={[1, 1.8]}
-        camera={{ position: [0, 0.6, 7.6], fov: 42 }}
+        camera={{ position: [0, 0.5, 9.4], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
         style={{ touchAction: 'none' }}
       >

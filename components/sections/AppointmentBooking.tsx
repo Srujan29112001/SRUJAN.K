@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import dynamic from 'next/dynamic';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 // Dynamic import for Cal.com embed to avoid SSR issues
 const CalEmbed = dynamic(() => import('@/components/ui/CalEmbed').then(m => m.CalEmbed), {
@@ -167,42 +168,13 @@ export const AppointmentBooking = forwardRef<AppointmentBookingHandle, Appointme
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-center mb-12 sm:mb-16 md:mb-20 booking-content relative"
+                        className="mb-12 sm:mb-16 md:mb-20 booking-content relative"
                     >
-                        {/* Blue glow behind */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-
-                        {/* Section badge - pill style */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6 }}
-                            className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md"
-                        >
-                            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-                                Schedule a Meeting
-                            </span>
-                        </motion.div>
-
-                        <motion.h2
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.8, delay: 0.1 }}
-                            className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight px-2"
-                        >
-                            GET IN TOUCH
-                        </motion.h2>
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                            className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4"
-                        >
-                            Ready to bring your project to life? Schedule a call to discuss your ideas.
-                        </motion.p>
+                        <SectionHeading
+                            eyebrow="Schedule a Meeting"
+                            title="GET IN TOUCH"
+                            subtitle="Ready to bring your project to life? Schedule a call to discuss your ideas."
+                        />
                     </motion.div>
 
                     {/* Contact Form */}

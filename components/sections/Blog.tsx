@@ -7,6 +7,7 @@ import { blogPosts } from '@/data/blog';
 import { cn } from '@/lib/utils';
 import { Calendar, Clock } from 'lucide-react';
 import { BlogModal, useBlogModal } from '@/components/ui/BlogModal';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 export function Blog() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -249,21 +250,12 @@ export function Blog() {
       <div ref={contentRef} className="relative z-10">
         <div className="container-custom px-4 sm:px-6">
           {/* Section header */}
-          <div className="blog-header mb-12 sm:mb-16 md:mb-20 lg:mb-24 text-center relative">
-            {/* Blue Glow Effect */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-
-            <div className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md">
-              <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-                Insights & Writing
-              </span>
-            </div>
-            <h2 className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight px-2">
-              BLOG
-            </h2>
-            <p className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4">
-              Thinking out loud about Agents, AGI, and Engineering.
-            </p>
+          <div className="blog-header mb-12 sm:mb-16 md:mb-20 lg:mb-24 relative">
+            <SectionHeading
+              eyebrow="Insights & Writing"
+              title="BLOG"
+              subtitle="Thinking out loud about Agents, AGI, and Engineering."
+            />
           </div>
 
           {/* Timeline */}

@@ -9,6 +9,7 @@ import {
     TerminalChat, ChatMessage, ChatProvenance,
     getByokConfig, saveByokConfig, BYOK_PROVIDERS, BYOK_CHANGED_EVENT, type ByokConfig,
 } from '@/components/ui/TerminalChat';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 /**
  * BYOK CONNECT BAR — lives OUTSIDE the terminal (above the avatar/chat grid)
@@ -860,44 +861,19 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
 
             {/* Section header — matches the canonical pattern used by Skills, Projects,
                  Testimonials, Contact, etc. Pill badge + large display title + secondary subtitle. */}
-            <div className="max-w-6xl mx-auto mb-12 sm:mb-16 md:mb-20 text-center relative z-10">
-                {/* Blue glow behind (mix-blend-screen so it brightens, not muddies) */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] sm:w-[600px] h-[300px] sm:h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-
-                {/* Section badge - pill style */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md"
-                >
-                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-                        AI Chat
-                    </span>
-                </motion.div>
-
-                <motion.h2
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8, delay: 0.1 }}
-                    className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight px-2"
-                >
-                    HAVE A CONVERSATION
-                </motion.h2>
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4"
-                >
-                    I&apos;m an AI representation of Srujan — discuss projects, explore ideas, or ask me anything.
-                    <span className="block mt-2 text-cyan-400/80 italic text-xs sm:text-sm">
-                        Srujan personally reviews all interactions to ensure a seamless follow-up.
-                    </span>
-                </motion.p>
+            <div className="max-w-6xl mx-auto mb-12 sm:mb-16 md:mb-20 relative z-10">
+                <SectionHeading
+                    eyebrow="AI Chat"
+                    title="HAVE A CONVERSATION"
+                    subtitle={
+                        <>
+                            I&apos;m an AI representation of Srujan — discuss projects, explore ideas, or ask me anything.
+                            <span className="block mt-2 text-cyan-400/80 italic text-xs sm:text-sm">
+                                Srujan personally reviews all interactions to ensure a seamless follow-up.
+                            </span>
+                        </>
+                    }
+                />
             </div>
 
             {/* BYOK connect bar — outside the terminal, always visible */}

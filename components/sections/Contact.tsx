@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { MagneticButton } from '@/components/ui/MagneticButton';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 // Dynamic import for 3D component
 const Scene = dynamic(() => import('@/components/three/Scene').then((m) => m.Scene), {
@@ -128,22 +129,12 @@ export function Contact() {
     >
       <div className="container-custom px-4 sm:px-6">
         {/* Section header */}
-        <div className="contact-header mb-12 sm:mb-16 md:mb-20 text-center relative">
-          {/* Blue Glow Effect */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-600/20 blur-[120px] rounded-full -z-20 pointer-events-none mix-blend-screen" />
-
-          <div className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md">
-            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-              Get in Touch
-            </span>
-          </div>
-          <h2 className="mt-4 sm:mt-5 md:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight px-2">
-            LET'S CONNECT
-          </h2>
-          <p className="mx-auto mt-3 sm:mt-4 max-w-xl text-sm sm:text-base md:text-lg text-text-secondary px-4">
-            Have a project in mind? Let's discuss how AI and robotics can solve your
-            challenges.
-          </p>
+        <div className="contact-header mb-12 sm:mb-16 md:mb-20 relative">
+          <SectionHeading
+            eyebrow="Get in Touch"
+            title="LET'S CONNECT"
+            subtitle="Have a project in mind? Let's discuss how AI and robotics can solve your challenges."
+          />
         </div>
 
         {/* Content grid */}
