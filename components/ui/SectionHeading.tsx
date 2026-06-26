@@ -12,7 +12,7 @@ export function SectionHeading({
   eyebrow,
   title,
   subtitle,
-  accent = '#22d3ee',
+  accent = 'var(--accent)',
   meta,
   titleId,
   className = '',

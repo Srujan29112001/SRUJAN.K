@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
+import { Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePageNav, type PageId } from '@/components/providers/PageNav';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 const navLinks: { label: string; page: PageId }[] = [
   { label: 'Home', page: 'home' },        // Hero + Journey
@@ -32,6 +34,7 @@ export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
   const { page, goTo } = usePageNav();
+  const { theme, toggle } = useTheme();
 
   // Role rotation effect
   useEffect(() => {
@@ -135,8 +138,16 @@ export function Navigation() {
             ))}
           </div>
 
-          {/* CTA Button — the Contact ("Get in Touch") page */}
-          <div className="hidden md:block">
+          {/* Right side: theme toggle + CTA */}
+          <div className="hidden md:flex items-center gap-3">
+            <button
+              onClick={toggle}
+              aria-label="Toggle light / dark mode"
+              title="Toggle theme"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/30 bg-cyan-500/5 text-cyan-400 hover:text-white hover:border-cyan-400 transition-colors"
+            >
+              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
             <a
               href="#contact"
               onClick={(e) => handleNavClick(e, 'contact')}
@@ -155,9 +166,17 @@ export function Navigation() {
             </a>
           </div>
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile: theme toggle + menu */}
+          <div className="flex items-center gap-1 md:hidden">
           <button
-            className="relative flex h-10 w-10 flex-col items-center justify-center gap-1.5 md:hidden"
+            onClick={toggle}
+            aria-label="Toggle light / dark mode"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-cyan-400"
+          >
+            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
+          <button
+            className="relative flex h-10 w-10 flex-col items-center justify-center gap-1.5"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
             style={{ zIndex: 100000 }}
@@ -166,6 +185,7 @@ export function Navigation() {
             <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && 'opacity-0')} />
             <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && '-translate-y-2 -rotate-45 bg-cyan-400')} />
           </button>
+          </div>
         </div>
       </nav>
 

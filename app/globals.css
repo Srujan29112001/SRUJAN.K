@@ -13,6 +13,11 @@
   --color-secondary: #06B6D4;
   --color-secondary-light: #22D3EE;
 
+  /* Site accent — cyan in dark mode, flips to orange in light mode */
+  --accent: #22D3EE;
+  --accent-strong: #06B6D4;
+  --accent-rgb: 34, 211, 238;
+
   /* Accent - Amber (Energy/Warmth) */
   --color-accent: #F59E0B;
   --color-accent-light: #FBBF24;
@@ -84,6 +89,106 @@
   --tracking-wider: 0.05em;
   --tracking-widest: 0.1em;
 }
+
+/* ============================================================
+   LIGHT MODE
+   Toggled by `html.light` (see ThemeProvider). Flips the design
+   tokens to a warm light palette and the site accent cyan → orange,
+   plus targeted overrides for the most common hard-coded dark
+   utilities so the main surfaces flip cleanly.
+   ============================================================ */
+html.light {
+  /* surfaces */
+  --color-bg-base: #f6f1e9;     /* warm cream */
+  --color-bg-elevated: #efe7da;
+  --color-bg-surface: #ffffff;
+  --color-bg-hover: #e8dfd0;
+
+  /* text */
+  --color-text-primary: #1b1713;
+  --color-text-secondary: #514a41;
+  --color-text-muted: #8a8076;
+  --color-text-accent: #ea580c;
+
+  /* brand → orange */
+  --color-primary: #ea580c;
+  --color-primary-light: #fb923c;
+  --color-primary-dark: #c2410c;
+  --color-primary-glow: rgba(234, 88, 12, 0.30);
+  --color-secondary: #f97316;
+  --color-secondary-light: #fb923c;
+  --color-accent: #f59e0b;
+
+  /* site accent → orange */
+  --accent: #ea580c;
+  --accent-strong: #c2410c;
+  --accent-rgb: 234, 88, 12;
+
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+}
+
+/* solid dark section backgrounds → cream */
+html.light .bg-black { background-color: var(--color-bg-base) !important; }
+html.light [class*="bg-[#070708]"] { background-color: var(--color-bg-base) !important; }
+html.light [class*="bg-[#030712]"] { background-color: rgba(247, 243, 236, 0.9) !important; }
+
+/* bulk white text → ink (re-asserted to white over media / dark chips below) */
+html.light .text-white { color: var(--color-text-primary) !important; }
+html.light [class*="text-white/"] { color: rgba(27, 23, 19, 0.6) !important; }
+html.light .text-text-primary { color: var(--color-text-primary) !important; }
+
+/* keep text white where it sits on media or a translucent-dark chip */
+html.light #hero [class*="text-white"],
+html.light [class*="bg-black/"] [class*="text-white"],
+html.light [class*="bg-black/"][class*="text-white"],
+html.light video ~ * [class*="text-white"] {
+  color: #fff !important;
+}
+
+/* cyan/blue accent utilities → orange */
+html.light .text-cyan-400,
+html.light .text-cyan-300,
+html.light .text-cyan-500,
+html.light [class*="text-cyan-400/"],
+html.light [class*="text-cyan-300/"] { color: var(--accent) !important; }
+
+html.light [class*="border-cyan-500/"] { border-color: rgba(234, 88, 12, 0.35) !important; }
+html.light [class*="bg-cyan-500/"] { background-color: rgba(234, 88, 12, 0.12) !important; }
+html.light [class*="bg-blue-600/"] { background-color: rgba(234, 88, 12, 0.10) !important; }
+
+/* white hairlines / fills → subtle dark */
+html.light [class*="border-white/"] { border-color: rgba(20, 16, 12, 0.12) !important; }
+html.light [class*="bg-white/"] { background-color: rgba(20, 16, 12, 0.04) !important; }
+
+/* scrollbar + selection */
+html.light ::-webkit-scrollbar-track { background: var(--color-bg-elevated); }
+html.light ::-webkit-scrollbar-thumb { background: #d9cdba; }
+html.light ::selection { background-color: var(--accent); color: #fff; }
+
+/* lighten the full-bleed dark gradient overlays so whole sections flip
+   (only the SOLID from/via/to-black stops used as section washes; the
+   translucent `from-black/80` image overlays keep darkening photos) */
+html.light .from-black {
+  --tw-gradient-from: var(--color-bg-base) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(246 241 233 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+html.light .via-black\/85 {
+  --tw-gradient-stops: var(--tw-gradient-from), rgb(246 241 233 / 0.85) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+html.light .via-black\/50 {
+  --tw-gradient-stops: var(--tw-gradient-from), rgb(246 241 233 / 0.5) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+html.light .to-black {
+  --tw-gradient-to: var(--color-bg-base) var(--tw-gradient-to-position) !important;
+}
+/* faint white grid lines read as faint dark lines on cream */
+html.light .opacity-\[0\.04\] { opacity: 0.5; }
 
 @layer base {
   * {

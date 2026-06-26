@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, Inter, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvider';
+import { ThemeProvider, themeNoFlashScript } from '@/components/providers/ThemeProvider';
 import { GrainOverlay } from '@/components/ui/GrainOverlay';
 import { SupportPopup } from '@/components/ui/SupportPopup';
 import './globals.css';
@@ -95,6 +96,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Set the theme class before paint to avoid a flash of the wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
@@ -125,11 +128,13 @@ export default function RootLayout({
           `}
         </Script>
 
-        <SmoothScrollProvider>
-          <GrainOverlay />
-          <SupportPopup />
-          {children}
-        </SmoothScrollProvider>
+        <ThemeProvider>
+          <SmoothScrollProvider>
+            <GrainOverlay />
+            <SupportPopup />
+            {children}
+          </SmoothScrollProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
