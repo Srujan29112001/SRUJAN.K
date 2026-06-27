@@ -945,9 +945,9 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                     onClick={() => setCommandCenterOpen(!commandCenterOpen)}
                     className="w-full group relative overflow-hidden rounded-2xl border-2 transition-all duration-500"
                     style={{
-                        borderColor: commandCenterOpen ? 'rgba(6, 182, 212, 0.4)' : 'rgba(168, 85, 247, 0.3)',
+                        borderColor: commandCenterOpen ? 'rgba(var(--accent-rgb), 0.4)' : 'rgba(168, 85, 247, 0.3)',
                         background: commandCenterOpen
-                            ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(59, 130, 246, 0.05))'
+                            ? 'linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(var(--accent-rgb), 0.05))'
                             : 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(236, 72, 153, 0.05))',
                     }}
                 >

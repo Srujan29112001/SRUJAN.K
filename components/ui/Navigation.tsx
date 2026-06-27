@@ -8,12 +8,12 @@ import { usePageNav, type PageId } from '@/components/providers/PageNav';
 import { useTheme } from '@/components/providers/ThemeProvider';
 
 const navLinks: { label: string; page: PageId }[] = [
-  { label: 'Home', page: 'home' },        // Hero + Journey
+  { label: 'Home & Journey', page: 'home' },   // Hero + Journey
   { label: 'Skills', page: 'skills' },
   { label: 'Projects', page: 'projects' },
   { label: 'Blog', page: 'blog' },
   { label: 'Testimonials', page: 'testimonials' },
-  { label: 'AI', page: 'ai' },            // AI Chat + Neural Map
+  { label: 'AI & Neural Map', page: 'ai' },    // AI Chat + Neural Map
   { label: 'Resume', page: 'resume' },
 ];
 
@@ -96,8 +96,8 @@ export function Navigation() {
               <div className="absolute inset-0 bg-cyan-500/30 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden group-hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-300">
                 <img
-                  src="/images/logo.png"
-                  alt="KS Logo"
+                  src={theme === 'light' ? '/images/logo%20light.jpeg' : '/images/logo%20dark.jpeg'}
+                  alt="Srujan logo"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -181,9 +181,9 @@ export function Navigation() {
             aria-label="Toggle menu"
             style={{ zIndex: 100000 }}
           >
-            <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && 'translate-y-2 rotate-45 bg-cyan-400')} />
-            <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && 'opacity-0')} />
-            <span className={cn('h-0.5 w-6 bg-white transition-all duration-300', isMenuOpen && '-translate-y-2 -rotate-45 bg-cyan-400')} />
+            <span className={cn('h-0.5 w-6 bg-[var(--color-text-primary)] transition-all duration-300', isMenuOpen && 'translate-y-2 rotate-45 bg-cyan-400')} />
+            <span className={cn('h-0.5 w-6 bg-[var(--color-text-primary)] transition-all duration-300', isMenuOpen && 'opacity-0')} />
+            <span className={cn('h-0.5 w-6 bg-[var(--color-text-primary)] transition-all duration-300', isMenuOpen && '-translate-y-2 -rotate-45 bg-cyan-400')} />
           </button>
           </div>
         </div>

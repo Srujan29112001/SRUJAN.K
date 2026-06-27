@@ -309,7 +309,7 @@ export function About() {
                     <span
                       className="absolute left-[18px] lg:left-1/2 top-1 lg:top-1/2 -translate-x-1/2 lg:-translate-y-1/2 z-10 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full font-mono text-[11px] sm:text-xs font-bold backdrop-blur-md"
                       style={{
-                        background: '#0a0a0f',
+                        background: 'var(--color-bg-elevated)',
                         border: `2px solid ${panel.color}`,
                         color: panel.color,
                         boxShadow: `0 0 18px ${panel.color}66`,
@@ -351,7 +351,7 @@ export function About() {
                       </p>
                       <h3
                         className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 leading-[1.05]"
-                        style={{ background: `linear-gradient(135deg,#fff 0%, ${panel.color} 120%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+                        style={{ background: `linear-gradient(135deg, var(--color-text-primary) 0%, ${panel.color} 120%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                       >
                         {panel.title}
                       </h3>

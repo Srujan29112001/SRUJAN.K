@@ -123,6 +123,8 @@ html.light {
   --accent: #ea580c;
   --accent-strong: #c2410c;
   --accent-rgb: 234, 88, 12;
+  /* flip-aware hairline: faint white in dark, faint ink in light */
+  --hairline: rgba(27, 23, 19, 0.18);
 
   color-scheme: light;
 }
@@ -150,16 +152,71 @@ html.light video ~ * [class*="text-white"] {
   color: #fff !important;
 }
 
-/* cyan/blue accent utilities → orange */
-html.light .text-cyan-400,
-html.light .text-cyan-300,
-html.light .text-cyan-500,
-html.light [class*="text-cyan-400/"],
-html.light [class*="text-cyan-300/"] { color: var(--accent) !important; }
+/* The Hero is a full-bleed dark video. Keep it identical to dark mode in light
+   mode — no cream section bg bleeding through as a "white tint" over the video,
+   name stays white (re-asserted above). #hero id beats the .bg-black rule. */
+html.light #hero { background-color: #000 !important; }
 
-html.light [class*="border-cyan-500/"] { border-color: rgba(234, 88, 12, 0.35) !important; }
-html.light [class*="bg-cyan-500/"] { background-color: rgba(234, 88, 12, 0.12) !important; }
-html.light [class*="bg-blue-600/"] { background-color: rgba(234, 88, 12, 0.10) !important; }
+/* cyan/blue accent utilities → orange (text, border, solid + translucent fills).
+   Broad [class*=] catches every shade/opacity (nav underline, dots, buttons). */
+html.light [class*="text-cyan-"],
+html.light [class*="text-blue-"] { color: var(--accent) !important; }
+
+html.light [class*="border-cyan-"],
+html.light [class*="border-blue-"] { border-color: rgba(234, 88, 12, 0.4) !important; }
+
+/* solid accent fills (nav underline, pulse dot, hamburger bars) → solid orange */
+html.light .bg-cyan-300, html.light .bg-cyan-400, html.light .bg-cyan-500, html.light .bg-cyan-600,
+html.light .bg-blue-400, html.light .bg-blue-500, html.light .bg-blue-600 { background-color: var(--accent) !important; }
+
+/* translucent accent fills (chips, glows, hover states) → faint orange wash */
+html.light [class*="bg-cyan-300/"], html.light [class*="bg-cyan-400/"],
+html.light [class*="bg-cyan-500/"], html.light [class*="bg-cyan-600/"],
+html.light [class*="bg-blue-400/"], html.light [class*="bg-blue-500/"],
+html.light [class*="bg-blue-600/"] { background-color: rgba(234, 88, 12, 0.12) !important; }
+
+/* SOLID cyan/blue GRADIENT-STOP utilities (from-/via-/to-, no opacity) → orange,
+   incl. hover variants. Tailwind gradient stops set --tw-gradient-* vars that the
+   bg-/text-/border- rules don't reach, so CTA buttons like
+   `bg-gradient-to-r from-cyan-500 to-blue-500` stay blue without this. Exact-class
+   selectors (no [class*=]) so translucent /NN decorative washes are left alone. */
+html.light .from-cyan-400, html.light .from-cyan-500, html.light .from-cyan-600,
+html.light .from-blue-400, html.light .from-blue-500, html.light .from-blue-600,
+html.light .hover\:from-cyan-400:hover, html.light .hover\:from-cyan-500:hover,
+html.light .hover\:from-blue-400:hover, html.light .hover\:from-blue-500:hover {
+  --tw-gradient-from: var(--accent) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(var(--accent-rgb), 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+html.light .via-cyan-400, html.light .via-cyan-500, html.light .via-blue-400, html.light .via-blue-500 {
+  --tw-gradient-to: rgba(var(--accent-rgb), 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--accent) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+html.light .to-cyan-400, html.light .to-cyan-500, html.light .to-cyan-600,
+html.light .to-blue-400, html.light .to-blue-500, html.light .to-blue-600,
+html.light .hover\:to-cyan-400:hover, html.light .hover\:to-blue-400:hover, html.light .hover\:to-blue-500:hover {
+  --tw-gradient-to: var(--accent-strong) var(--tw-gradient-to-position) !important;
+}
+
+/* TRANSLUCENT cyan/blue gradient-stop washes (/NN form: icon chips, hover glows,
+   corner accents, avatar halos) → faint orange so decorative tints stay on-brand. */
+html.light [class*="from-cyan-300/"], html.light [class*="from-cyan-400/"],
+html.light [class*="from-cyan-500/"], html.light [class*="from-cyan-600/"],
+html.light [class*="from-blue-400/"], html.light [class*="from-blue-500/"],
+html.light [class*="from-blue-600/"] {
+  --tw-gradient-from: rgba(var(--accent-rgb), 0.16) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(var(--accent-rgb), 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+html.light [class*="via-cyan-400/"], html.light [class*="via-cyan-500/"],
+html.light [class*="via-blue-400/"], html.light [class*="via-blue-500/"] {
+  --tw-gradient-to: rgba(var(--accent-rgb), 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), rgba(var(--accent-rgb), 0.1) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+html.light [class*="to-cyan-400/"], html.light [class*="to-cyan-500/"], html.light [class*="to-cyan-600/"],
+html.light [class*="to-blue-400/"], html.light [class*="to-blue-500/"], html.light [class*="to-blue-600/"] {
+  --tw-gradient-to: rgba(var(--accent-rgb), 0.16) var(--tw-gradient-to-position) !important;
+}
 
 /* white hairlines / fills → subtle dark */
 html.light [class*="border-white/"] { border-color: rgba(20, 16, 12, 0.12) !important; }
@@ -205,6 +262,25 @@ html.light .to-black {
 }
 /* faint white grid lines read as faint dark lines on cream */
 html.light .opacity-\[0\.04\] { opacity: 0.5; }
+
+/* Get-in-touch Cal-embed fallback card (inline dark hex) → cream */
+html.light [class*="bg-[#0a0a0f]"] { background-color: var(--color-bg-elevated) !important; }
+
+/* ---- Blog article modal: dark reading card → light reading card -------------
+   The panel is bg-black/95 with white prose; flip the panel + the article body
+   text to ink. The hero-image region (tags/meta) is outside [data-article-body],
+   so its white-over-photo text is left untouched. */
+html.light [data-blogmodal] {
+  background-color: var(--color-bg-surface) !important;
+  border-color: rgba(234, 88, 12, 0.3) !important;
+}
+html.light [data-article-body] [class*="text-white"] { color: var(--color-text-primary) !important; }
+html.light [data-article-body] [class*="text-white/"] { color: var(--color-text-secondary) !important; }
+/* the "Read on Medium" pill keeps white text — re-orange its gradient + re-white it */
+html.light [data-article-body] a[class*="from-cyan-500"] {
+  background-image: linear-gradient(to right, var(--accent), var(--accent-strong)) !important;
+}
+html.light [data-article-body] a[class*="text-white"] { color: #fff !important; }
 
 @layer base {
   * {

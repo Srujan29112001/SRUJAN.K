@@ -133,14 +133,14 @@ export const AppointmentBooking = forwardRef<AppointmentBookingHandle, Appointme
                 ref={sectionRef}
                 id="booking"
                 className={`relative py-20 pb-16 md:pb-32 px-4 overflow-hidden ${className}`}
-                style={{ background: 'linear-gradient(180deg, #0a0a0f 0%, #0a0f1a 100%)' }}
+                style={{ background: 'var(--gradient-section)' }}
             >
                 {/* Background - Animated gradient */}
                 <div className="absolute inset-0 opacity-20">
                     <div
                         className="absolute inset-0"
                         style={{
-                            background: 'radial-gradient(ellipse at 30% 50%, rgba(6, 182, 212, 0.3) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, rgba(59, 130, 246, 0.3) 0%, transparent 50%)',
+                            background: 'radial-gradient(ellipse at 30% 50%, rgba(var(--accent-rgb), 0.3) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, rgba(var(--accent-rgb), 0.22) 0%, transparent 50%)',
                         }}
                     />
                     {/* Animated circles */}
@@ -154,8 +154,8 @@ export const AppointmentBooking = forwardRef<AppointmentBookingHandle, Appointme
                     className="absolute inset-0 opacity-[0.03]"
                     style={{
                         backgroundImage: `
-                            linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
+                            linear-gradient(rgba(var(--accent-rgb), 0.12) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(var(--accent-rgb), 0.12) 1px, transparent 1px)
                         `,
                         backgroundSize: '100px 100px',
                     }}

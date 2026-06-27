@@ -178,8 +178,8 @@ export function ResumeGate() {
                 className="absolute inset-0 opacity-5 pointer-events-none"
                 style={{
                     backgroundImage: `
-              linear-gradient(rgba(6, 182, 212, 0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(6, 182, 212, 0.5) 1px, transparent 1px)
+              linear-gradient(rgba(var(--accent-rgb), 0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(var(--accent-rgb), 0.5) 1px, transparent 1px)
             `,
                     backgroundSize: '100px 100px',
                 }}
@@ -375,7 +375,7 @@ export function ResumeGate() {
                                     {/* Score arc */}
                                     <div className="relative w-32 h-32 flex-shrink-0">
                                         <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-                                            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+                                            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(150,150,150,0.25)" strokeWidth="10" />
                                             <circle
                                                 cx="60" cy="60" r="52" fill="none"
                                                 stroke={scoreColor(result.fit.score)}
@@ -456,7 +456,7 @@ export function ResumeGate() {
                                     <p className="text-xs text-text-muted mb-4 font-mono">{result.fileName}.pdf</p>
                                     <button
                                         onClick={handleDownload}
-                                        className="px-8 py-3.5 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-emerald-500/25 active:scale-[0.98]"
+                                        className="px-8 py-3.5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-emerald-500/25 active:scale-[0.98]"
                                     >
                                         Open Tailored Resume ↗
                                     </button>

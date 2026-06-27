@@ -98,7 +98,7 @@ export function Skills({ activeCategory, setActiveCategory }: SkillsProps) {
       <div
         className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(var(--accent-rgb),0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--accent-rgb),0.5) 1px, transparent 1px)',
           backgroundSize: '64px 64px',
         }}
       />
@@ -135,8 +135,8 @@ export function Skills({ activeCategory, setActiveCategory }: SkillsProps) {
                 onClick={() => setActiveCategory(d.key)}
                 className="group relative inline-flex items-center gap-2.5 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border font-mono text-xs sm:text-sm uppercase tracking-wider transition-all duration-300"
                 style={{
-                  borderColor: isActive ? cat.color : 'rgba(255,255,255,0.12)',
-                  color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
+                  borderColor: isActive ? cat.color : 'var(--hairline, rgba(255,255,255,0.12))',
+                  color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                   backgroundColor: isActive ? `${cat.color}1f` : 'transparent',
                   boxShadow: isActive ? `0 0 24px ${cat.color}40` : 'none',
                 }}

@@ -141,6 +141,7 @@ export function BlogModal({ post, isOpen, onClose }: BlogModalProps) {
                 <div
                     ref={contentRef}
                     data-lenis-prevent
+                    data-blogmodal
                     className="relative w-full max-w-4xl my-2 sm:my-auto bg-black/95 border border-cyan-500/30 rounded-lg sm:rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] custom-scrollbar"
                 >
                     {/* Close Button */}
@@ -192,7 +193,7 @@ export function BlogModal({ post, isOpen, onClose }: BlogModalProps) {
                     </div>
 
                     {/* Article Content */}
-                    <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+                    <div data-article-body className="p-4 sm:p-6 md:p-8 lg:p-10">
                         {/* Title */}
                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white mb-3 sm:mb-4">
                             {post.title}
