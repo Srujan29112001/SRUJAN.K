@@ -105,6 +105,9 @@ export function Blog() {
     let height = canvas.height;
     let animationFrameId: number;
     let ripples: Ripple[] = [];
+    // Ripple colours — cyan/blue in dark mode, warm orange in light mode.
+    let ripple1 = '6, 182, 212';
+    let ripple2 = '59, 130, 246';
 
     // Mouse tracking
     let mouseX = -1000;
@@ -147,7 +150,7 @@ export function Blog() {
         if (this.opacity <= 0) return;
         ctx!.beginPath();
         ctx!.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx!.strokeStyle = `rgba(6, 182, 212, ${this.opacity})`;
+        ctx!.strokeStyle = `rgba(${ripple1}, ${this.opacity})`;
         ctx!.lineWidth = this.lineWidth;
         ctx!.stroke();
 
@@ -155,7 +158,7 @@ export function Blog() {
         if (this.radius > 30) {
           ctx!.beginPath();
           ctx!.arc(this.x, this.y, this.radius * 0.6, 0, Math.PI * 2);
-          ctx!.strokeStyle = `rgba(59, 130, 246, ${this.opacity * 0.4})`;
+          ctx!.strokeStyle = `rgba(${ripple2}, ${this.opacity * 0.4})`;
           ctx!.lineWidth = this.lineWidth * 0.5;
           ctx!.stroke();
         }
@@ -208,6 +211,9 @@ export function Blog() {
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
+      const light = document.documentElement.classList.contains('light');
+      ripple1 = light ? '234, 88, 12' : '6, 182, 212';
+      ripple2 = light ? '193, 65, 12' : '59, 130, 246';
 
       // Draw ripples only (no particles)
       ripples = ripples.filter(r => { const alive = r.update(); if (alive) r.draw(); return alive; });

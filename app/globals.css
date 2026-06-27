@@ -165,6 +165,22 @@ html.light [class*="bg-blue-600/"] { background-color: rgba(234, 88, 12, 0.10) !
 html.light [class*="border-white/"] { border-color: rgba(20, 16, 12, 0.12) !important; }
 html.light [class*="bg-white/"] { background-color: rgba(20, 16, 12, 0.04) !important; }
 
+/* design tokens (bg-bg-*, text-text-*) were compiled by Tailwind to literal
+   hex, so the :root vars never reached them — flip them explicitly here. */
+html.light [class*="bg-bg-base"] { background-color: var(--color-bg-base) !important; }
+html.light [class*="bg-bg-elevated"] { background-color: var(--color-bg-elevated) !important; }
+html.light [class*="bg-bg-surface"] { background-color: var(--color-bg-surface) !important; }
+html.light [class*="bg-bg-hover"] { background-color: var(--color-bg-hover) !important; }
+html.light [class*="text-text-primary"] { color: var(--color-text-primary) !important; }
+html.light [class*="text-text-secondary"] { color: var(--color-text-secondary) !important; }
+html.light [class*="text-text-muted"] { color: var(--color-text-muted) !important; }
+
+/* brand accent utilities (purple/cyan) → orange in light mode */
+html.light .text-primary, html.light .text-secondary { color: var(--accent) !important; }
+html.light .bg-primary, html.light .bg-secondary { background-color: var(--accent) !important; }
+html.light .border-primary, html.light .border-secondary { border-color: var(--accent) !important; }
+html.light .hover\:text-primary:hover, html.light .active\:text-primary:active { color: var(--accent) !important; }
+
 /* scrollbar + selection */
 html.light ::-webkit-scrollbar-track { background: var(--color-bg-elevated); }
 html.light ::-webkit-scrollbar-thumb { background: #d9cdba; }

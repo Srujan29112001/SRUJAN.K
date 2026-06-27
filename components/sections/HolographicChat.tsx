@@ -195,6 +195,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
         let height = canvas.height;
         let animationFrameId: number;
         let particles: Particle[] = [];
+        let starRGB = '255, 255, 255'; // white stars in dark, amber motes in light
 
         // Mouse tracking
         let mouseX = -1000;
@@ -271,9 +272,9 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                         this.x, this.y, 0,
                         this.x, this.y, this.size * 3
                     );
-                    gradient.addColorStop(0, `rgba(255, 255, 255, ${this.brightness})`);
-                    gradient.addColorStop(0.3, `rgba(255, 255, 255, ${this.brightness * 0.3})`);
-                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    gradient.addColorStop(0, `rgba(${starRGB}, ${this.brightness})`);
+                    gradient.addColorStop(0.3, `rgba(${starRGB}, ${this.brightness * 0.3})`);
+                    gradient.addColorStop(1, `rgba(${starRGB}, 0)`);
                     ctx!.beginPath();
                     ctx!.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
                     ctx!.fillStyle = gradient;
@@ -283,7 +284,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
                 // Star core
                 ctx!.beginPath();
                 ctx!.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx!.fillStyle = `rgba(255, 255, 255, ${this.brightness})`;
+                ctx!.fillStyle = `rgba(${starRGB}, ${this.brightness})`;
                 ctx!.fill();
             }
         }
@@ -316,6 +317,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
 
         const animate = () => {
             ctx.clearRect(0, 0, width, height);
+            starRGB = document.documentElement.classList.contains('light') ? '193, 86, 18' : '255, 255, 255';
             scrollVelocity *= 0.95;
             particles.forEach((p) => { p.update(); p.draw(); });
             animationFrameId = requestAnimationFrame(animate);
