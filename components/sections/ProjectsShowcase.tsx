@@ -177,14 +177,7 @@ export default function ProjectsShowcase({ activeCategory, setActiveCategory }: 
                     </motion.div>
                 </AnimatePresence>
                 <div className="absolute inset-0 bg-gradient-to-b from-black via-black/85 to-black" />
-                <div
-                    className="absolute inset-0 opacity-[0.04]"
-                    style={{
-                        backgroundImage:
-                            'linear-gradient(rgba(var(--accent-rgb),0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--accent-rgb),0.5) 1px, transparent 1px)',
-                        backgroundSize: '64px 64px',
-                    }}
-                />
+                {/* background grid removed — distracting to read over in light mode */}
                 <div
                     className="absolute top-[12%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[150px] mix-blend-screen transition-colors duration-700"
                     style={{ backgroundColor: `${accent}22` }}

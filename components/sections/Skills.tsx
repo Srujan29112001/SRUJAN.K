@@ -93,15 +93,8 @@ export function Skills({ activeCategory, setActiveCategory }: SkillsProps) {
 
   return (
     <section id="skills" className="relative bg-black py-20 sm:py-24 md:py-28 lg:py-32 overflow-hidden">
-      {/* lightweight CSS backdrop (no canvas/WebGL) — faint grid + glow tinted
-          to the active discipline */}
-      <div
-        className="absolute inset-0 opacity-[0.04] pointer-events-none"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(var(--accent-rgb),0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--accent-rgb),0.5) 1px, transparent 1px)',
-          backgroundSize: '64px 64px',
-        }}
-      />
+      {/* soft glow tinted to the active discipline (grid backdrop removed — it
+          was distracting to read over in light mode) */}
       <div
         className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[460px] rounded-full blur-[150px] pointer-events-none transition-colors duration-700 mix-blend-screen"
         style={{ backgroundColor: `${category.color}22` }}
