@@ -146,6 +146,7 @@ html.light .text-text-primary { color: var(--color-text-primary) !important; }
 
 /* keep text white where it sits on media or a translucent-dark chip */
 html.light #hero [class*="text-white"],
+html.light #services [class*="text-white"],
 html.light [class*="bg-black/"] [class*="text-white"],
 html.light [class*="bg-black/"][class*="text-white"],
 html.light video ~ * [class*="text-white"] {
@@ -155,7 +156,7 @@ html.light video ~ * [class*="text-white"] {
 /* The Hero is a full-bleed dark video. Keep it identical to dark mode in light
    mode — no cream section bg bleeding through as a "white tint" over the video,
    name stays white (re-asserted above). #hero id beats the .bg-black rule. */
-html.light #hero { background-color: #000 !important; }
+html.light #hero, html.light #services { background-color: #000 !important; }
 
 /* cyan/blue accent utilities → orange (text, border, solid + translucent fills).
    Broad [class*=] catches every shade/opacity (nav underline, dots, buttons). */

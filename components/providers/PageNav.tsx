@@ -22,6 +22,7 @@ export type PageId =
   | 'blog'
   | 'testimonials'
   | 'ai'          // AI Chat + Neural Map (Knowledge Graph)
+  | 'services'    // AI assistant showcase (formerly the /ai-assistant page)
   | 'resume'
   | 'contact';
 
@@ -32,6 +33,7 @@ export const PAGE_IDS: PageId[] = [
   'blog',
   'testimonials',
   'ai',
+  'services',
   'resume',
   'contact',
 ];
@@ -51,6 +53,9 @@ const ANCHOR_TO_PAGE: Record<string, PageId> = {
   knowledge: 'ai',
   'knowledge-graph': 'ai',
   neural: 'ai',
+  services: 'services',
+  'ai-assistant': 'services',
+  calculator: 'services',
   resume: 'resume',
   contact: 'contact',
   booking: 'contact',

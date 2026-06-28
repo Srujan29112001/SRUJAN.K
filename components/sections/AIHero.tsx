@@ -3,8 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { getLenis } from '@/lib/lenis';
 
 // Dynamic import for 3D background
 const SpaceBackground = dynamic(() => import('@/components/three/SpaceBackground').then(m => m.SpaceBackground), {
@@ -14,9 +13,7 @@ const SpaceBackground = dynamic(() => import('@/components/three/SpaceBackground
     ),
 });
 
-gsap.registerPlugin(ScrollTrigger);
-
-export function AIHero() {
+export function AIHero({ onPrimaryCta }: { onPrimaryCta?: () => void } = {}) {
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const backgroundRef = useRef<HTMLDivElement>(null);
@@ -29,39 +26,41 @@ export function AIHero() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // GSAP scroll-triggered zoom and blur effect
+    // The 3D SpaceBackground loads async (ssr:false); its WebGL canvas settles a
+    // few hundred ms after mount and drifts scroll past the nav's page-change
+    // reset. Re-assert top across that init window — but stop the moment the user
+    // scrolls on purpose, so we never fight a real scroll.
     useEffect(() => {
-        const ctx = gsap.context(() => {
-            ScrollTrigger.create({
-                trigger: containerRef.current,
-                start: 'top top',
-                end: '+=100%',
-                pin: true,
-                scrub: true,
-                animation: gsap.timeline()
-                    // Zoom and blur out content
-                    .to(contentRef.current, {
-                        scale: 2,
-                        opacity: 0,
-                        filter: 'blur(10px)',
-                        ease: 'power2.in',
-                    })
-                    // Also zoom the background slightly
-                    .to(backgroundRef.current, {
-                        scale: 1.3,
-                        opacity: 0.5,
-                        ease: 'power1.in',
-                    }, 0)
-            });
-        }, containerRef);
+        let cancelled = false;
+        const toTop = () => {
+            if (cancelled) return;
+            const lenis = getLenis();
+            if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+            window.scrollTo(0, 0);
+        };
+        const stop = () => { cancelled = true; };
+        // A wheel / touch / key from the user = intentional scroll → back off.
+        window.addEventListener('wheel', stop, { passive: true, once: true });
+        window.addEventListener('touchmove', stop, { passive: true, once: true });
+        window.addEventListener('keydown', stop, { once: true });
 
-        return () => ctx.revert();
+        toTop();
+        const raf = requestAnimationFrame(toTop);
+        const timers = [60, 150, 300, 500, 800, 1100, 1500].map((d) => setTimeout(toTop, d));
+        return () => {
+            cancelled = true;
+            cancelAnimationFrame(raf);
+            timers.forEach(clearTimeout);
+            window.removeEventListener('wheel', stop);
+            window.removeEventListener('touchmove', stop);
+            window.removeEventListener('keydown', stop);
+        };
     }, []);
 
     return (
         <section
             ref={containerRef}
-            id="hero"
+            id="services"
             className="relative min-h-screen overflow-hidden"
         >
             {/* Space Background - Interactive! Click and drag to rotate */}
@@ -107,21 +106,21 @@ export function AIHero() {
                     className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 mb-12"
                 >
                     <button
-                        onClick={() => document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' })}
+                        onClick={() => (onPrimaryCta ? onPrimaryCta() : (window.location.href = '/#contact'))}
                         className="group relative px-6 sm:px-8 py-3 sm:py-4 rounded-full overflow-hidden
                                   font-display font-semibold text-xs sm:text-sm uppercase tracking-wider
                                   w-full sm:w-auto pointer-events-auto"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-500 opacity-90" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-teal-400 opacity-0 
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent)] to-[var(--accent-strong)] opacity-90" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-strong)] to-[var(--accent)] opacity-0
                                        group-hover:opacity-100 transition-opacity duration-300" />
                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                            <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] 
-                                           transition-transform duration-700 bg-gradient-to-r from-transparent 
+                            <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%]
+                                           transition-transform duration-700 bg-gradient-to-r from-transparent
                                            via-white/20 to-transparent" />
                         </div>
                         <span className="relative z-10 flex items-center justify-center gap-2 text-black">
-                            <span>Get Estimate</span>
+                            <span>Let&apos;s Talk</span>
                             <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                             </svg>

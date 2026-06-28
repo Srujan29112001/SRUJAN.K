@@ -32,6 +32,13 @@ const KnowledgeGraph3D = dynamic(
   () => import('@/components/sections/KnowledgeGraph3D'),
   { ssr: false }
 );
+
+// Services — the AI-assistant showcase (immersive 3D "at your service" hero),
+// integrated as a portfolio section. Pricing calculator intentionally dropped.
+const AIHero = dynamic(
+  () => import('@/components/sections/AIHero'),
+  { ssr: false }
+);
 import { CustomCursor } from '@/components/ui/CustomCursor';
 import { Navigation } from '@/components/ui/Navigation';
 import { ScrollProgress } from '@/components/ui/ScrollProgress';
@@ -87,6 +94,7 @@ function PagedMain({
             <KnowledgeGraph3D />
           </>
         )}
+        {page === 'services' && <AIHero onPrimaryCta={goBooking} />}
         {page === 'resume' && <ResumeGate />}
         {page === 'contact' && <Contact />}
       </motion.div>

@@ -14,6 +14,7 @@ const navLinks: { label: string; page: PageId }[] = [
   { label: 'Blog', page: 'blog' },
   { label: 'Testimonials', page: 'testimonials' },
   { label: 'AI & Neural Map', page: 'ai' },    // AI Chat + Neural Map
+  { label: 'Services', page: 'services' },     // AI assistant showcase
   { label: 'Resume', page: 'resume' },
 ];
 
