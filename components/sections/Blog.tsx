@@ -9,17 +9,17 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 import { BlogModal, useBlogModal } from '@/components/ui/BlogModal';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 
-const dispatches = blogPosts; // already newest-first (Dec → Sep)
+const dispatches = blogPosts; // newest-first (Dec → Sep)
 const pad = (i: number) => String(i + 1).padStart(3, '0');
 const dateline = (p: BlogPost) =>
   `${p.date} · ${p.dispatchLabel ?? 'Field Note'} · ${p.readTime.replace(' read', '')}`.toUpperCase();
+const HAIRLINE = 'var(--hairline, rgba(255,255,255,0.12))';
 
 /**
- * THE LOGBOOK — the Blog as a researcher's bound field-notebook you leaf
- * through: a left "Index of Dispatches" (a literary table of contents) and a
- * right "open leaf" showing one dispatch at a time, with a 3D page-turn between
- * them. Deliberately analog — the one tactile surface on an otherwise 3D site.
- * Fully token-driven so it flips dark→cream and cyan→orange.
+ * THE LOGBOOK — the Blog as a researcher's field-notebook you leaf through:
+ * a left "Index of Dispatches" and a right "open leaf" showing one dispatch,
+ * with a 3D page-turn between them. Clean editorial layout, token-driven so it
+ * flips dark→cream and cyan→orange.
  */
 export function Blog() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -32,26 +32,25 @@ export function Blog() {
 
   const active = dispatches[activeIndex];
 
-  // Header reveal + re-target the exit-blur handoff onto the new spread wrapper.
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from('.logbook-header', {
-        opacity: 0, y: 50, duration: 1,
+        opacity: 0, y: 40, duration: 0.9,
         scrollTrigger: { trigger: sectionRef.current, start: 'top 80%', toggleActions: 'play none none reverse' },
       });
       gsap.from('.logbook-spread', {
-        opacity: 0, y: 40, duration: 1, ease: 'power3.out',
-        scrollTrigger: { trigger: '.logbook-spread', start: 'top 85%', toggleActions: 'play none none reverse' },
+        opacity: 0, y: 36, duration: 0.9, ease: 'power3.out',
+        scrollTrigger: { trigger: '.logbook-spread', start: 'top 88%', toggleActions: 'play none none reverse' },
       });
       gsap.to(contentRef.current, {
-        scale: 1.1, opacity: 0, filter: 'blur(14px)', ease: 'power2.in',
-        scrollTrigger: { trigger: sectionRef.current, start: 'bottom 90%', end: 'bottom top', scrub: 1 },
+        scale: 1.08, opacity: 0, filter: 'blur(12px)', ease: 'power2.in',
+        scrollTrigger: { trigger: sectionRef.current, start: 'bottom 88%', end: 'bottom top', scrub: 1 },
       });
     }, sectionRef);
     return () => ctx.revert();
   }, []);
 
-  // ── THE PAGE TURN — direction-aware 3D leaf flip (the section's signature) ──
+  // ── THE PAGE TURN — direction-aware 3D leaf flip ───────────────────────────
   const turnTo = (i: number, dir: 'next' | 'prev') => {
     if (i === activeIndex || i < 0 || i >= dispatches.length || turningRef.current) return;
     const leaf = leafRef.current;
@@ -67,8 +66,8 @@ export function Blog() {
       return;
     }
 
-    const rot = dir === 'next' ? -18 : 18;
-    const x = dir === 'next' ? -18 : 18;
+    const rot = dir === 'next' ? -16 : 16;
+    const x = dir === 'next' ? -16 : 16;
     const sweep = leaf.querySelector('.leaf-sweep');
     gsap.timeline({ onComplete: () => { turningRef.current = false; } })
       .set(sweep, { opacity: 0 })
@@ -77,11 +76,7 @@ export function Blog() {
       .add(() => setActiveIndex(i))
       .to(leaf, { rotateY: 0, x: 0, duration: 0.34, ease: 'power3.out' })
       .to(sweep, { opacity: 0, duration: 0.25 }, '<')
-      .to(leaf, { scale: 0.99, duration: 0.08, yoyo: true, repeat: 1 }, '>-0.04')
-      .add(() => {
-        const hand = leaf.querySelectorAll('.leaf-handplaced');
-        gsap.fromTo(hand, { opacity: 0, y: 6 }, { opacity: 1, y: 0, stagger: 0.06, duration: 0.3 });
-      });
+      .to(leaf, { scale: 0.992, duration: 0.08, yoyo: true, repeat: 1 }, '>-0.04');
   };
 
   const onRow = (i: number) =>
@@ -94,8 +89,8 @@ export function Blog() {
       className="relative overflow-hidden bg-bg-base py-16 sm:py-20 md:py-24 lg:py-28"
     >
       <div ref={contentRef} className="relative z-10 container-custom px-4 sm:px-6">
-        {/* Heading (canonical convention) */}
-        <div className="logbook-header mb-10 sm:mb-14 md:mb-16">
+        {/* Heading */}
+        <div className="logbook-header mb-10 sm:mb-12 md:mb-14">
           <SectionHeading
             eyebrow="Field Dispatches"
             title="THE LOGBOOK"
@@ -104,29 +99,29 @@ export function Blog() {
           />
         </div>
 
-        {/* THE DESK + OPEN SPREAD */}
+        {/* THE OPEN SPREAD */}
         <div
-          className="logbook-spread relative rounded-2xl border bg-bg-elevated p-5 sm:p-8 md:p-10"
-          style={{
-            borderColor: 'var(--hairline, rgba(255,255,255,0.1))',
-            backgroundImage:
-              'repeating-linear-gradient(transparent 0 27px, rgba(120,120,120,0.10) 27px 28px)',
-          }}
+          className="logbook-spread relative mx-auto max-w-6xl rounded-2xl border bg-bg-elevated overflow-hidden"
+          style={{ borderColor: HAIRLINE }}
         >
-          {/* soft center-gutter shadow (desktop fold) */}
           <div
-            className="hidden md:block absolute top-8 bottom-8 left-[38%] w-10 -translate-x-1/2 pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.07), transparent)' }}
-          />
+            className="relative md:grid md:grid-cols-[33%_67%] p-5 sm:p-8 md:p-9 lg:p-11"
+            style={{ perspective: '2000px' }}
+          >
+            {/* crisp gutter divider (desktop) */}
+            <div
+              className="hidden md:block absolute top-9 lg:top-11 bottom-9 lg:bottom-11 left-[33%] w-px"
+              style={{ backgroundColor: HAIRLINE }}
+            />
 
-          <div className="md:grid md:grid-cols-[38%_62%] md:gap-8 lg:gap-12" style={{ perspective: '1800px' }}>
-            {/* ── LEFT PAGE — THE INDEX ─────────────────────────────────── */}
-            <div className="md:pr-2">
-              <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.3em] text-text-muted tabular-nums mb-4 sm:mb-6">
-                Index of Dispatches — {pad(dispatches.length - 1)} Entries
-              </p>
+            {/* ── LEFT PAGE — THE INDEX ───────────────────────────────────── */}
+            <div className="md:pr-7 lg:pr-9">
+              <div className="flex items-baseline justify-between pb-3 mb-1 border-b" style={{ borderColor: HAIRLINE }}>
+                <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.28em] text-text-muted">Index of Dispatches</span>
+                <span className="font-mono text-[10px] text-text-muted tabular-nums">{pad(dispatches.length - 1)}</span>
+              </div>
 
-              <div className="flex md:block gap-3 overflow-x-auto md:overflow-visible pb-2 md:pb-0 -mx-1 px-1">
+              <div className="flex md:block gap-3 overflow-x-auto md:overflow-visible -mx-1 px-1 md:mx-0 md:px-0">
                 {dispatches.map((p, i) => {
                   const isActive = i === activeIndex;
                   return (
@@ -135,95 +130,84 @@ export function Blog() {
                       onClick={() => onRow(i)}
                       aria-current={isActive ? 'true' : undefined}
                       className={cn(
-                        'group text-left shrink-0 md:shrink md:w-full rounded-lg md:rounded-none border-l-2 transition-colors duration-300',
-                        'min-w-[220px] md:min-w-0 px-3 md:px-4 py-3 md:py-4',
-                        isActive
-                          ? 'border-cyan-400 bg-bg-surface/50 md:bg-transparent'
-                          : 'border-transparent hover:bg-bg-surface/30'
+                        'group text-left shrink-0 md:shrink md:w-full transition-colors duration-300 relative',
+                        'min-w-[230px] md:min-w-0 rounded-lg md:rounded-none py-4 px-3 md:px-4 md:border-b',
+                        isActive ? 'bg-bg-surface/40 md:bg-transparent' : 'hover:bg-bg-surface/25'
                       )}
+                      style={{ borderColor: HAIRLINE }}
                     >
-                      <div className="flex items-baseline gap-2 md:gap-3">
+                      {/* active marker */}
+                      <span
+                        className={cn('absolute left-0 top-3 bottom-3 w-[2px] rounded transition-opacity', isActive ? 'opacity-100' : 'opacity-0')}
+                        style={{ backgroundColor: 'var(--accent)' }}
+                      />
+                      <div className="flex items-baseline gap-2.5 md:pl-3">
                         <span className={cn('font-mono text-[11px] tabular-nums shrink-0', isActive ? 'text-cyan-400' : 'text-text-muted')}>
-                          No.&nbsp;{pad(i)}
+                          {pad(i)}
                         </span>
-                        <span className={cn('font-display text-sm sm:text-base font-bold leading-tight transition-colors', isActive ? 'text-text-primary' : 'text-text-secondary group-hover:text-text-primary')}>
+                        <span className={cn('font-display text-sm font-bold leading-snug transition-colors flex-1', isActive ? 'text-text-primary' : 'text-text-secondary group-hover:text-text-primary')}>
                           {p.title}
                         </span>
-                        {/* TOC leader dots → read-time (desktop) */}
-                        <span className="hidden md:block flex-1 mx-2 translate-y-[-3px] border-b border-dotted border-text-muted/40" />
-                        <span className="hidden md:inline font-mono text-[10px] text-text-muted tabular-nums shrink-0">{p.readTime.replace(' read', '')}</span>
+                        <span className="font-mono text-[10px] text-text-muted tabular-nums shrink-0 hidden md:inline">{p.readTime.replace(' read', '')}</span>
                       </div>
-                      <div className="md:pl-[3.1rem] mt-1.5">
-                        <p className="italic text-xs sm:text-sm text-text-secondary leading-snug">{p.caption}</p>
-                        <p className="font-mono text-[9px] sm:text-[10px] uppercase tracking-wider text-text-muted mt-1">{dateline(p)}</p>
-                      </div>
+                      <p className="md:pl-3 mt-1.5 italic text-xs text-text-secondary leading-snug">{p.caption}</p>
+                      <p className="md:pl-3 mt-1 font-mono text-[9px] uppercase tracking-wider text-text-muted">{dateline(p)}</p>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* ── RIGHT PAGE — THE OPEN LEAF ────────────────────────────── */}
+            {/* ── RIGHT PAGE — THE OPEN LEAF ──────────────────────────────── */}
             <div
               ref={leafRef}
-              className="relative mt-8 md:mt-0 md:pl-2"
+              className="relative mt-8 md:mt-0 md:pl-7 lg:pl-9"
               style={{ transformStyle: 'preserve-3d', transformOrigin: 'left center' }}
             >
-              {/* light-sweep during a turn */}
               <div
-                className="leaf-sweep absolute -inset-2 pointer-events-none opacity-0 z-20"
-                style={{ background: 'linear-gradient(105deg, transparent 32%, rgba(var(--accent-rgb),0.12) 50%, transparent 68%)' }}
+                className="leaf-sweep absolute inset-0 pointer-events-none opacity-0 z-20"
+                style={{ background: 'linear-gradient(105deg, transparent 34%, rgba(var(--accent-rgb),0.12) 50%, transparent 66%)' }}
               />
 
-              {/* No. + dateline */}
-              <div className="flex items-start justify-between gap-4">
-                <span className="font-mono text-3xl sm:text-4xl md:text-5xl font-bold tabular-nums text-text-primary leading-none">
+              {/* header: No. + dateline on one baseline */}
+              <div className="flex items-end justify-between gap-4 pb-3 border-b" style={{ borderColor: HAIRLINE }}>
+                <span className="font-mono text-2xl sm:text-3xl font-bold tabular-nums text-text-primary leading-none">
                   No.&nbsp;{pad(activeIndex)}
                 </span>
-                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-text-muted text-right pt-1 max-w-[9rem] leading-relaxed">
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-text-muted text-right leading-relaxed">
                   {dateline(active)}
                 </span>
               </div>
 
-              {/* pasted-in plate + marginal note */}
-              <div className="relative mt-6 sm:mt-7">
-                <div className="leaf-handplaced relative mx-auto w-[82%] sm:w-[74%]" style={{ transform: 'rotate(-1.2deg)' }}>
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-[2px] border-4 border-bg-surface shadow-xl">
-                    <Image src={active.image} alt={active.title} fill className="object-cover" sizes="(max-width:768px) 80vw, 40vw" />
-                    {/* duotone wash in the post's colour */}
-                    <div className="absolute inset-0 mix-blend-soft-light opacity-30" style={{ backgroundColor: active.color }} />
-                  </div>
-                  {/* faux tape strip */}
-                  <div
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 rotate-[7deg] rounded-[1px]"
-                    style={{ backgroundColor: 'rgba(150,140,125,0.4)', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
-                  />
+              {/* plate */}
+              <figure className="mt-6">
+                <div className="relative aspect-[16/9] overflow-hidden rounded-md border shadow-lg" style={{ borderColor: HAIRLINE }}>
+                  <Image src={active.image} alt={active.title} fill className="object-cover" sizes="(max-width:768px) 90vw, 50vw" />
+                  <div className="absolute inset-0 mix-blend-soft-light opacity-25" style={{ backgroundColor: active.color }} />
                 </div>
-                {/* handwritten marginal note */}
-                <p
-                  className="leaf-handplaced absolute right-0 sm:-right-4 bottom-2 max-w-[8.5rem] sm:max-w-[10rem] italic text-xs sm:text-sm text-cyan-400 leading-snug"
-                  style={{ transform: 'rotate(-2.5deg)' }}
-                >
-                  note — {active.note}
-                </p>
-              </div>
+                <figcaption className="mt-2.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-text-muted">
+                  <span className="text-cyan-400">Plate {pad(activeIndex)}</span>
+                  <span className="opacity-50">·</span>
+                  <span className="italic normal-case tracking-normal text-[11px] text-text-secondary">{active.note}</span>
+                </figcaption>
+              </figure>
 
               {/* title + standfirst */}
-              <button onClick={() => openModal(active)} className="block text-left mt-7 sm:mt-8 group">
+              <button onClick={() => openModal(active)} className="block text-left mt-6 group">
                 <h3 className="font-display text-2xl sm:text-3xl font-bold text-text-primary group-hover:text-cyan-400 transition-colors leading-tight">
                   {active.title}
                 </h3>
               </button>
               <p className="mt-3 text-sm sm:text-base text-text-secondary leading-relaxed">{active.summary}</p>
 
-              {/* pull-quote in the margin */}
+              {/* pull-quote */}
               {active.pullQuote && (
-                <blockquote className="leaf-handplaced mt-5 pl-4 border-l-2 border-cyan-400 italic text-base sm:text-lg text-text-primary/90 leading-relaxed">
+                <blockquote className="mt-5 pl-4 border-l-2 italic text-base text-text-primary/90 leading-relaxed" style={{ borderColor: 'var(--accent)' }}>
                   &ldquo;{active.pullQuote}&rdquo;
                 </blockquote>
               )}
 
-              {/* wax-stamp tags */}
+              {/* tags */}
               <div className="mt-6 flex flex-wrap gap-2">
                 {active.tags.map((tag) => (
                   <span key={tag} className="inline-flex items-center px-3 py-1 rounded-full border border-cyan-400/40 font-mono text-[10px] uppercase tracking-wider text-cyan-400">
@@ -232,8 +216,8 @@ export function Blog() {
                 ))}
               </div>
 
-              {/* footer — open + turn-to */}
-              <div className="mt-8 pt-5 border-t flex flex-wrap items-center justify-between gap-4" style={{ borderColor: 'var(--hairline, rgba(255,255,255,0.1))' }}>
+              {/* footer */}
+              <div className="mt-7 pt-5 border-t flex items-center justify-between gap-4" style={{ borderColor: HAIRLINE }}>
                 <button
                   onClick={() => openModal(active)}
                   className="group inline-flex items-center gap-2 font-mono text-xs sm:text-sm uppercase tracking-wider text-cyan-400 hover:text-text-primary transition-colors"
@@ -242,8 +226,8 @@ export function Blog() {
                   <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                 </button>
 
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-text-muted hidden sm:inline">Turn to</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-text-muted hidden sm:inline">Turn to</span>
                   <button
                     onClick={() => turnTo(activeIndex - 1, 'prev')}
                     disabled={activeIndex === 0}
@@ -262,40 +246,24 @@ export function Blog() {
                   </button>
                 </div>
               </div>
-
-              {/* page-corner dog-ear → next */}
-              {activeIndex < dispatches.length - 1 && (
-                <button
-                  onClick={() => turnTo(activeIndex + 1, 'next')}
-                  aria-label="Next dispatch"
-                  title="next dispatch"
-                  className="hidden md:block absolute -bottom-10 -right-10 group"
-                >
-                  <svg width="56" height="56" viewBox="0 0 56 56" className="transition-transform group-hover:scale-110">
-                    <path d="M56 0 L56 56 L0 56 Z" fill="rgba(var(--accent-rgb),0.18)" />
-                    <path d="M56 0 L56 56 L0 56" fill="none" stroke="rgba(var(--accent-rgb),0.5)" strokeWidth="1" />
-                  </svg>
-                </button>
-              )}
             </div>
           </div>
         </div>
 
-        {/* FILED ON MEDIUM — last archival entry */}
-        <div className="mt-10 sm:mt-12 flex justify-center">
+        {/* FILED ON MEDIUM */}
+        <div className="mt-8 sm:mt-10 flex justify-center">
           <a
             href="https://medium.com/@srujan29112001"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2 font-mono text-xs sm:text-sm uppercase tracking-[0.2em] text-text-muted hover:text-cyan-400 transition-colors"
+            className="group inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-text-muted hover:text-cyan-400 transition-colors"
           >
-            <span className="border-b border-transparent group-hover:border-cyan-400/60 transition-colors pb-0.5">Filed on Medium</span>
+            <span className="border-b border-transparent group-hover:border-cyan-400/60 transition-colors pb-0.5">The full archive lives on Medium</span>
             <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
           </a>
         </div>
       </div>
 
-      {/* Article sub-page */}
       <BlogModal post={selectedPost} isOpen={isOpen} onClose={closeModal} />
     </section>
   );
