@@ -46,10 +46,10 @@ const STAGES = [
 const CASE_IDS = [
     'helix-data-agent',
     'clinical-ai-copilot',
-    'neuropsych-trading',
+    'neural-signal-time-freq',
     'vehicle-tracking',
-    'autonomous-rover',
-    'covid-simulation',
+    'lifi-comm',
+    'space-debris',
 ];
 const caseFiles = CASE_IDS.map((id) => projects.find((p) => p.id === id)).filter(
     (p): p is NonNullable<typeof p> => Boolean(p)

@@ -6,6 +6,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MagneticButton } from '@/components/ui/MagneticButton';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 // Dynamic import for 3D components (Optional Fallback)
 const Scene = dynamic(() => import('@/components/three/Scene').then((m) => m.Scene), {
@@ -22,10 +23,28 @@ export function Hero() {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
+  // Light mode plays its own background clip; dark keeps the original.
+  const heroVideo = theme === 'light' ? '/videos/hero-bg-light.mp4' : '/videos/hero-bg.mp4';
   // The bg video can take a moment to buffer on a fresh device; until it can
   // play we cover the static poster with a clean branded loader and only then
   // fade the video in.
   const [videoReady, setVideoReady] = useState(false);
+
+  // Reload the <video> when the theme flips (skip the very first mount so the
+  // natural load isn't interrupted, and dark-mode visitors never reload).
+  const didInitVideo = useRef(false);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (!didInitVideo.current) {
+      didInitVideo.current = true;
+      return;
+    }
+    v.load();
+    const p = v.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  }, [theme]);
 
   useEffect(() => {
     // If the video is already cached/ready before React attaches the handler.
@@ -97,6 +116,7 @@ export function Hero() {
             poster→video swap and always fades on ready or the timeout. */}
         <video
           ref={videoRef}
+          src={heroVideo}
           autoPlay
           loop
           muted
@@ -108,9 +128,7 @@ export function Hero() {
           onError={() => setVideoReady(true)}
           className="absolute inset-0 w-full h-full object-cover opacity-50 sm:opacity-60"
           poster="/images/projects/hero-ai.png" // Fallback image
-        >
-          <source src="/videos/hero-bg.mp4" type="video/mp4" />
-        </video>
+        />
 
         {/* Overlay Gradient for readability - Enhanced for mobile */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/80 sm:from-black/30 sm:via-transparent sm:to-black/80" />
