@@ -12,6 +12,7 @@ import { Blog } from '@/components/sections/Blog';
 import { Testimonials } from '@/components/sections/Testimonials';
 import { Contact } from '@/components/sections/Contact';
 import { Footer } from '@/components/sections/Footer';
+import { ServicesShowcase } from '@/components/sections/ServicesShowcase';
 
 // AI Chat lives outside Contact so it can be its own section, swappable in
 // page order, and reachable from the navbar.
@@ -94,7 +95,12 @@ function PagedMain({
             <KnowledgeGraph3D />
           </>
         )}
-        {page === 'services' && <AIHero onPrimaryCta={goBooking} />}
+        {page === 'services' && (
+          <>
+            <AIHero onPrimaryCta={goBooking} />
+            <ServicesShowcase onPrimaryCta={goBooking} />
+          </>
+        )}
         {page === 'resume' && <ResumeGate />}
         {page === 'contact' && <Contact />}
       </motion.div>
