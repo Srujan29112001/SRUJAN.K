@@ -9,6 +9,11 @@ export interface BlogPost {
     tags: string[];
     link: string;
     color: string;
+    /** "Logbook" dispatch fields (optional) — used by the Blog redesign */
+    dispatchLabel?: string; // dateline middle label, e.g. "ENTERPRISE SWARM"
+    caption?: string;       // one-line "signal caption" shown in the index
+    note?: string;          // handwritten marginal note on the open leaf
+    pullQuote?: string;     // a line pulled into the margin
 }
 
 export const blogPosts: BlogPost[] = [
@@ -48,6 +53,10 @@ I'm now exploring **emergent behaviors** in agent swarms—patterns that arise n
         tags: ['AI Agents', 'Architecture', 'GenAI'],
         link: '#',
         color: '#3B82F6',
+        dispatchLabel: 'Enterprise Swarm',
+        caption: '35 agents, one hive mind.',
+        note: 'coordinators only talk sideways — never broadcast.',
+        pullQuote: 'Agents don\'t talk to everyone — they communicate through specialized coordinators.',
     },
     {
         id: 'neuromorphic-computing',
@@ -84,6 +93,10 @@ Intel's Loihi 2 and IBM's TrueNorth are just the beginning. I predict neuromorph
         tags: ['Research', 'Hardware', 'SNN'],
         link: '#',
         color: '#10B981',
+        dispatchLabel: 'Silicon Bench',
+        caption: '94% accuracy at 85% less power.',
+        note: 'it only fires when it has something to say.',
+        pullQuote: 'Spikes, not values — just like a biological neuron.',
     },
     {
         id: 'embodied-intelligence',
@@ -123,6 +136,10 @@ The solution wasn't better simulation—it was **adaptive learning on-device**. 
         tags: ['Robotics', 'Sim2Real', 'VLA'],
         link: '#',
         color: '#F59E0B',
+        dispatchLabel: 'Sim2Real',
+        caption: 'Teaching a robot to survive reality.',
+        note: 'the fix wasn\'t better sim — it was learning on the body.',
+        pullQuote: 'Simulated physics never perfectly matches reality. That gap is the whole problem.',
     },
     {
         id: 'freelance-ai',
@@ -168,6 +185,10 @@ The freelance era taught me what enterprise needs. Now I'm applying these insigh
         tags: ['Freelance', 'SaaS', 'MVP'],
         link: '#',
         color: '#EC4899',
+        dispatchLabel: 'The Trenches',
+        caption: 'Six MVPs, six industries, one year.',
+        note: 'clients don\'t buy clean code — they buy revenue.',
+        pullQuote: 'Build the 20% that delivers 80% of the value — first.',
     },
 ];
 
