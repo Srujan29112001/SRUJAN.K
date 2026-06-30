@@ -853,7 +853,7 @@ export function HolographicChat({ onEstimateRequest, onBookingRequest }: Hologra
         <section
             ref={sectionRef}
             id="chat"
-            className="relative min-h-screen py-20 px-4 overflow-x-hidden bg-black"
+            className="relative min-h-screen pt-28 sm:pt-32 pb-20 px-4 overflow-x-hidden bg-black"
         >
             {/* Interactive Particle Background */}
             <canvas ref={canvasRef} className="absolute inset-0 z-[1] opacity-60 pointer-events-none" />

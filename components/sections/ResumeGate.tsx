@@ -172,7 +172,7 @@ export function ResumeGate() {
     const scoreColor = (s: number) => (s >= 70 ? '#34D399' : s >= 45 ? '#FBBF24' : '#F87171');
 
     return (
-        <section id="resume" className="relative py-20 px-4 overflow-hidden bg-black">
+        <section id="resume" className="relative pt-28 sm:pt-32 pb-20 px-4 overflow-hidden bg-black">
             {/* Grid pattern background (matches AI Chat section) */}
             <div
                 className="absolute inset-0 opacity-5 pointer-events-none"

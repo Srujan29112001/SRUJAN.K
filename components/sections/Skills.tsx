@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { skillCategories } from '@/data/skills';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 interface SkillsProps {
   activeCategory: 'AI' | 'Robotics' | 'Research';
@@ -101,23 +102,17 @@ export function Skills({ activeCategory, setActiveCategory }: SkillsProps) {
       />
 
       <div id="skills-content" className="container-custom relative z-10 px-4 sm:px-6">
-        {/* Header */}
-        <div className="mb-12 sm:mb-16 text-center">
-          <div className="inline-block bg-black/50 px-4 sm:px-6 py-2 border border-cyan-500/30 rounded-full backdrop-blur-md">
-            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.2em] sm:tracking-[0.3em] text-cyan-400">
-              Skill Matrix
-            </span>
-          </div>
-          <h2 className="mt-4 sm:mt-6 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white tracking-tight">
-            THE ARSENAL
-          </h2>
-          <p className="mx-auto mt-3 sm:mt-4 max-w-2xl text-base sm:text-lg text-text-secondary px-2">
-            Three disciplines I move between — and the engineering craft that ties them together. Pick a path.
-          </p>
+        {/* Header — canonical SectionHeading, matching the rest of the site */}
+        <div className="mb-12 sm:mb-16">
+          <SectionHeading
+            eyebrow="Skill Matrix"
+            title="THE ARSENAL"
+            subtitle="Three disciplines I move between — and the engineering craft that ties them together. Pick a path."
+          />
         </div>
 
         {/* Discipline selector */}
-        <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 mb-12 sm:mb-16">
+        <div className="flex flex-wrap items-center justify-start gap-2.5 sm:gap-4 mb-12 sm:mb-16">
           {DISCIPLINES.map(d => {
             const cat = skillCategories.find(c => c.id === d.id)!;
             const Icon = cat.icon;

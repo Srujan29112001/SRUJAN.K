@@ -86,7 +86,7 @@ export function Navigation() {
             : 'bg-[#030712]/50 backdrop-blur-sm'
         )}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
           {/* Logo with rotating role */}
           <a
             href="#home"
