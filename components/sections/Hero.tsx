@@ -25,7 +25,7 @@ export function Hero() {
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   // Light mode plays its own background clip; dark keeps the original.
-  const heroVideo = theme === 'light' ? '/videos/hero-bg-light.mp4' : '/videos/hero-bg.mp4';
+  const heroVideo = theme === 'light' ? '/videos/bg-light.mp4' : '/videos/bg-Dark.mp4';
   // The bg video can take a moment to buffer on a fresh device; until it can
   // play we cover the static poster with a clean branded loader and only then
   // fade the video in.
@@ -111,9 +111,9 @@ export function Hero() {
 
       {/* Video Background Layer */}
       <div className="absolute inset-0 z-0">
-        {/* Video is ALWAYS rendered (poster shows until the first frame), so
-            the hero can never go black — the veil below only hides the brief
-            poster→video swap and always fades on ready or the timeout. */}
+        {/* No poster image — until the first frame paints, the clean loading
+            veil below covers a plain dark backdrop (never a stock image). The
+            veil fades the moment the video can play, or after the safety timeout. */}
         <video
           ref={videoRef}
           src={heroVideo}
@@ -127,7 +127,6 @@ export function Hero() {
           onLoadedData={() => setVideoReady(true)}
           onError={() => setVideoReady(true)}
           className="absolute inset-0 w-full h-full object-cover opacity-50 sm:opacity-60"
-          poster="/images/projects/hero-ai.png" // Fallback image
         />
 
         {/* Overlay Gradient for readability - Enhanced for mobile */}

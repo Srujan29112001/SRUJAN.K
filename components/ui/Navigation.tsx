@@ -95,11 +95,11 @@ export function Navigation() {
           >
             <div className="relative">
               <div className="absolute inset-0 bg-cyan-500/30 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden group-hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-300">
+              <div className="relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 transition-all duration-300">
                 <img
-                  src={theme === 'light' ? '/images/logo%20light.jpeg' : '/images/logo%20dark.jpeg'}
+                  src={theme === 'light' ? '/images/logo%20light.png' : '/images/logo%20dark.png'}
                   alt="Srujan logo"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(var(--accent-rgb),0.35)] group-hover:drop-shadow-[0_0_18px_rgba(var(--accent-rgb),0.55)] transition-all duration-300"
                 />
               </div>
             </div>
