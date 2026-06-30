@@ -99,7 +99,7 @@ export function Navigation() {
                 <img
                   src={theme === 'light' ? '/images/logo%20light.png' : '/images/logo%20dark.png'}
                   alt="Srujan logo"
-                  className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(var(--accent-rgb),0.35)] group-hover:drop-shadow-[0_0_18px_rgba(var(--accent-rgb),0.55)] transition-all duration-300"
+                  className="w-full h-full object-contain rounded-2xl drop-shadow-[0_0_12px_rgba(var(--accent-rgb),0.35)] group-hover:drop-shadow-[0_0_18px_rgba(var(--accent-rgb),0.55)] transition-all duration-300"
                 />
               </div>
             </div>
