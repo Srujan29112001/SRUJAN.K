@@ -23,6 +23,10 @@ export interface Project {
    *  button) rather than a demo video/recording ("View Live Demo"). */
   liveApp?: boolean;
   github?: string;
+  /** No public repo yet (planned / "dream" project) → Source shows "Coming Soon". */
+  sourceComingSoon?: boolean;
+  /** No live deployment yet → the Try-it button shows "Coming Soon". */
+  tryItComingSoon?: boolean;
   documentation?: string;
   year?: string;
   role?: string;
@@ -123,21 +127,22 @@ export const projects: Project[] = [
     "ongoing": true,
     "year": "2024",
     "role": "Lead Researcher",
-    "link": "https://srujan29112001.github.io/AI-SRUJAN/"
+    "sourceComingSoon": true,
+    "tryItComingSoon": true
   },
   {
     "id": "wellness-ai",
     "title": "Personalized Wellness AI for Holistic Health",
     "category": "AI",
-    "metric": "MCP & A2A Agents",
-    "description": "Holistic mind-body-spirit wellness platform where collaborative AI agents coordinate via MCP and A2A protocols to deliver personalized nutrition, mental-health and spiritual guidance.",
-    "longDescription": "A holistic wellness platform that treats mind, body and spirit as interconnected, blending traditional Ayurvedic guidance with modern nutritional science to generate personalized health recommendations through a team of collaborating AI agents.\n\nThe workflow starts with a multi-step onboarding form that captures the user's health profile; a Coordinator agent then receives this context and delegates to specialist agents. A Nutrition agent plans meals against the USDA FoodData database, a Mental Health agent handles mood tracking and emotional guidance, and a Spiritual agent produces Ayurvedic and astrologically aligned recommendations. Each agent invokes external tools, their findings are synthesized into a unified plan, and an optimization pass produces meal and schedule plans before results are stored and tracked.\n\nArchitecturally, the Coordinator-plus-specialists design communicates over the Model Context Protocol (MCP) for standardized agent-to-tool calls and Agent-to-Agent (A2A) messaging for discovery and task delegation. Claude models drive reasoning across the agents, multi-modal health data (brainwave, voice-emotion and food signals) feeds the analysis, and Google OR-Tools solves the meal-planning and scheduling constraints as a constraint-satisfaction problem.\n\nTech stack: Claude-based multi-agent reasoning over MCP and A2A, EEG and voice-emotion analysis, GraphRAG-style knowledge retrieval, OR-Tools optimization, USDA/VedicAstro integrations, with a Next.js/Supabase application layer.",
+    "metric": "EEG + GraphRAG Coach",
+    "description": "Holistic wellness platform that fuses EEG brainwave analysis, voice-emotion detection and computer vision with a GraphRAG AI coach — merging Ayurveda and astrology with modern neuroscience for personalized diet, supplement and lifestyle guidance.",
+    "longDescription": "Wellness AI unifies neuroscience, traditional medicine and modern AI into one platform — pairing EEG brainwave analysis and conversational AI coaching with Ayurvedic and astrological insight to fight the fragmentation of everyday health management. It blends ancient wisdom (Ayurveda, astrology) with cutting-edge science.\n\nWORKFLOW — the system ingests multi-modal signals (EEG, voice, food images, supplement labels, wearable metrics), processes brainwaves across delta / theta / alpha / beta / gamma bands to classify mental state, integrates the user's data with curated wellness knowledge bases, reasons over it with GraphRAG, and generates tailored diet plans, supplement advice and lifestyle interventions delivered through a conversational coach with persistent memory.\n\nARCHITECTURE — a layered design: a Streamlit dashboard UI; a FastAPI + GraphQL (Strawberry) API layer with auth and privacy controls; an ML layer (EEG analysis, voice-emotion, food recognition, OCR); a knowledge-and-reasoning layer (GraphRAG, vector retrieval, LLM coaching); and polyglot storage — PostgreSQL, MongoDB, Redis and a Neo4j knowledge graph.\n\nMODELS — a CNN-LSTM (with optional spiking neural networks) for EEG, wav2vec2 for voice emotion, a DINO-ViT fine-tuned on Food-101 for food recognition, Tesseract OCR for supplement labels, and QLoRA/LoRA-tuned LLMs for coaching.\n\nTECH — FastAPI, Strawberry GraphQL, LangChain, PyTorch, Neo4j, ChromaDB/Pinecone, MNE-Python, librosa, PostgreSQL/MongoDB/Redis, with Docker/Kubernetes, GitHub Actions CI/CD and Prometheus/Grafana/MLflow monitoring.",
     "tech": [
-      "Wellness AI",
-      "Ayurveda",
-      "EEG Analysis",
+      "EEG (CNN-LSTM)",
+      "wav2vec2",
       "GraphRAG",
-      "Voice Emotion Detection"
+      "Neo4j",
+      "FastAPI"
     ],
     "image": "/images/projects/arch_wellness_1.png",
     "gallery": [],
@@ -146,8 +151,8 @@ export const projects: Project[] = [
     "ongoing": true,
     "year": "2024",
     "role": "Full Stack AI Developer",
-    "github": "https://github.com/Srujan29112001/Holistic-Wellness-app",
-    "link": "https://srujan29112001.github.io/AI-SRUJAN/"
+    "github": "https://github.com/Srujan29112001/Wellnessapp",
+    "tryItComingSoon": true
   },
   {
     "id": "clinical-ai-copilot",
@@ -183,15 +188,15 @@ export const projects: Project[] = [
     "id": "advisory-platform",
     "title": "Entrepreneurship Intelligence Platform (EIP)",
     "category": "AI",
-    "metric": "Enterprise GraphRAG",
-    "description": "Enterprise multi-agent advisory platform where specialized finance, tax, market, legal and wealth agents collaborate over a GraphRAG knowledge layer to deliver entrepreneur business intelligence.",
-    "longDescription": "An enterprise-grade advisory platform that gives entrepreneurs expert, integrated guidance across finance, tax, market strategy, legal compliance and personal wealth by coordinating a roster of specialized AI agents over a GraphRAG knowledge layer.\n\nThe workflow routes an entrepreneur's query from a Next.js front end through an API gateway into a FastAPI backend, where a LangGraph orchestrator dispatches the request to the relevant specialist agents. Agents invoke calculators, document parsers and API integrations as tools; a RAG step retrieves relevant context via pgvector similarity search over embedded tax codes, templates and policies; and Claude synthesizes the combined agent outputs into responses rendered as interactive dashboards and charts.\n\nArchitecturally, the system uses a layered orchestration model: a UI layer, an API gateway, a LangGraph/LangChain multi-agent orchestrator, and a shared tools-and-RAG layer backed by Supabase Postgres with pgvector. Specialist agents (Finance, Tax, Market, Legal, Wealth) share state through the central orchestrator's state machine, while LangChain document loaders handle PDF extraction and OCR for legal and financial documents.\n\nTech stack: FastAPI with LangGraph/LangChain orchestration, Claude 3.5 Sonnet / GPT-4 reasoning, Supabase PostgreSQL + pgvector vector database and knowledge graph retrieval, OpenAI/Hugging Face embeddings, and a Next.js/React front end.",
+    "metric": "91-Agent Board",
+    "description": "A glass-box board of 91 specialist AI agents that researches any business decision with live data, debates it in the open, red-teams your biases and cross-examines itself, then returns a weighted, sourced verdict — across founder, trader, wealth and advisory modes.",
+    "longDescription": "EIP turns a messy decision — a startup idea, a stock, a salary, or a fork in the road — into a transparent, sourced verdict: a board of 91 specialist AI agents researches it with live data, argues in the open, audits your biases, cross-examines each other, and hands back a weighted, honest recommendation. The guiding principle is glass-box reasoning — every claim is sourced or flagged as an estimate, deterministic cores (runway math, backtests, FIRE calculations) never hallucinate, and a built-in Red Team attacks every thesis.\n\nWORKFLOW — Intake → Grounding → two analysis waves → Crucible → Synthesis. A Gateway parses the free-text brief and convenes the right specialists; a Grounding layer (web, news, yfinance market data, World Bank macro, documents, sentiment) feeds a shared Evidence Board; domain agents run in two parallel waves (foundational, then integrative); a Crucible (Red Team, Devil's Advocate, Bias Auditor, Fact Checker) attacks the consensus; and a Synthesis layer weighs, composes and visualizes the verdict. A two-round deliberation then re-runs the whole board with Round-1 findings visible, shipping two complete result sets per run.\n\nARCHITECTURE — a Next.js 16 / React 19 \"Studio\" (Pipeline / Boardroom / Results tabs plus a React-Three-Fiber 3D decision graph) streams from a FastAPI asyncio-DAG orchestrator over Server-Sent Events — the SSE stream is the product, so any storage or LLM failure fails soft. An 8-provider LLM gateway (Groq, Google, Anthropic, OpenAI, DeepSeek, Mistral, xAI, OpenRouter, plus local Ollama) does strict specialist routing, and 14 deterministic-core agents never call an LLM.\n\nMODES — Founder (GO / CONDITIONAL / NO-GO plus a 30-60-90 plan), Trader (setup-quality band, education only), Wealth (money-health roadmap) and an Intelligent advisory engine. Live app: eip-cbkt.vercel.app.\n\nTECH — Next.js 16, React 19, Tailwind v4, Zustand, React-Three-Fiber; FastAPI, asyncio DAG, orjson, SSE; yfinance, World Bank API, SQLite/Postgres; an 8-provider LLM gateway plus Ollama.",
     "tech": [
-      "GraphRAG",
-      "Multi-Agent System",
-      "Vector Database",
-      "Knowledge Graph",
-      "FastAPI"
+      "Multi-Agent (91)",
+      "Next.js 16",
+      "FastAPI + SSE",
+      "React-Three-Fiber",
+      "LLM Gateway"
     ],
     "image": "/images/projects/arch_advisory_1.png",
     "gallery": [],
@@ -200,23 +205,24 @@ export const projects: Project[] = [
     "ongoing": true,
     "year": "2024",
     "role": "AI Architect",
-    "github": "https://github.com/Srujan29112001/Entra",
-    "link": "https://srujan29112001.github.io/AI-SRUJAN/"
+    "github": "https://github.com/Srujan29112001/EIP",
+    "link": "https://eip-cbkt.vercel.app/",
+    "liveApp": true
   },
   {
     "id": "finance-copilot",
     "title": "Finance Analytics & Trading Co-Pilot",
     "category": "AI",
     "metric": "Real-Time Streaming",
-    "description": "Real-time finance analytics platform fusing Kafka/Spark streaming with DQN reinforcement-learning trading agents and a LangChain RAG copilot for interactive insights.",
-    "longDescription": "A scalable, real-time finance analytics and trading platform that fuses multi-modal market data to drive reinforcement-learning trading agents while exposing an interactive AI copilot for on-demand financial insight.\n\nThe workflow ingests streaming inputs (market prices, news sentiment and social signals) through Apache Kafka, processes and aggregates them with Spark, and feeds the engineered state into Deep Q-Network (DQN) trading agents. The DQN agents learn a trading policy by estimating action-value functions and improving through reward feedback, while a LangChain RAG copilot lets users query the system in natural language and receive grounded, context-aware financial answers.\n\nArchitecturally, the platform is built as decoupled microservices so streaming, model serving and the copilot scale independently, with Kafka providing the event backbone and Spark handling distributed stream processing. The reinforcement-learning layer maps market state to trading decisions, and a real-time observability stack tracks pipeline and model health.\n\nTech stack: Apache Kafka and Spark for real-time streaming, Deep Q-Network reinforcement learning for trading policy, LangChain for the RAG copilot, a microservices architecture, and Prometheus/Grafana for observability.",
+    "description": "Real-time trading analytics that fuses Kafka/Spark streaming of market, news and social data with a DQN reinforcement-learning signal engine and a LangChain RAG/GraphRAG co-pilot for natural-language market analysis.",
+    "longDescription": "A real-time finance analytics and trading co-pilot that fights \"data overload\" by fusing live market data, news and social media into one system — delivering AI insights and automated BUY/SELL/HOLD signals grounded in context rather than isolated price ticks.\n\nWORKFLOW — dual pipelines. A real-time stream: producers publish to Apache Kafka topics, Spark Structured Streaming runs windowed aggregations, anomaly detection and sentiment scoring, and results land in a multi-database store that serves the API and dashboard. A batch layer: daily Airflow jobs refresh materialized views, compute technical indicators (SMA / RSI / MACD), retrain ML models and update vector embeddings. Users query a Streamlit dashboard whose \"AI Co-Pilot\" tab answers natural-language questions (\"Why did TSLA spike?\") via retrieval-augmented generation over stored documents and live data.\n\nARCHITECTURE — a microservices design: a Kafka streaming bus; Spark processing; polyglot storage (PostgreSQL, MongoDB, Qdrant vectors, Neo4j graph); an AI/ML layer of LangChain agents, RL trading models and sentiment analyzers; FastAPI + GraphQL APIs; and Prometheus/Grafana observability.\n\nHIGHLIGHTS — RAG-powered conversational analysis, GraphRAG multi-hop entity reasoning, a Stable-Baselines3 Deep-Q-Network signal generator, Vision-Language chart analysis (GPT-4 Vision), a 100% offline privacy mode with local LLaMA-2 / Mistral, and a paper-trading safety layer.\n\nTECH — Apache Kafka, Spark, PostgreSQL/MongoDB/Qdrant/Neo4j, LangChain, Stable-Baselines3 DQN, OpenAI GPT-4 (plus Vision), FastAPI / Strawberry GraphQL, Streamlit/Plotly, Airflow, MLflow/W&B, Prometheus/Grafana.",
     "tech": [
       "Apache Kafka",
       "Spark",
-      "Reinforcement Learning",
+      "DQN (RL)",
       "LangChain",
-      "DQN",
-      "Microservices"
+      "Qdrant",
+      "GraphRAG"
     ],
     "image": "/images/projects/arch_finance_copilot.png",
     "gallery": [],
@@ -225,7 +231,8 @@ export const projects: Project[] = [
     "ongoing": true,
     "year": "2024",
     "role": "Lead Architect",
-    "link": "#"
+    "github": "https://github.com/Srujan29112001/Finance-and-Trading",
+    "tryItComingSoon": true
   },
   {
     "id": "vehicle-tracking",
@@ -792,14 +799,14 @@ export const projects: Project[] = [
     "title": "Vision-Language Robotic Assistant (VLA-Sim)",
     "category": "Robotics",
     "metric": "Embodied VLA",
-    "description": "Embodied vision-language-action system for warehouse pick-and-place: DINO v2 + MiDaS perception, Llama 3.1 grounding, Neo4j GraphRAG, fused into a transformer that outputs joint commands.",
-    "longDescription": "RoboVLA is an embodied vision-language-action system for robotic warehouse automation that turns a natural-language command and a camera view into executable pick-and-place actions, optimized to run on a single NVIDIA RTX 3060 (12GB VRAM).\n\nWorkflow (pick-and-place): given an RGB image, a text command such as 'pick the red box from the top shelf' and the robot's joint/gripper state, DINO v2 detects the target object, MiDaS estimates depth and 3D Gaussian Splatting reconstructs the scene as a point cloud; Llama 3.1 extracts the intent and target entity while CLIP aligns the visual detection with the language; Neo4j GraphRAG and ChromaDB retrieve similar successful strategies; a cross-attention module fuses the perception and language embeddings and a transformer VLA decoder emits an action vector of joint commands plus gripper state with a success probability.\n\nArchitecture: a three-layer perception to language-grounding to action pipeline, with Soft Actor-Critic reinforcement learning for grasp optimization and QLoRA 4-bit / INT8 quantization to fit the full stack in 12GB. Served behind a FastAPI endpoint, containerized with Docker and orchestrated on Kubernetes with Prometheus and Grafana monitoring for horizontal scaling.\n\nTech stack: DINO v2, MiDaS, 3D Gaussian Splatting, Llama 3.1, CLIP, Neo4j, ChromaDB, transformer VLA + SAC, FastAPI, Docker, Kubernetes, Prometheus/Grafana.",
+    "description": "Embodied vision-language-action system for home service robots that see, understand, remember and act — ViT-DINO + MiDaS perception, an LLM/VLA cognition brain, GraphRAG memory, and ROS2/MoveIt2 + deep-RL control, from Isaac Sim/Gazebo to real TurtleBot3.",
+    "longDescription": "A comprehensive embodied-AI system for home service robotics that unifies multimodal perception, natural-language understanding and autonomous control so a robot can \"see, understand, remember, and act\" — combining vision transformers, LLMs, knowledge graphs and reinforcement learning on one platform.\n\nWORKFLOW — a user issues a natural-language command via a web dashboard or REST API; the FastAPI gateway authenticates and routes it; the cognition layer (LLM / VLA models) plans the task sequence; the perception layer (vision models + OCR) reads the environment; the memory system (GraphRAG + vector DBs) retrieves relevant context; and the control layer executes via ROS2 navigation, MoveIt2 manipulation or learned RL policies, with feedback loops for continuous learning.\n\nARCHITECTURE — a layered microservices design: Perception (ViT-DINO detection, MiDaS depth, DeepSeek OCR); Cognition (QLoRA-tuned LLM brain, Vision-Language-Action models, LangChain agent orchestration); Memory (GraphRAG knowledge graphs plus vector databases); Control (ROS2 nav, MoveIt2, deep RL with Q-learning/PPO, spiking neural nets); and Infrastructure (FastAPI gateway with MCP, Docker/Kubernetes, Prometheus/Grafana).\n\nSIM-TO-REAL — trained and validated in Gazebo and NVIDIA Isaac Sim, with support for real TurtleBot3 robots and production-grade security (JWT, mTLS).\n\nTECH — Python 3.10+, FastAPI, ROS2 Humble, PyTorch, LangChain; GPT-4 / Claude / LLaMA and RT-2-style VLA; DINO vision + MiDaS depth; Gazebo + Isaac Sim; PostgreSQL/Neo4j/MongoDB + FAISS/Chroma; Docker/Kubernetes, MLflow/W&B, Prometheus/Grafana.",
     "tech": [
-      "DINO v2",
-      "Llama 3.1",
-      "Neo4j",
-      "Robotics",
-      "NVIDIA Isaac"
+      "Vision-Language-Action",
+      "ROS2 / MoveIt2",
+      "ViT-DINO",
+      "GraphRAG",
+      "Isaac Sim"
     ],
     "image": "/images/projects/robovla.png",
     "architectureImage": "/images/projects/arch_robovla.png",
@@ -814,8 +821,8 @@ export const projects: Project[] = [
     "featured": true,
     "ongoing": true,
     "year": "2024",
-    "github": "https://github.com/Srujan29112001/ROBOWAREHOUSE",
-    "link": "https://srujan29112001.github.io/ROBOTICS-SRUJAN/"
+    "github": "https://github.com/Srujan29112001/Robot-Assistant-VLA-Sim",
+    "tryItComingSoon": true
   },
   {
     "id": "internship-semester",
@@ -1163,14 +1170,14 @@ export const projects: Project[] = [
     "title": "Space Debris Tracking & Collision Prediction",
     "category": "Research",
     "metric": "Physics-Informed NN",
-    "description": "Autonomous space situational-awareness stack: YOLOv7 + DINOv2 detect orbital debris while Physics-Informed Neural Networks propagate trajectories for collision prediction.",
-    "longDescription": "An AI system for space situational awareness that detects orbiting debris, tracks it over time, and predicts conjunction (collision) risk — combining learned perception with physics-grounded trajectory modeling.\n\nWORKFLOW — incoming imagery is passed through a computer-vision front end that detects and localizes debris objects; detections are associated across frames into tracks, and each track's motion is propagated forward to forecast future positions and flag close approaches. A real-time 3D dashboard renders the orbital scene, and multi-agent autonomous monitoring runs the loop continuously.\n\nARCHITECTURE — perception uses YOLOv7 for fast single-pass object detection alongside DINOv2 self-supervised visual features for robust representation. Trajectory prediction uses Physics-Informed Neural Networks (PINNs), which embed the governing equations of orbital mechanics directly into the training loss so predicted paths respect gravitational dynamics rather than relying on data fit alone. A knowledge graph organizes object relationships and context, and 3D Gaussian Splatting supports the real-time volumetric scene rendering.\n\nTECH — YOLOv7, DINOv2, PINNs, orbital mechanics, knowledge graph, and 3D Gaussian Splatting.",
+    "description": "Autonomous space situational-awareness stack: YOLOv7 + DINOv2 + DeepSORT detect and track orbital debris while Physics-Informed Neural Networks and a Mamba2 state-space model propagate trajectories and predict collision risk across 10,000+ objects.",
+    "longDescription": "An AI framework for space situational awareness (a ~$2.5B/yr domain) that protects satellites by detecting and tracking orbital debris and predicting conjunction (collision) risk in real time — pairing learned perception with physics-grounded trajectory modeling.\n\nWORKFLOW — a five-stage pipeline: (1) ingest telescope/radar feeds and Two-Line-Element (TLE) sets via Kafka; (2) detect and characterize debris with computer vision; (3) forecast trajectories and collision probabilities with ML; (4) store orbital relationships in a graph database; (5) autonomous agents raise alerts and compute fuel-optimal evasive maneuvers.\n\nARCHITECTURE — Detection: YOLOv7 for debris identification, DINOv2 for zero-shot novel-object detection, DeepSORT + Kalman tracking, and 3D Gaussian Splatting for tumble-rate estimation. Prediction: Physics-Informed Neural Networks (PINNs) that bake orbital-mechanics equations into the loss, a Transformer for multi-object interactions, a Mamba2 state-space model for long-horizon orbit evolution, and deep ensembles for uncertainty. Knowledge: a Neo4j catalog with GraphRAG over conjunction history and real-time risk queries across 10,000+ tracked objects. Response: a Model-Context-Protocol multi-agent system, an RL observation-planning scheduler, and multi-channel alerting (email / SMS / WebSocket).\n\nSTATUS — an in-progress research build (~50–60% implemented): TLE processing (SGP4 propagation), the knowledge graph and DeepSORT tracking are functional; collision-probability scoring and full YOLOv7 integration are next.\n\nTECH — YOLOv7, DINOv2, DeepSORT, PINNs, Transformers, Mamba2; FastAPI, GraphQL, WebSocket; Neo4j, Redis, PostgreSQL, Kafka, SGP4; Docker/Kubernetes; a Streamlit 3D-orbit dashboard.",
     "tech": [
-      "YOLOv7",
+      "YOLOv7 + DINOv2",
+      "DeepSORT",
       "PINNs",
-      "Orbital Mechanics",
-      "Knowledge Graph",
-      "3D Gaussian Splatting"
+      "Mamba2",
+      "Neo4j GraphRAG"
     ],
     "image": "/images/projects/space-debris.png",
     "gallery": [],
@@ -1179,7 +1186,8 @@ export const projects: Project[] = [
     "ongoing": true,
     "year": "2024",
     "role": "Research Engineer",
-    "link": "#"
+    "github": "https://github.com/Srujan29112001/Space-debrey",
+    "tryItComingSoon": true
   },
   {
     "id": "quantum-particle",

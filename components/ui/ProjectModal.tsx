@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { gsap } from 'gsap';
-import { X, ArrowLeft, Github, ExternalLink, Play, FileText, ArrowUpRight } from 'lucide-react';
+import { X, ArrowLeft, Github, ExternalLink, Play, FileText, ArrowUpRight, Clock } from 'lucide-react';
 import { Project } from '@/data/projects';
 import { useSmoothScroll } from '@/components/providers/SmoothScrollProvider';
 
@@ -172,7 +172,7 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
 
             {/* actions */}
             <div className="flex flex-wrap items-center gap-3">
-              {project.link && (
+              {project.link ? (
                 <a
                   href={project.link}
                   target="_blank"
@@ -188,8 +188,12 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                   {project.liveApp ? 'Try it' : 'See Project'}
                   <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </a>
-              )}
-              {project.github && (
+              ) : project.tryItComingSoon ? (
+                <span className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-white/10 text-text-muted font-medium text-sm cursor-default select-none">
+                  <Clock className="w-4 h-4" /> Try it · Coming Soon
+                </span>
+              ) : null}
+              {project.github ? (
                 <a
                   href={project.github}
                   target="_blank"
@@ -198,7 +202,11 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                 >
                   <Github className="w-4 h-4" /> Source
                 </a>
-              )}
+              ) : project.sourceComingSoon ? (
+                <span className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-white/10 text-text-muted font-medium text-sm cursor-default select-none">
+                  <Github className="w-4 h-4" /> Source · Coming Soon
+                </span>
+              ) : null}
               {project.documentation && (
                 <a
                   href={project.documentation}
