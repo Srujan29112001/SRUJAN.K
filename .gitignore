@@ -57,3 +57,8 @@ next-env.d.ts
 .vscode
 *.swp
 *.swo
+
+# Raw AI-generated project renders (~3.4 GB of source PNGs, kept locally).
+# Only the optimized WebP set in public/images/projects/gallery/ is committed.
+public/images/projects/*/
+!public/images/projects/gallery/

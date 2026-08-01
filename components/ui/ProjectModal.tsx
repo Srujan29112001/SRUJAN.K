@@ -58,11 +58,21 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
   if (!isOpen || !project) return null;
 
   const accent = project.color || '#06b6d4';
-  const images = Array.from(
-    new Set(
-      [project.image, project.architectureImage, ...((project.gallery || []).map((g) => g.src))].filter(Boolean)
-    )
-  ) as string[];
+
+  // Fan cards: the cover photo first, then each gallery pair as a double-sided
+  // page (front = the Gemini render, back = its ChatGPT counterpart).
+  const seen = new Set<string>();
+  const cards: { front: string; back?: string }[] = [];
+  const pushCard = (front?: string, back?: string) => {
+    if (!front || seen.has(front)) return;
+    seen.add(front);
+    cards.push(back ? { front, back } : { front });
+  };
+  pushCard(project.image);
+  pushCard(project.architectureImage);
+  (project.gallery || []).forEach((g) => pushCard(g.src, g.back));
+
+  const images = cards.map((c) => c.front);
 
   const overview = (project.longDescription || project.description)
     .split(/\n{2,}/)
@@ -256,7 +266,7 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
           <div className="order-1 lg:order-2 relative">
             {/* desktop: draggable 3D cluster */}
             <div className="hidden md:block lg:sticky lg:top-6 h-[58vh] lg:h-[calc(100vh-8rem)] relative">
-              {images.length > 0 && <ProjectGallery3D images={images} color={accent} />}
+              {cards.length > 0 && <ProjectGallery3D cards={cards} color={accent} />}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.25em] text-white/30 pointer-events-none">
                 Drag to spin · up / down to tilt · ± to zoom
               </div>

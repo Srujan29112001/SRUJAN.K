@@ -3,6 +3,8 @@ export interface ProjectImage {
   src: string;
   alt: string;
   caption?: string;
+  /** Reverse face of this card in the 3D fan (the ChatGPT-rendered counterpart). */
+  back?: string;
 }
 
 export interface Project {
@@ -60,6 +62,44 @@ export const projects: Project[] = [
       "TypeScript"
     ],
     "image": "/images/projects/helix.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/helix-data-agent-g1.webp",
+        "back": "/images/projects/gallery/helix-data-agent-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/helix-data-agent-g2.webp",
+        "back": "/images/projects/gallery/helix-data-agent-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/helix-data-agent-g3.webp",
+        "back": "/images/projects/gallery/helix-data-agent-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/helix-data-agent-g4.webp",
+        "back": "/images/projects/gallery/helix-data-agent-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/helix-data-agent-g5.webp",
+        "back": "/images/projects/gallery/helix-data-agent-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/helix-data-agent-g6.webp",
+        "back": "/images/projects/gallery/helix-data-agent-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#10B981",
     "featured": true,
     "ongoing": true,
@@ -87,9 +127,40 @@ export const projects: Project[] = [
     "architectureImage": "/images/projects/arch_news_researcher.png",
     "gallery": [
       {
-        "src": "/images/projects/arch_news_researcher.png",
-        "alt": "System Architecture",
-        "caption": "Full system design"
+        "src": "/images/projects/gallery/news-researcher-g1.webp",
+        "back": "/images/projects/gallery/news-researcher-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/news-researcher-g2.webp",
+        "back": "/images/projects/gallery/news-researcher-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/news-researcher-g3.webp",
+        "back": "/images/projects/gallery/news-researcher-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/news-researcher-g4.webp",
+        "back": "/images/projects/gallery/news-researcher-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/news-researcher-g5.webp",
+        "back": "/images/projects/gallery/news-researcher-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/news-researcher-g6.webp",
+        "back": "/images/projects/gallery/news-researcher-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
       }
     ],
     "color": "#3B82F6",
@@ -117,9 +188,40 @@ export const projects: Project[] = [
     "architectureImage": "/images/projects/arch_neuropsych_trading.png",
     "gallery": [
       {
-        "src": "/images/projects/arch_neuropsych_trading.png",
-        "alt": "System Architecture",
-        "caption": "Neuromorphic design"
+        "src": "/images/projects/gallery/neuropsych-trading-g1.webp",
+        "back": "/images/projects/gallery/neuropsych-trading-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/neuropsych-trading-g2.webp",
+        "back": "/images/projects/gallery/neuropsych-trading-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/neuropsych-trading-g3.webp",
+        "back": "/images/projects/gallery/neuropsych-trading-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/neuropsych-trading-g4.webp",
+        "back": "/images/projects/gallery/neuropsych-trading-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/neuropsych-trading-g5.webp",
+        "back": "/images/projects/gallery/neuropsych-trading-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/neuropsych-trading-g6.webp",
+        "back": "/images/projects/gallery/neuropsych-trading-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
       }
     ],
     "color": "#10B981",
@@ -145,7 +247,44 @@ export const projects: Project[] = [
       "FastAPI"
     ],
     "image": "/images/projects/arch_wellness_1.png",
-    "gallery": [],
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/wellness-ai-g1.webp",
+        "back": "/images/projects/gallery/wellness-ai-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/wellness-ai-g2.webp",
+        "back": "/images/projects/gallery/wellness-ai-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/wellness-ai-g3.webp",
+        "back": "/images/projects/gallery/wellness-ai-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/wellness-ai-g4.webp",
+        "back": "/images/projects/gallery/wellness-ai-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/wellness-ai-g5.webp",
+        "back": "/images/projects/gallery/wellness-ai-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/wellness-ai-g6.webp",
+        "back": "/images/projects/gallery/wellness-ai-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#06B6D4",
     "featured": true,
     "ongoing": true,
@@ -175,7 +314,44 @@ export const projects: Project[] = [
       "SSE"
     ],
     "image": "/images/projects/clinical-ai.png",
-    "gallery": [],
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/clinical-ai-copilot-g1.webp",
+        "back": "/images/projects/gallery/clinical-ai-copilot-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/clinical-ai-copilot-g2.webp",
+        "back": "/images/projects/gallery/clinical-ai-copilot-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/clinical-ai-copilot-g3.webp",
+        "back": "/images/projects/gallery/clinical-ai-copilot-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/clinical-ai-copilot-g4.webp",
+        "back": "/images/projects/gallery/clinical-ai-copilot-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/clinical-ai-copilot-g5.webp",
+        "back": "/images/projects/gallery/clinical-ai-copilot-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/clinical-ai-copilot-g6.webp",
+        "back": "/images/projects/gallery/clinical-ai-copilot-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EC4899",
     "featured": true,
     "year": "2025",
@@ -199,7 +375,44 @@ export const projects: Project[] = [
       "LLM Gateway"
     ],
     "image": "/images/projects/arch_advisory_1.png",
-    "gallery": [],
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/advisory-platform-g1.webp",
+        "back": "/images/projects/gallery/advisory-platform-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/advisory-platform-g2.webp",
+        "back": "/images/projects/gallery/advisory-platform-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/advisory-platform-g3.webp",
+        "back": "/images/projects/gallery/advisory-platform-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/advisory-platform-g4.webp",
+        "back": "/images/projects/gallery/advisory-platform-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/advisory-platform-g5.webp",
+        "back": "/images/projects/gallery/advisory-platform-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/advisory-platform-g6.webp",
+        "back": "/images/projects/gallery/advisory-platform-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#6D64A3",
     "featured": true,
     "ongoing": true,
@@ -225,7 +438,44 @@ export const projects: Project[] = [
       "GraphRAG"
     ],
     "image": "/images/projects/arch_finance_copilot.png",
-    "gallery": [],
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/finance-copilot-g1.webp",
+        "back": "/images/projects/gallery/finance-copilot-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/finance-copilot-g2.webp",
+        "back": "/images/projects/gallery/finance-copilot-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/finance-copilot-g3.webp",
+        "back": "/images/projects/gallery/finance-copilot-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/finance-copilot-g4.webp",
+        "back": "/images/projects/gallery/finance-copilot-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/finance-copilot-g5.webp",
+        "back": "/images/projects/gallery/finance-copilot-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/finance-copilot-g6.webp",
+        "back": "/images/projects/gallery/finance-copilot-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#22C55E",
     "featured": true,
     "ongoing": true,
@@ -248,6 +498,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/vehicle-tracking.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/vehicle-tracking-g1.webp",
+        "back": "/images/projects/gallery/vehicle-tracking-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/vehicle-tracking-g2.webp",
+        "back": "/images/projects/gallery/vehicle-tracking-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/vehicle-tracking-g3.webp",
+        "back": "/images/projects/gallery/vehicle-tracking-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/vehicle-tracking-g4.webp",
+        "back": "/images/projects/gallery/vehicle-tracking-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/vehicle-tracking-g5.webp",
+        "back": "/images/projects/gallery/vehicle-tracking-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/vehicle-tracking-g6.webp",
+        "back": "/images/projects/gallery/vehicle-tracking-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EF4444",
     "featured": false,
     "year": "2023",
@@ -268,6 +556,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/alphafold.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/alphafold-g1.webp",
+        "back": "/images/projects/gallery/alphafold-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/alphafold-g2.webp",
+        "back": "/images/projects/gallery/alphafold-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/alphafold-g3.webp",
+        "back": "/images/projects/gallery/alphafold-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/alphafold-g4.webp",
+        "back": "/images/projects/gallery/alphafold-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/alphafold-g5.webp",
+        "back": "/images/projects/gallery/alphafold-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/alphafold-g6.webp",
+        "back": "/images/projects/gallery/alphafold-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -288,6 +614,44 @@ export const projects: Project[] = [
       "Optimization"
     ],
     "image": "/images/projects/evolutionary-sim.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/simulation-evolution-g1.webp",
+        "back": "/images/projects/gallery/simulation-evolution-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/simulation-evolution-g2.webp",
+        "back": "/images/projects/gallery/simulation-evolution-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/simulation-evolution-g3.webp",
+        "back": "/images/projects/gallery/simulation-evolution-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/simulation-evolution-g4.webp",
+        "back": "/images/projects/gallery/simulation-evolution-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/simulation-evolution-g5.webp",
+        "back": "/images/projects/gallery/simulation-evolution-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/simulation-evolution-g6.webp",
+        "back": "/images/projects/gallery/simulation-evolution-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#10B981",
     "featured": false,
     "year": "2023",
@@ -327,6 +691,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_stock_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/stock-rl-g1.webp",
+        "back": "/images/projects/gallery/stock-rl-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/stock-rl-g2.webp",
+        "back": "/images/projects/gallery/stock-rl-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/stock-rl-g3.webp",
+        "back": "/images/projects/gallery/stock-rl-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/stock-rl-g4.webp",
+        "back": "/images/projects/gallery/stock-rl-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/stock-rl-g5.webp",
+        "back": "/images/projects/gallery/stock-rl-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/stock-rl-g6.webp",
+        "back": "/images/projects/gallery/stock-rl-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#22C55E",
     "featured": false,
     "year": "2023",
@@ -347,6 +749,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_ludo_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/ludo-q-learning-g1.webp",
+        "back": "/images/projects/gallery/ludo-q-learning-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/ludo-q-learning-g2.webp",
+        "back": "/images/projects/gallery/ludo-q-learning-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/ludo-q-learning-g3.webp",
+        "back": "/images/projects/gallery/ludo-q-learning-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/ludo-q-learning-g4.webp",
+        "back": "/images/projects/gallery/ludo-q-learning-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/ludo-q-learning-g5.webp",
+        "back": "/images/projects/gallery/ludo-q-learning-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/ludo-q-learning-g6.webp",
+        "back": "/images/projects/gallery/ludo-q-learning-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F43F5E",
     "featured": false,
     "year": "2023",
@@ -368,6 +808,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_lora_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/llama-lora-g1.webp",
+        "back": "/images/projects/gallery/llama-lora-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/llama-lora-g2.webp",
+        "back": "/images/projects/gallery/llama-lora-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/llama-lora-g3.webp",
+        "back": "/images/projects/gallery/llama-lora-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/llama-lora-g4.webp",
+        "back": "/images/projects/gallery/llama-lora-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/llama-lora-g5.webp",
+        "back": "/images/projects/gallery/llama-lora-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/llama-lora-g6.webp",
+        "back": "/images/projects/gallery/llama-lora-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#A855F7",
     "featured": false,
     "year": "2023",
@@ -388,6 +866,44 @@ export const projects: Project[] = [
       "LangChain"
     ],
     "image": "/images/projects/arch_rag3_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/rag-llama3-g1.webp",
+        "back": "/images/projects/gallery/rag-llama3-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/rag-llama3-g2.webp",
+        "back": "/images/projects/gallery/rag-llama3-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/rag-llama3-g3.webp",
+        "back": "/images/projects/gallery/rag-llama3-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/rag-llama3-g4.webp",
+        "back": "/images/projects/gallery/rag-llama3-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/rag-llama3-g5.webp",
+        "back": "/images/projects/gallery/rag-llama3-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/rag-llama3-g6.webp",
+        "back": "/images/projects/gallery/rag-llama3-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#3B82F6",
     "featured": false,
     "year": "2024",
@@ -409,6 +925,44 @@ export const projects: Project[] = [
       "Streamlit"
     ],
     "image": "/images/projects/arch_gemma_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/rag-gemma-g1.webp",
+        "back": "/images/projects/gallery/rag-gemma-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/rag-gemma-g2.webp",
+        "back": "/images/projects/gallery/rag-gemma-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/rag-gemma-g3.webp",
+        "back": "/images/projects/gallery/rag-gemma-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/rag-gemma-g4.webp",
+        "back": "/images/projects/gallery/rag-gemma-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/rag-gemma-g5.webp",
+        "back": "/images/projects/gallery/rag-gemma-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/rag-gemma-g6.webp",
+        "back": "/images/projects/gallery/rag-gemma-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#0EA5E9",
     "featured": false,
     "year": "2024",
@@ -429,6 +983,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_yelp_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/yelp-sentiment-g1.webp",
+        "back": "/images/projects/gallery/yelp-sentiment-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/yelp-sentiment-g2.webp",
+        "back": "/images/projects/gallery/yelp-sentiment-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/yelp-sentiment-g3.webp",
+        "back": "/images/projects/gallery/yelp-sentiment-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/yelp-sentiment-g4.webp",
+        "back": "/images/projects/gallery/yelp-sentiment-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/yelp-sentiment-g5.webp",
+        "back": "/images/projects/gallery/yelp-sentiment-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/yelp-sentiment-g6.webp",
+        "back": "/images/projects/gallery/yelp-sentiment-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#FF0000",
     "featured": false,
     "year": "2023",
@@ -450,6 +1042,44 @@ export const projects: Project[] = [
       "GloVe"
     ],
     "image": "/images/projects/arch_imdb_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/imdb-sentiment-g1.webp",
+        "back": "/images/projects/gallery/imdb-sentiment-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/imdb-sentiment-g2.webp",
+        "back": "/images/projects/gallery/imdb-sentiment-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/imdb-sentiment-g3.webp",
+        "back": "/images/projects/gallery/imdb-sentiment-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/imdb-sentiment-g4.webp",
+        "back": "/images/projects/gallery/imdb-sentiment-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/imdb-sentiment-g5.webp",
+        "back": "/images/projects/gallery/imdb-sentiment-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/imdb-sentiment-g6.webp",
+        "back": "/images/projects/gallery/imdb-sentiment-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F5C518",
     "featured": false,
     "year": "2023",
@@ -470,6 +1100,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_tumor_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/brain-tumor-g1.webp",
+        "back": "/images/projects/gallery/brain-tumor-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/brain-tumor-g2.webp",
+        "back": "/images/projects/gallery/brain-tumor-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/brain-tumor-g3.webp",
+        "back": "/images/projects/gallery/brain-tumor-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/brain-tumor-g4.webp",
+        "back": "/images/projects/gallery/brain-tumor-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/brain-tumor-g5.webp",
+        "back": "/images/projects/gallery/brain-tumor-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/brain-tumor-g6.webp",
+        "back": "/images/projects/gallery/brain-tumor-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -490,6 +1158,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_cancer_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/breast-cancer-g1.webp",
+        "back": "/images/projects/gallery/breast-cancer-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/breast-cancer-g2.webp",
+        "back": "/images/projects/gallery/breast-cancer-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/breast-cancer-g3.webp",
+        "back": "/images/projects/gallery/breast-cancer-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/breast-cancer-g4.webp",
+        "back": "/images/projects/gallery/breast-cancer-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/breast-cancer-g5.webp",
+        "back": "/images/projects/gallery/breast-cancer-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/breast-cancer-g6.webp",
+        "back": "/images/projects/gallery/breast-cancer-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EC4899",
     "featured": false,
     "year": "2023",
@@ -510,6 +1216,44 @@ export const projects: Project[] = [
       "Computer Vision"
     ],
     "image": "/images/projects/arch_esrgan_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/esrgan-g1.webp",
+        "back": "/images/projects/gallery/esrgan-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/esrgan-g2.webp",
+        "back": "/images/projects/gallery/esrgan-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/esrgan-g3.webp",
+        "back": "/images/projects/gallery/esrgan-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/esrgan-g4.webp",
+        "back": "/images/projects/gallery/esrgan-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/esrgan-g5.webp",
+        "back": "/images/projects/gallery/esrgan-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/esrgan-g6.webp",
+        "back": "/images/projects/gallery/esrgan-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#3B82F6",
     "featured": false,
     "year": "2023",
@@ -530,6 +1274,44 @@ export const projects: Project[] = [
       "Computer Vision"
     ],
     "image": "/images/projects/arch_neuron_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/neuron-segmentation-g1.webp",
+        "back": "/images/projects/gallery/neuron-segmentation-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/neuron-segmentation-g2.webp",
+        "back": "/images/projects/gallery/neuron-segmentation-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/neuron-segmentation-g3.webp",
+        "back": "/images/projects/gallery/neuron-segmentation-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/neuron-segmentation-g4.webp",
+        "back": "/images/projects/gallery/neuron-segmentation-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/neuron-segmentation-g5.webp",
+        "back": "/images/projects/gallery/neuron-segmentation-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/neuron-segmentation-g6.webp",
+        "back": "/images/projects/gallery/neuron-segmentation-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#10B981",
     "featured": false,
     "year": "2023",
@@ -550,6 +1332,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_sandstone_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/sandstones-g1.webp",
+        "back": "/images/projects/gallery/sandstones-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/sandstones-g2.webp",
+        "back": "/images/projects/gallery/sandstones-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/sandstones-g3.webp",
+        "back": "/images/projects/gallery/sandstones-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/sandstones-g4.webp",
+        "back": "/images/projects/gallery/sandstones-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/sandstones-g5.webp",
+        "back": "/images/projects/gallery/sandstones-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/sandstones-g6.webp",
+        "back": "/images/projects/gallery/sandstones-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#D97706",
     "featured": false,
     "year": "2023",
@@ -570,6 +1390,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_audio_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/deep-audio-g1.webp",
+        "back": "/images/projects/gallery/deep-audio-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/deep-audio-g2.webp",
+        "back": "/images/projects/gallery/deep-audio-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/deep-audio-g3.webp",
+        "back": "/images/projects/gallery/deep-audio-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/deep-audio-g4.webp",
+        "back": "/images/projects/gallery/deep-audio-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/deep-audio-g5.webp",
+        "back": "/images/projects/gallery/deep-audio-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/deep-audio-g6.webp",
+        "back": "/images/projects/gallery/deep-audio-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#6366F1",
     "featured": false,
     "year": "2023",
@@ -590,6 +1448,44 @@ export const projects: Project[] = [
       "Computer Vision"
     ],
     "image": "/images/projects/arch_lip_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/lip-read-g1.webp",
+        "back": "/images/projects/gallery/lip-read-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/lip-read-g2.webp",
+        "back": "/images/projects/gallery/lip-read-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/lip-read-g3.webp",
+        "back": "/images/projects/gallery/lip-read-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/lip-read-g4.webp",
+        "back": "/images/projects/gallery/lip-read-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/lip-read-g5.webp",
+        "back": "/images/projects/gallery/lip-read-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/lip-read-g6.webp",
+        "back": "/images/projects/gallery/lip-read-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F43F5E",
     "featured": false,
     "year": "2023",
@@ -610,6 +1506,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/arch_3d_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/image-to-3d-g1.webp",
+        "back": "/images/projects/gallery/image-to-3d-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/image-to-3d-g2.webp",
+        "back": "/images/projects/gallery/image-to-3d-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/image-to-3d-g3.webp",
+        "back": "/images/projects/gallery/image-to-3d-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/image-to-3d-g4.webp",
+        "back": "/images/projects/gallery/image-to-3d-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/image-to-3d-g5.webp",
+        "back": "/images/projects/gallery/image-to-3d-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/image-to-3d-g6.webp",
+        "back": "/images/projects/gallery/image-to-3d-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#0EA5E9",
     "featured": false,
     "year": "2023",
@@ -630,6 +1564,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/pointnet.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/pointnet-g1.webp",
+        "back": "/images/projects/gallery/pointnet-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/pointnet-g2.webp",
+        "back": "/images/projects/gallery/pointnet-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/pointnet-g3.webp",
+        "back": "/images/projects/gallery/pointnet-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/pointnet-g4.webp",
+        "back": "/images/projects/gallery/pointnet-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/pointnet-g5.webp",
+        "back": "/images/projects/gallery/pointnet-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/pointnet-g6.webp",
+        "back": "/images/projects/gallery/pointnet-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -650,6 +1622,44 @@ export const projects: Project[] = [
       "Real-time"
     ],
     "image": "/images/projects/midas-depth.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/midas-depth-g1.webp",
+        "back": "/images/projects/gallery/midas-depth-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/midas-depth-g2.webp",
+        "back": "/images/projects/gallery/midas-depth-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/midas-depth-g3.webp",
+        "back": "/images/projects/gallery/midas-depth-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/midas-depth-g4.webp",
+        "back": "/images/projects/gallery/midas-depth-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/midas-depth-g5.webp",
+        "back": "/images/projects/gallery/midas-depth-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/midas-depth-g6.webp",
+        "back": "/images/projects/gallery/midas-depth-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#14B8A6",
     "featured": false,
     "year": "2023",
@@ -670,6 +1680,44 @@ export const projects: Project[] = [
       "Data Science"
     ],
     "image": "/images/projects/weather-pred.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/weather-prophet-g1.webp",
+        "back": "/images/projects/gallery/weather-prophet-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/weather-prophet-g2.webp",
+        "back": "/images/projects/gallery/weather-prophet-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/weather-prophet-g3.webp",
+        "back": "/images/projects/gallery/weather-prophet-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/weather-prophet-g4.webp",
+        "back": "/images/projects/gallery/weather-prophet-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/weather-prophet-g5.webp",
+        "back": "/images/projects/gallery/weather-prophet-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/weather-prophet-g6.webp",
+        "back": "/images/projects/gallery/weather-prophet-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F59E0B",
     "featured": false,
     "year": "2023",
@@ -690,6 +1738,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/sales-forecasting.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/sales-arima-g1.webp",
+        "back": "/images/projects/gallery/sales-arima-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/sales-arima-g2.webp",
+        "back": "/images/projects/gallery/sales-arima-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/sales-arima-g3.webp",
+        "back": "/images/projects/gallery/sales-arima-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/sales-arima-g4.webp",
+        "back": "/images/projects/gallery/sales-arima-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/sales-arima-g5.webp",
+        "back": "/images/projects/gallery/sales-arima-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/sales-arima-g6.webp",
+        "back": "/images/projects/gallery/sales-arima-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#22C55E",
     "featured": false,
     "year": "2023",
@@ -710,6 +1796,44 @@ export const projects: Project[] = [
       "Data Science"
     ],
     "image": "/images/projects/census-gpu.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/census-gpu-g1.webp",
+        "back": "/images/projects/gallery/census-gpu-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/census-gpu-g2.webp",
+        "back": "/images/projects/gallery/census-gpu-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/census-gpu-g3.webp",
+        "back": "/images/projects/gallery/census-gpu-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/census-gpu-g4.webp",
+        "back": "/images/projects/gallery/census-gpu-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/census-gpu-g5.webp",
+        "back": "/images/projects/gallery/census-gpu-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/census-gpu-g6.webp",
+        "back": "/images/projects/gallery/census-gpu-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#76B900",
     "featured": false,
     "year": "2023",
@@ -730,6 +1854,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/steel-optimization.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/steel-pso-g1.webp",
+        "back": "/images/projects/gallery/steel-pso-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/steel-pso-g2.webp",
+        "back": "/images/projects/gallery/steel-pso-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/steel-pso-g3.webp",
+        "back": "/images/projects/gallery/steel-pso-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/steel-pso-g4.webp",
+        "back": "/images/projects/gallery/steel-pso-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/steel-pso-g5.webp",
+        "back": "/images/projects/gallery/steel-pso-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/steel-pso-g6.webp",
+        "back": "/images/projects/gallery/steel-pso-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#64748B",
     "featured": false,
     "year": "2023",
@@ -750,6 +1912,44 @@ export const projects: Project[] = [
       "Real-time"
     ],
     "image": "/images/projects/rps-gesture.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/rps-fastervit-g1.webp",
+        "back": "/images/projects/gallery/rps-fastervit-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/rps-fastervit-g2.webp",
+        "back": "/images/projects/gallery/rps-fastervit-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/rps-fastervit-g3.webp",
+        "back": "/images/projects/gallery/rps-fastervit-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/rps-fastervit-g4.webp",
+        "back": "/images/projects/gallery/rps-fastervit-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/rps-fastervit-g5.webp",
+        "back": "/images/projects/gallery/rps-fastervit-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/rps-fastervit-g6.webp",
+        "back": "/images/projects/gallery/rps-fastervit-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F97316",
     "featured": false,
     "year": "2023",
@@ -769,6 +1969,44 @@ export const projects: Project[] = [
       "Deep Learning"
     ],
     "image": "/images/projects/flower-class.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/daisy-dandelion-g1.webp",
+        "back": "/images/projects/gallery/daisy-dandelion-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/daisy-dandelion-g2.webp",
+        "back": "/images/projects/gallery/daisy-dandelion-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/daisy-dandelion-g3.webp",
+        "back": "/images/projects/gallery/daisy-dandelion-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/daisy-dandelion-g4.webp",
+        "back": "/images/projects/gallery/daisy-dandelion-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/daisy-dandelion-g5.webp",
+        "back": "/images/projects/gallery/daisy-dandelion-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/daisy-dandelion-g6.webp",
+        "back": "/images/projects/gallery/daisy-dandelion-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EAB308",
     "featured": false,
     "year": "2023",
@@ -788,6 +2026,44 @@ export const projects: Project[] = [
       "Computer Vision"
     ],
     "image": "/images/projects/emotion-class.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/happy-sad-g1.webp",
+        "back": "/images/projects/gallery/happy-sad-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/happy-sad-g2.webp",
+        "back": "/images/projects/gallery/happy-sad-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/happy-sad-g3.webp",
+        "back": "/images/projects/gallery/happy-sad-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/happy-sad-g4.webp",
+        "back": "/images/projects/gallery/happy-sad-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/happy-sad-g5.webp",
+        "back": "/images/projects/gallery/happy-sad-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/happy-sad-g6.webp",
+        "back": "/images/projects/gallery/happy-sad-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -812,9 +2088,40 @@ export const projects: Project[] = [
     "architectureImage": "/images/projects/arch_robovla.png",
     "gallery": [
       {
-        "src": "/images/projects/arch_robovla.png",
-        "alt": "Architecture",
-        "caption": "System diagram"
+        "src": "/images/projects/gallery/robovla-g1.webp",
+        "back": "/images/projects/gallery/robovla-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/robovla-g2.webp",
+        "back": "/images/projects/gallery/robovla-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/robovla-g3.webp",
+        "back": "/images/projects/gallery/robovla-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/robovla-g4.webp",
+        "back": "/images/projects/gallery/robovla-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/robovla-g5.webp",
+        "back": "/images/projects/gallery/robovla-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/robovla-g6.webp",
+        "back": "/images/projects/gallery/robovla-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
       }
     ],
     "color": "#10B981",
@@ -838,6 +2145,44 @@ export const projects: Project[] = [
       "Computer Vision"
     ],
     "image": "/images/projects/drdo-aerial.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/internship-semester-g1.webp",
+        "back": "/images/projects/gallery/internship-semester-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/internship-semester-g2.webp",
+        "back": "/images/projects/gallery/internship-semester-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/internship-semester-g3.webp",
+        "back": "/images/projects/gallery/internship-semester-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/internship-semester-g4.webp",
+        "back": "/images/projects/gallery/internship-semester-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/internship-semester-g5.webp",
+        "back": "/images/projects/gallery/internship-semester-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/internship-semester-g6.webp",
+        "back": "/images/projects/gallery/internship-semester-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "architectureImage": "/images/projects/arch_drdo_aerial.png",
     "color": "#F59E0B",
     "featured": false,
@@ -859,6 +2204,44 @@ export const projects: Project[] = [
       "MATLAB"
     ],
     "image": "/images/projects/neural-signal.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/neural-signal-time-freq-g1.webp",
+        "back": "/images/projects/gallery/neural-signal-time-freq-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-time-freq-g2.webp",
+        "back": "/images/projects/gallery/neural-signal-time-freq-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-time-freq-g3.webp",
+        "back": "/images/projects/gallery/neural-signal-time-freq-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-time-freq-g4.webp",
+        "back": "/images/projects/gallery/neural-signal-time-freq-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-time-freq-g5.webp",
+        "back": "/images/projects/gallery/neural-signal-time-freq-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-time-freq-g6.webp",
+        "back": "/images/projects/gallery/neural-signal-time-freq-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#6366F1",
     "featured": false,
     "year": "2024",
@@ -879,6 +2262,44 @@ export const projects: Project[] = [
       "Signal Processing"
     ],
     "image": "/images/projects/arch_phase_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/phase-sync-g1.webp",
+        "back": "/images/projects/gallery/phase-sync-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/phase-sync-g2.webp",
+        "back": "/images/projects/gallery/phase-sync-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/phase-sync-g3.webp",
+        "back": "/images/projects/gallery/phase-sync-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/phase-sync-g4.webp",
+        "back": "/images/projects/gallery/phase-sync-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/phase-sync-g5.webp",
+        "back": "/images/projects/gallery/phase-sync-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/phase-sync-g6.webp",
+        "back": "/images/projects/gallery/phase-sync-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -899,6 +2320,44 @@ export const projects: Project[] = [
       "MATLAB"
     ],
     "image": "/images/projects/neural-spectral.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/neural-signal-spectral-g1.webp",
+        "back": "/images/projects/gallery/neural-signal-spectral-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-spectral-g2.webp",
+        "back": "/images/projects/gallery/neural-signal-spectral-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-spectral-g3.webp",
+        "back": "/images/projects/gallery/neural-signal-spectral-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-spectral-g4.webp",
+        "back": "/images/projects/gallery/neural-signal-spectral-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-spectral-g5.webp",
+        "back": "/images/projects/gallery/neural-signal-spectral-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/neural-signal-spectral-g6.webp",
+        "back": "/images/projects/gallery/neural-signal-spectral-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F43F5E",
     "featured": false,
     "year": "2023",
@@ -919,6 +2378,44 @@ export const projects: Project[] = [
       "Neuroscience"
     ],
     "image": "/images/projects/eeg-sim.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/simulating-eeg-g1.webp",
+        "back": "/images/projects/gallery/simulating-eeg-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/simulating-eeg-g2.webp",
+        "back": "/images/projects/gallery/simulating-eeg-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/simulating-eeg-g3.webp",
+        "back": "/images/projects/gallery/simulating-eeg-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/simulating-eeg-g4.webp",
+        "back": "/images/projects/gallery/simulating-eeg-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/simulating-eeg-g5.webp",
+        "back": "/images/projects/gallery/simulating-eeg-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/simulating-eeg-g6.webp",
+        "back": "/images/projects/gallery/simulating-eeg-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#0EA5E9",
     "featured": false,
     "year": "2023",
@@ -939,6 +2436,44 @@ export const projects: Project[] = [
       "Robotics"
     ],
     "image": "/images/projects/pathfinding.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/pathfinding-algo-g1.webp",
+        "back": "/images/projects/gallery/pathfinding-algo-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/pathfinding-algo-g2.webp",
+        "back": "/images/projects/gallery/pathfinding-algo-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/pathfinding-algo-g3.webp",
+        "back": "/images/projects/gallery/pathfinding-algo-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/pathfinding-algo-g4.webp",
+        "back": "/images/projects/gallery/pathfinding-algo-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/pathfinding-algo-g5.webp",
+        "back": "/images/projects/gallery/pathfinding-algo-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/pathfinding-algo-g6.webp",
+        "back": "/images/projects/gallery/pathfinding-algo-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#10B981",
     "featured": false,
     "year": "2023",
@@ -958,6 +2493,44 @@ export const projects: Project[] = [
       "Autonomous Vehicles"
     ],
     "image": "/images/projects/lane-control.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/lane-changing-control-g1.webp",
+        "back": "/images/projects/gallery/lane-changing-control-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/lane-changing-control-g2.webp",
+        "back": "/images/projects/gallery/lane-changing-control-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/lane-changing-control-g3.webp",
+        "back": "/images/projects/gallery/lane-changing-control-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/lane-changing-control-g4.webp",
+        "back": "/images/projects/gallery/lane-changing-control-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/lane-changing-control-g5.webp",
+        "back": "/images/projects/gallery/lane-changing-control-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/lane-changing-control-g6.webp",
+        "back": "/images/projects/gallery/lane-changing-control-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F97316",
     "featured": false,
     "year": "2023",
@@ -978,6 +2551,44 @@ export const projects: Project[] = [
       "Dynamics"
     ],
     "image": "/images/projects/water-tank.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/water-tank-dynamics-g1.webp",
+        "back": "/images/projects/gallery/water-tank-dynamics-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/water-tank-dynamics-g2.webp",
+        "back": "/images/projects/gallery/water-tank-dynamics-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/water-tank-dynamics-g3.webp",
+        "back": "/images/projects/gallery/water-tank-dynamics-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/water-tank-dynamics-g4.webp",
+        "back": "/images/projects/gallery/water-tank-dynamics-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/water-tank-dynamics-g5.webp",
+        "back": "/images/projects/gallery/water-tank-dynamics-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/water-tank-dynamics-g6.webp",
+        "back": "/images/projects/gallery/water-tank-dynamics-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#06B6D4",
     "featured": false,
     "year": "2023",
@@ -998,6 +2609,44 @@ export const projects: Project[] = [
       "Simulation"
     ],
     "image": "/images/projects/pid-cube.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/pid-falling-cube-g1.webp",
+        "back": "/images/projects/gallery/pid-falling-cube-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/pid-falling-cube-g2.webp",
+        "back": "/images/projects/gallery/pid-falling-cube-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/pid-falling-cube-g3.webp",
+        "back": "/images/projects/gallery/pid-falling-cube-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/pid-falling-cube-g4.webp",
+        "back": "/images/projects/gallery/pid-falling-cube-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/pid-falling-cube-g5.webp",
+        "back": "/images/projects/gallery/pid-falling-cube-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/pid-falling-cube-g6.webp",
+        "back": "/images/projects/gallery/pid-falling-cube-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EC4899",
     "featured": false,
     "year": "2023",
@@ -1018,6 +2667,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/gesture-cursor.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/hand-gesture-cursor-g1.webp",
+        "back": "/images/projects/gallery/hand-gesture-cursor-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/hand-gesture-cursor-g2.webp",
+        "back": "/images/projects/gallery/hand-gesture-cursor-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/hand-gesture-cursor-g3.webp",
+        "back": "/images/projects/gallery/hand-gesture-cursor-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/hand-gesture-cursor-g4.webp",
+        "back": "/images/projects/gallery/hand-gesture-cursor-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/hand-gesture-cursor-g5.webp",
+        "back": "/images/projects/gallery/hand-gesture-cursor-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/hand-gesture-cursor-g6.webp",
+        "back": "/images/projects/gallery/hand-gesture-cursor-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -1038,6 +2725,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/pushup-counter.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/pushup-counter-g1.webp",
+        "back": "/images/projects/gallery/pushup-counter-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/pushup-counter-g2.webp",
+        "back": "/images/projects/gallery/pushup-counter-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/pushup-counter-g3.webp",
+        "back": "/images/projects/gallery/pushup-counter-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/pushup-counter-g4.webp",
+        "back": "/images/projects/gallery/pushup-counter-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/pushup-counter-g5.webp",
+        "back": "/images/projects/gallery/pushup-counter-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/pushup-counter-g6.webp",
+        "back": "/images/projects/gallery/pushup-counter-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#10B981",
     "featured": false,
     "year": "2023",
@@ -1058,6 +2783,44 @@ export const projects: Project[] = [
       "Python"
     ],
     "image": "/images/projects/bicep-counter.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/bicep-curl-counter-g1.webp",
+        "back": "/images/projects/gallery/bicep-curl-counter-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/bicep-curl-counter-g2.webp",
+        "back": "/images/projects/gallery/bicep-curl-counter-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/bicep-curl-counter-g3.webp",
+        "back": "/images/projects/gallery/bicep-curl-counter-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/bicep-curl-counter-g4.webp",
+        "back": "/images/projects/gallery/bicep-curl-counter-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/bicep-curl-counter-g5.webp",
+        "back": "/images/projects/gallery/bicep-curl-counter-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/bicep-curl-counter-g6.webp",
+        "back": "/images/projects/gallery/bicep-curl-counter-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F59E0B",
     "featured": false,
     "year": "2023",
@@ -1078,6 +2841,44 @@ export const projects: Project[] = [
       "MediaPipe"
     ],
     "image": "/images/projects/volume-control.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/volume-control-g1.webp",
+        "back": "/images/projects/gallery/volume-control-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/volume-control-g2.webp",
+        "back": "/images/projects/gallery/volume-control-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/volume-control-g3.webp",
+        "back": "/images/projects/gallery/volume-control-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/volume-control-g4.webp",
+        "back": "/images/projects/gallery/volume-control-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/volume-control-g5.webp",
+        "back": "/images/projects/gallery/volume-control-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/volume-control-g6.webp",
+        "back": "/images/projects/gallery/volume-control-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#3B82F6",
     "featured": false,
     "year": "2023",
@@ -1098,6 +2899,44 @@ export const projects: Project[] = [
       "Web AI"
     ],
     "image": "/images/projects/body-pose.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/body-pose-react-g1.webp",
+        "back": "/images/projects/gallery/body-pose-react-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/body-pose-react-g2.webp",
+        "back": "/images/projects/gallery/body-pose-react-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/body-pose-react-g3.webp",
+        "back": "/images/projects/gallery/body-pose-react-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/body-pose-react-g4.webp",
+        "back": "/images/projects/gallery/body-pose-react-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/body-pose-react-g5.webp",
+        "back": "/images/projects/gallery/body-pose-react-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/body-pose-react-g6.webp",
+        "back": "/images/projects/gallery/body-pose-react-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -1118,6 +2957,44 @@ export const projects: Project[] = [
       "Web AI"
     ],
     "image": "/images/projects/body-seg.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/body-segmentation-g1.webp",
+        "back": "/images/projects/gallery/body-segmentation-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/body-segmentation-g2.webp",
+        "back": "/images/projects/gallery/body-segmentation-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/body-segmentation-g3.webp",
+        "back": "/images/projects/gallery/body-segmentation-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/body-segmentation-g4.webp",
+        "back": "/images/projects/gallery/body-segmentation-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/body-segmentation-g5.webp",
+        "back": "/images/projects/gallery/body-segmentation-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/body-segmentation-g6.webp",
+        "back": "/images/projects/gallery/body-segmentation-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EC4899",
     "featured": false,
     "year": "2023",
@@ -1138,6 +3015,44 @@ export const projects: Project[] = [
       "Web AI"
     ],
     "image": "/images/projects/hand-pose.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/hand-pose-react-g1.webp",
+        "back": "/images/projects/gallery/hand-pose-react-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/hand-pose-react-g2.webp",
+        "back": "/images/projects/gallery/hand-pose-react-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/hand-pose-react-g3.webp",
+        "back": "/images/projects/gallery/hand-pose-react-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/hand-pose-react-g4.webp",
+        "back": "/images/projects/gallery/hand-pose-react-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/hand-pose-react-g5.webp",
+        "back": "/images/projects/gallery/hand-pose-react-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/hand-pose-react-g6.webp",
+        "back": "/images/projects/gallery/hand-pose-react-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EAB308",
     "featured": false,
     "year": "2023",
@@ -1158,7 +3073,44 @@ export const projects: Project[] = [
       "SciPy"
     ],
     "image": "/images/projects/exoplanet.png",
-    "gallery": [],
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/exoplanet-detection-g1.webp",
+        "back": "/images/projects/gallery/exoplanet-detection-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/exoplanet-detection-g2.webp",
+        "back": "/images/projects/gallery/exoplanet-detection-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/exoplanet-detection-g3.webp",
+        "back": "/images/projects/gallery/exoplanet-detection-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/exoplanet-detection-g4.webp",
+        "back": "/images/projects/gallery/exoplanet-detection-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/exoplanet-detection-g5.webp",
+        "back": "/images/projects/gallery/exoplanet-detection-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/exoplanet-detection-g6.webp",
+        "back": "/images/projects/gallery/exoplanet-detection-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#6366F1",
     "featured": true,
     "year": "2023",
@@ -1180,7 +3132,44 @@ export const projects: Project[] = [
       "Neo4j GraphRAG"
     ],
     "image": "/images/projects/space-debris.png",
-    "gallery": [],
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/space-debris-g1.webp",
+        "back": "/images/projects/gallery/space-debris-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/space-debris-g2.webp",
+        "back": "/images/projects/gallery/space-debris-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/space-debris-g3.webp",
+        "back": "/images/projects/gallery/space-debris-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/space-debris-g4.webp",
+        "back": "/images/projects/gallery/space-debris-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/space-debris-g5.webp",
+        "back": "/images/projects/gallery/space-debris-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/space-debris-g6.webp",
+        "back": "/images/projects/gallery/space-debris-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#6366F1",
     "featured": true,
     "ongoing": true,
@@ -1203,6 +3192,44 @@ export const projects: Project[] = [
       "NumPy"
     ],
     "image": "/images/projects/quantum-dynamics.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/quantum-particle-g1.webp",
+        "back": "/images/projects/gallery/quantum-particle-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/quantum-particle-g2.webp",
+        "back": "/images/projects/gallery/quantum-particle-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/quantum-particle-g3.webp",
+        "back": "/images/projects/gallery/quantum-particle-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/quantum-particle-g4.webp",
+        "back": "/images/projects/gallery/quantum-particle-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/quantum-particle-g5.webp",
+        "back": "/images/projects/gallery/quantum-particle-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/quantum-particle-g6.webp",
+        "back": "/images/projects/gallery/quantum-particle-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#8B5CF6",
     "featured": false,
     "year": "2023",
@@ -1223,6 +3250,44 @@ export const projects: Project[] = [
       "Hardware"
     ],
     "image": "/images/projects/lifi-system.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/lifi-comm-g1.webp",
+        "back": "/images/projects/gallery/lifi-comm-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/lifi-comm-g2.webp",
+        "back": "/images/projects/gallery/lifi-comm-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/lifi-comm-g3.webp",
+        "back": "/images/projects/gallery/lifi-comm-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/lifi-comm-g4.webp",
+        "back": "/images/projects/gallery/lifi-comm-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/lifi-comm-g5.webp",
+        "back": "/images/projects/gallery/lifi-comm-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/lifi-comm-g6.webp",
+        "back": "/images/projects/gallery/lifi-comm-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F59E0B",
     "featured": false,
     "documentation": "https://drive.google.com/file/d/1xaGgViC6ZqSG_RMIFcPvBzCTVtBHB8PN/view?usp=sharing",
@@ -1242,6 +3307,44 @@ export const projects: Project[] = [
       "Complexity Science"
     ],
     "image": "/images/projects/cellular-automata.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/cellular-automata-g1.webp",
+        "back": "/images/projects/gallery/cellular-automata-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/cellular-automata-g2.webp",
+        "back": "/images/projects/gallery/cellular-automata-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/cellular-automata-g3.webp",
+        "back": "/images/projects/gallery/cellular-automata-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/cellular-automata-g4.webp",
+        "back": "/images/projects/gallery/cellular-automata-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/cellular-automata-g5.webp",
+        "back": "/images/projects/gallery/cellular-automata-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/cellular-automata-g6.webp",
+        "back": "/images/projects/gallery/cellular-automata-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#10B981",
     "featured": false,
     "year": "2023",
@@ -1262,6 +3365,44 @@ export const projects: Project[] = [
       "Matplotlib"
     ],
     "image": "/images/projects/covid-sim.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/covid-simulation-g1.webp",
+        "back": "/images/projects/gallery/covid-simulation-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/covid-simulation-g2.webp",
+        "back": "/images/projects/gallery/covid-simulation-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/covid-simulation-g3.webp",
+        "back": "/images/projects/gallery/covid-simulation-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/covid-simulation-g4.webp",
+        "back": "/images/projects/gallery/covid-simulation-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/covid-simulation-g5.webp",
+        "back": "/images/projects/gallery/covid-simulation-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/covid-simulation-g6.webp",
+        "back": "/images/projects/gallery/covid-simulation-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EF4444",
     "featured": false,
     "year": "2023",
@@ -1282,6 +3423,44 @@ export const projects: Project[] = [
       "Algorithms"
     ],
     "image": "/images/projects/hilbert-curve.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/hilbert-curve-g1.webp",
+        "back": "/images/projects/gallery/hilbert-curve-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/hilbert-curve-g2.webp",
+        "back": "/images/projects/gallery/hilbert-curve-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/hilbert-curve-g3.webp",
+        "back": "/images/projects/gallery/hilbert-curve-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/hilbert-curve-g4.webp",
+        "back": "/images/projects/gallery/hilbert-curve-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/hilbert-curve-g5.webp",
+        "back": "/images/projects/gallery/hilbert-curve-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/hilbert-curve-g6.webp",
+        "back": "/images/projects/gallery/hilbert-curve-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#06B6D4",
     "featured": false,
     "year": "2023",
@@ -1302,6 +3481,44 @@ export const projects: Project[] = [
       "Math"
     ],
     "image": "/images/projects/fractal-gen.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/barnsley-fern-g1.webp",
+        "back": "/images/projects/gallery/barnsley-fern-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/barnsley-fern-g2.webp",
+        "back": "/images/projects/gallery/barnsley-fern-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/barnsley-fern-g3.webp",
+        "back": "/images/projects/gallery/barnsley-fern-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/barnsley-fern-g4.webp",
+        "back": "/images/projects/gallery/barnsley-fern-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/barnsley-fern-g5.webp",
+        "back": "/images/projects/gallery/barnsley-fern-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/barnsley-fern-g6.webp",
+        "back": "/images/projects/gallery/barnsley-fern-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#22C55E",
     "featured": false,
     "year": "2023",
@@ -1322,6 +3539,44 @@ export const projects: Project[] = [
       "JavaScript"
     ],
     "image": "/images/projects/maurer-rose.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/maurer-rose-g1.webp",
+        "back": "/images/projects/gallery/maurer-rose-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/maurer-rose-g2.webp",
+        "back": "/images/projects/gallery/maurer-rose-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/maurer-rose-g3.webp",
+        "back": "/images/projects/gallery/maurer-rose-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/maurer-rose-g4.webp",
+        "back": "/images/projects/gallery/maurer-rose-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/maurer-rose-g5.webp",
+        "back": "/images/projects/gallery/maurer-rose-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/maurer-rose-g6.webp",
+        "back": "/images/projects/gallery/maurer-rose-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#EC4899",
     "featured": false,
     "year": "2023",
@@ -1342,6 +3597,44 @@ export const projects: Project[] = [
       "Matplotlib"
     ],
     "image": "/images/projects/edge-detection.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/edge-detection-g1.webp",
+        "back": "/images/projects/gallery/edge-detection-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/edge-detection-g2.webp",
+        "back": "/images/projects/gallery/edge-detection-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/edge-detection-g3.webp",
+        "back": "/images/projects/gallery/edge-detection-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/edge-detection-g4.webp",
+        "back": "/images/projects/gallery/edge-detection-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/edge-detection-g5.webp",
+        "back": "/images/projects/gallery/edge-detection-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/edge-detection-g6.webp",
+        "back": "/images/projects/gallery/edge-detection-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#64748B",
     "featured": false,
     "year": "2023",
@@ -1362,6 +3655,44 @@ export const projects: Project[] = [
       "C++"
     ],
     "image": "/images/projects/smart-dustbin.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/smart-dustbin-g1.webp",
+        "back": "/images/projects/gallery/smart-dustbin-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/smart-dustbin-g2.webp",
+        "back": "/images/projects/gallery/smart-dustbin-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/smart-dustbin-g3.webp",
+        "back": "/images/projects/gallery/smart-dustbin-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/smart-dustbin-g4.webp",
+        "back": "/images/projects/gallery/smart-dustbin-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/smart-dustbin-g5.webp",
+        "back": "/images/projects/gallery/smart-dustbin-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/smart-dustbin-g6.webp",
+        "back": "/images/projects/gallery/smart-dustbin-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#10B981",
     "featured": false,
     "year": "2023",
@@ -1382,6 +3713,44 @@ export const projects: Project[] = [
       "C++"
     ],
     "image": "/images/projects/autonomous-rover.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/autonomous-rover-g1.webp",
+        "back": "/images/projects/gallery/autonomous-rover-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/autonomous-rover-g2.webp",
+        "back": "/images/projects/gallery/autonomous-rover-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/autonomous-rover-g3.webp",
+        "back": "/images/projects/gallery/autonomous-rover-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/autonomous-rover-g4.webp",
+        "back": "/images/projects/gallery/autonomous-rover-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/autonomous-rover-g5.webp",
+        "back": "/images/projects/gallery/autonomous-rover-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/autonomous-rover-g6.webp",
+        "back": "/images/projects/gallery/autonomous-rover-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
     "color": "#F43F5E",
     "featured": false,
     "year": "2023",

@@ -8,15 +8,23 @@ import * as THREE from 'three';
 /**
  * ProjectGallery3D — a 3D radial page-fan: a thick book opened completely back
  * on itself so the covers touch. Rounded cards are hinged on a central vertical
- * spine and fanned evenly 360° around it. Each card carries one of the project's
- * images on its face; cards beyond the available images stay white.
+ * spine and fanned evenly 360° around it. Every card is double-sided: the front
+ * face carries one image and the back face its counterpart, so spinning the fan
+ * reveals a second set. The fan sizes itself to the number of cards, so there
+ * are never blank filler pages.
  *
  * Controls: drag left/right to spin around the spine, drag up/down to tilt to
  * the top / bottom views, scroll to spin, and +/- to zoom. Original R3F build,
  * themed to each project's colour.
  */
 
-const COUNT = 10;       // number of pages in the fan (evenly spaced)
+export interface GalleryCard {
+  front: string;
+  back?: string;
+}
+
+const MIN_PAGES = 7;    // keep a full-looking fan even for image-light projects
+const MAX_PAGES = 14;
 const INNER_R = 0.28;   // gap between the spine and a page's inner edge
 const W = 3.3;          // page width (radial) — landscape 16:9
 const H = 1.86;         // page height (along the spine) — landscape 16:9
@@ -24,8 +32,8 @@ const D = 0.07;         // page thickness
 const lerp = THREE.MathUtils.lerp;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function Page({ angle, url, accent }: { angle: number; url: string | null; accent: string }) {
-  const hasImg = !!url;
+function Page({ angle, card, accent }: { angle: number; card: GalleryCard | null; accent: string }) {
+  const hasImg = !!card?.front;
   return (
     <group rotation={[0, angle, 0]}>
       {/* inner edge sits at radius INNER_R; the page extends outward along +X */}
@@ -37,11 +45,21 @@ function Page({ angle, url, accent }: { angle: number; url: string | null; accen
             roughness={0.6}
           />
         </RoundedBox>
-        {hasImg && (
+        {card?.front && (
           <Image
-            url={url as string}
+            url={card.front}
             scale={[W * 0.92, H * 0.93] as unknown as number}
             position={[0, 0, D / 2 + 0.006]}
+            toneMapped={false}
+          />
+        )}
+        {/* back face — flipped 180° so it reads the right way round from behind */}
+        {card?.back && (
+          <Image
+            url={card.back}
+            scale={[W * 0.92, H * 0.93] as unknown as number}
+            position={[0, 0, -(D / 2 + 0.006)]}
+            rotation={[0, Math.PI, 0]}
             toneMapped={false}
           />
         )}
@@ -50,7 +68,7 @@ function Page({ angle, url, accent }: { angle: number; url: string | null; accen
   );
 }
 
-function Book({ images, accent, zoomRef }: { images: string[]; accent: string; zoomRef: { current: number } }) {
+function Book({ cards, accent, zoomRef }: { cards: GalleryCard[]; accent: string; zoomRef: { current: number } }) {
   const tiltGroup = useRef<THREE.Group>(null); // up/down → top / bottom view
   const spinGroup = useRef<THREE.Group>(null); // left/right → spin around spine
   const { gl } = useThree();
@@ -97,12 +115,14 @@ function Book({ images, accent, zoomRef }: { images: string[]; accent: string; z
     }
   });
 
-  const step = (Math.PI * 2) / COUNT;
+  // the fan sizes itself to the cards, so there are no blank filler pages
+  const pages = clamp(Math.max(cards.length, MIN_PAGES), MIN_PAGES, MAX_PAGES);
+  const step = (Math.PI * 2) / pages;
   return (
     <group ref={tiltGroup}>
       <group ref={spinGroup}>
-        {Array.from({ length: COUNT }).map((_, i) => (
-          <Page key={i} angle={i * step} url={images[i] ?? null} accent={accent} />
+        {Array.from({ length: pages }).map((_, i) => (
+          <Page key={i} angle={i * step} card={cards[i] ?? null} accent={accent} />
         ))}
       </group>
     </group>
@@ -110,13 +130,13 @@ function Book({ images, accent, zoomRef }: { images: string[]; accent: string; z
 }
 
 export default function ProjectGallery3D({
-  images,
+  cards,
   color = '#22d3ee',
 }: {
-  images: string[];
+  cards: GalleryCard[];
   color?: string;
 }) {
-  const imgs = (images && images.length ? images : []).slice(0, COUNT);
+  const imgs = (cards && cards.length ? cards : []).slice(0, MAX_PAGES);
   const zoomRef = useRef(1);
   const zoomBy = (f: number) => { zoomRef.current = clamp(zoomRef.current * f, 0.45, 2.6); };
 
@@ -136,7 +156,7 @@ export default function ProjectGallery3D({
         <directionalLight position={[-5, -1, 2]} intensity={0.4} />
         <pointLight position={[-3, 2, 4]} intensity={0.5} color={color} />
         <Suspense fallback={null}>
-          <Book images={imgs} accent={color} zoomRef={zoomRef} />
+          <Book cards={imgs} accent={color} zoomRef={zoomRef} />
         </Suspense>
       </Canvas>
 
