@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Image, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
@@ -32,8 +32,34 @@ const D = 0.07;         // page thickness
 const lerp = THREE.MathUtils.lerp;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function Page({ angle, card, accent }: { angle: number; card: GalleryCard | null; accent: string }) {
+function Page({
+  angle,
+  card,
+  accent,
+  frontIndex,
+  backIndex,
+  onOpen,
+}: {
+  angle: number;
+  card: GalleryCard | null;
+  accent: string;
+  frontIndex?: number;
+  backIndex?: number;
+  onOpen: (i: number) => void;
+}) {
   const hasImg = !!card?.front;
+  const { gl } = useThree();
+  const hover = (on: boolean) => { gl.domElement.style.cursor = on ? 'zoom-in' : 'auto'; };
+  // double-click a face to open it full-size in the lightbox
+  const faceProps = (i?: number) =>
+    i === undefined
+      ? {}
+      : {
+          onDoubleClick: (e: { stopPropagation: () => void }) => { e.stopPropagation(); hover(false); onOpen(i); },
+          onPointerOver: (e: { stopPropagation: () => void }) => { e.stopPropagation(); hover(true); },
+          onPointerOut: () => hover(false),
+        };
+
   return (
     <group rotation={[0, angle, 0]}>
       {/* inner edge sits at radius INNER_R; the page extends outward along +X */}
@@ -51,6 +77,7 @@ function Page({ angle, card, accent }: { angle: number; card: GalleryCard | null
             scale={[W * 0.92, H * 0.93] as unknown as number}
             position={[0, 0, D / 2 + 0.006]}
             toneMapped={false}
+            {...faceProps(frontIndex)}
           />
         )}
         {/* back face — flipped 180° so it reads the right way round from behind */}
@@ -61,6 +88,7 @@ function Page({ angle, card, accent }: { angle: number; card: GalleryCard | null
             position={[0, 0, -(D / 2 + 0.006)]}
             rotation={[0, Math.PI, 0]}
             toneMapped={false}
+            {...faceProps(backIndex)}
           />
         )}
       </group>
@@ -68,7 +96,19 @@ function Page({ angle, card, accent }: { angle: number; card: GalleryCard | null
   );
 }
 
-function Book({ cards, accent, zoomRef }: { cards: GalleryCard[]; accent: string; zoomRef: { current: number } }) {
+function Book({
+  cards,
+  accent,
+  zoomRef,
+  faces,
+  onOpen,
+}: {
+  cards: GalleryCard[];
+  accent: string;
+  zoomRef: { current: number };
+  faces: { front?: number; back?: number }[];
+  onOpen: (i: number) => void;
+}) {
   const tiltGroup = useRef<THREE.Group>(null); // up/down → top / bottom view
   const spinGroup = useRef<THREE.Group>(null); // left/right → spin around spine
   const { gl } = useThree();
@@ -122,7 +162,15 @@ function Book({ cards, accent, zoomRef }: { cards: GalleryCard[]; accent: string
     <group ref={tiltGroup}>
       <group ref={spinGroup}>
         {Array.from({ length: pages }).map((_, i) => (
-          <Page key={i} angle={i * step} card={cards[i] ?? null} accent={accent} />
+          <Page
+            key={i}
+            angle={i * step}
+            card={cards[i] ?? null}
+            accent={accent}
+            frontIndex={faces[i]?.front}
+            backIndex={faces[i]?.back}
+            onOpen={onOpen}
+          />
         ))}
       </group>
     </group>
@@ -136,12 +184,48 @@ export default function ProjectGallery3D({
   cards: GalleryCard[];
   color?: string;
 }) {
-  const imgs = (cards && cards.length ? cards : []).slice(0, MAX_PAGES);
+  const imgs = useMemo(() => (cards && cards.length ? cards : []).slice(0, MAX_PAGES), [cards]);
   const zoomRef = useRef(1);
   const zoomBy = (f: number) => { zoomRef.current = clamp(zoomRef.current * f, 0.45, 2.6); };
 
+  // Flatten every visible face into one navigable list, in fan order
+  // (card 1 front, card 1 back, card 2 front, …), and remember where each
+  // card's faces landed so a double-click can open the right one.
+  const { flat, faces } = useMemo(() => {
+    const flat: string[] = [];
+    const faces = imgs.map((c) => {
+      const f: { front?: number; back?: number } = {};
+      if (c.front) { f.front = flat.length; flat.push(c.front); }
+      if (c.back) { f.back = flat.length; flat.push(c.back); }
+      return f;
+    });
+    return { flat, faces };
+  }, [imgs]);
+
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const open = lightbox !== null;
+  const go = useCallback(
+    (d: number) => setLightbox((i) => (i === null ? i : (i + d + flat.length) % flat.length)),
+    [flat.length]
+  );
+
+  // Esc / ← / → while the lightbox is up. Capture-phase + stopPropagation so
+  // Esc closes the lightbox without also closing the project modal behind it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.stopPropagation(); setLightbox(null); }
+      else if (e.key === 'ArrowRight') { e.stopPropagation(); go(1); }
+      else if (e.key === 'ArrowLeft') { e.stopPropagation(); go(-1); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [open, go]);
+
   const btn =
     'flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/50 backdrop-blur-sm text-white/80 text-lg leading-none hover:text-white hover:border-white/50 transition active:scale-95';
+  const navBtn =
+    'pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-black/60 backdrop-blur-md text-white/80 hover:text-white hover:border-white/60 hover:bg-black/80 transition active:scale-95';
 
   return (
     <div className="relative w-full h-full">
@@ -156,7 +240,7 @@ export default function ProjectGallery3D({
         <directionalLight position={[-5, -1, 2]} intensity={0.4} />
         <pointLight position={[-3, 2, 4]} intensity={0.5} color={color} />
         <Suspense fallback={null}>
-          <Book cards={imgs} accent={color} zoomRef={zoomRef} />
+          <Book cards={imgs} accent={color} zoomRef={zoomRef} faces={faces} onOpen={setLightbox} />
         </Suspense>
       </Canvas>
 
@@ -169,6 +253,61 @@ export default function ProjectGallery3D({
           −
         </button>
       </div>
+
+      {/* ── LIGHTBOX — double-click a card face to open it full-size ───────── */}
+      {open && (
+        <div
+          className="fixed inset-0 z-[100050] flex items-center justify-center bg-black/92 backdrop-blur-lg animate-[fadeIn_.18s_ease-out]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Project image viewer"
+          onClick={() => setLightbox(null)}
+        >
+          {/* close */}
+          <button
+            type="button"
+            aria-label="Close image viewer"
+            onClick={(e) => { e.stopPropagation(); setLightbox(null); }}
+            className="absolute top-5 right-5 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white/80 backdrop-blur-md transition hover:border-white/60 hover:text-white active:scale-95"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* the image */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={flat[lightbox as number]}
+            alt={`Project image ${(lightbox as number) + 1} of ${flat.length}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[86vh] max-w-[92vw] rounded-xl object-contain shadow-2xl"
+            style={{ boxShadow: `0 0 90px -20px ${color}` }}
+          />
+
+          {/* prev / next */}
+          {flat.length > 1 && (
+            <div className="pointer-events-none absolute inset-x-4 top-1/2 flex -translate-y-1/2 justify-between sm:inset-x-8">
+              <button type="button" aria-label="Previous image" className={navBtn} onClick={(e) => { e.stopPropagation(); go(-1); }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <button type="button" aria-label="Next image" className={navBtn} onClick={(e) => { e.stopPropagation(); go(1); }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* counter */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-white/15 bg-black/60 px-4 py-1.5 font-mono text-[11px] tracking-[0.2em] text-white/70 backdrop-blur-md tabular-nums">
+            {String((lightbox as number) + 1).padStart(2, '0')} / {String(flat.length).padStart(2, '0')}
+            <span className="ml-3 hidden text-white/35 sm:inline">← → to browse · esc to close</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
