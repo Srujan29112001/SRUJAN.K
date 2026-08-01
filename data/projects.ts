@@ -659,26 +659,6 @@ export const projects: Project[] = [
     "link": "https://drive.google.com/file/d/1vqF9JT7hqPYHwKPKEGwvOQF9Nl8c42nI/view?usp=drive_link"
   },
   {
-    "id": "word-similarity",
-    "title": "Word Similarity Predictor",
-    "category": "AI",
-    "metric": "Word2Vec",
-    "description": "Trains a Word2Vec model on cell-phone product reviews to learn word embeddings and surface semantic relationships between terms.",
-    "longDescription": "An NLP project that applies Word2Vec to a corpus of product reviews for cell phones and accessories, learning vector representations of words so that semantically related terms can be compared and explored.\n\nThe workflow loads the review texts, preprocesses and tokenizes them into sentences of words, and trains a Word2Vec model on the resulting corpus. Once trained, the model maps each word to a dense embedding vector, which is used to query nearest neighbors and measure semantic similarity between words via cosine similarity in the embedding space.\n\nArchitecturally, Word2Vec is a shallow neural model (skip-gram or CBOW) that learns embeddings by predicting a word from its surrounding context (or vice versa); words that share contexts in the reviews end up close together in vector space, which is what makes similarity and analogy queries meaningful. The Gensim implementation handles vocabulary building, negative sampling, and training over multiple epochs.\n\nTech stack: Python, Gensim, and the Word2Vec algorithm for NLP-based word-embedding and semantic-similarity analysis.",
-    "tech": [
-      "NLP",
-      "Word2Vec",
-      "Gensim",
-      "Python"
-    ],
-    "image": "/images/projects/arch_word_1.png",
-    "color": "#6366F1",
-    "featured": false,
-    "year": "2023",
-    "documentation": "https://drive.google.com/file/d/1fnfMxCc-lXLICGKQ2ogI6jxUqxcocs4R/view?usp=drive_link",
-    "link": "https://drive.google.com/file/d/1g2h1Doo8riJtBG4uEnmw9sHlN7gMsN5s/view?usp=drive_link"
-  },
-  {
     "id": "stock-rl",
     "title": "Stock Trading Reinforcement Learning",
     "category": "AI",
@@ -2069,6 +2049,64 @@ export const projects: Project[] = [
     "year": "2023",
     "documentation": "https://drive.google.com/file/d/1pttNmzVRI8iq0rxXllxRMTjPgWLf9hW-/view?usp=drive_link",
     "link": "https://drive.google.com/file/d/1_8_8PJrHWsArQF4q1NYTwgYCmY56tv1Q/view?usp=drive_link"
+  },
+  {
+    "id": "word-similarity",
+    "title": "Word Similarity Predictor",
+    "category": "AI",
+    "metric": "Word2Vec",
+    "description": "Trains a Word2Vec model on cell-phone product reviews to learn word embeddings and surface semantic relationships between terms.",
+    "longDescription": "An NLP project that applies Word2Vec to a corpus of product reviews for cell phones and accessories, learning vector representations of words so that semantically related terms can be compared and explored.\n\nThe workflow loads the review texts, preprocesses and tokenizes them into sentences of words, and trains a Word2Vec model on the resulting corpus. Once trained, the model maps each word to a dense embedding vector, which is used to query nearest neighbors and measure semantic similarity between words via cosine similarity in the embedding space.\n\nArchitecturally, Word2Vec is a shallow neural model (skip-gram or CBOW) that learns embeddings by predicting a word from its surrounding context (or vice versa); words that share contexts in the reviews end up close together in vector space, which is what makes similarity and analogy queries meaningful. The Gensim implementation handles vocabulary building, negative sampling, and training over multiple epochs.\n\nTech stack: Python, Gensim, and the Word2Vec algorithm for NLP-based word-embedding and semantic-similarity analysis.",
+    "tech": [
+      "NLP",
+      "Word2Vec",
+      "Gensim",
+      "Python"
+    ],
+    "image": "/images/projects/arch_word_1.png",
+    "gallery": [
+      {
+        "src": "/images/projects/gallery/word-similarity-g1.webp",
+        "back": "/images/projects/gallery/word-similarity-c1.webp",
+        "alt": "Hero",
+        "caption": "Hero"
+      },
+      {
+        "src": "/images/projects/gallery/word-similarity-g2.webp",
+        "back": "/images/projects/gallery/word-similarity-c2.webp",
+        "alt": "System",
+        "caption": "System"
+      },
+      {
+        "src": "/images/projects/gallery/word-similarity-g3.webp",
+        "back": "/images/projects/gallery/word-similarity-c3.webp",
+        "alt": "Interface",
+        "caption": "Interface"
+      },
+      {
+        "src": "/images/projects/gallery/word-similarity-g4.webp",
+        "back": "/images/projects/gallery/word-similarity-c4.webp",
+        "alt": "Method",
+        "caption": "Method"
+      },
+      {
+        "src": "/images/projects/gallery/word-similarity-g5.webp",
+        "back": "/images/projects/gallery/word-similarity-c5.webp",
+        "alt": "In the field",
+        "caption": "In the field"
+      },
+      {
+        "src": "/images/projects/gallery/word-similarity-g6.webp",
+        "back": "/images/projects/gallery/word-similarity-c6.webp",
+        "alt": "Signature",
+        "caption": "Signature"
+      }
+    ],
+    "color": "#6366F1",
+    "featured": false,
+    "year": "2023",
+    "documentation": "https://drive.google.com/file/d/1fnfMxCc-lXLICGKQ2ogI6jxUqxcocs4R/view?usp=drive_link",
+    "link": "https://drive.google.com/file/d/1g2h1Doo8riJtBG4uEnmw9sHlN7gMsN5s/view?usp=drive_link"
   },
   {
     "id": "robovla",
