@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { skillCategories } from '@/data/skills';
 import { SectionHeading } from '@/components/ui/SectionHeading';
@@ -42,31 +42,66 @@ function chips(details?: string): string[] {
   return (details || '').split(',').map(s => s.trim()).filter(Boolean);
 }
 
+/**
+ * Reveal-on-scroll that cannot get stuck. `whileInView` depends on
+ * IntersectionObserver, which some mobile browsers never fire for these bars —
+ * leaving them permanently empty. This watches the element and ALSO releases
+ * after a short grace period, so the fill always happens.
+ */
+function useRevealed(ref: React.RefObject<Element>, delay = 900) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (shown) return;
+    const el = ref.current;
+    let io: IntersectionObserver | undefined;
+    if (el && typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver(
+        (entries) => { if (entries.some((e) => e.isIntersecting)) { setShown(true); io?.disconnect(); } },
+        { threshold: 0.15 }
+      );
+      io.observe(el);
+    }
+    const t = setTimeout(() => setShown(true), delay); // safety net
+    return () => { io?.disconnect(); clearTimeout(t); };
+  }, [ref, delay, shown]);
+  return shown;
+}
+
 function SkillRow({ name, proficiency, details, color, index }: {
   name: string; proficiency: number; details?: string; color: string; index: number;
 }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const shown = useRevealed(rowRef, 700 + index * 60);
+
   return (
     <motion.div
+      ref={rowRef}
       initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.45, delay: index * 0.05, ease: 'easeOut' }}
-      className="group"
+      animate={shown ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+      transition={{ duration: 0.45, ease: 'easeOut' }}
+      className="group min-w-0"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h4 className="font-display text-base sm:text-lg font-semibold text-white">{name}</h4>
         <span className="font-mono text-xs sm:text-sm tabular-nums" style={{ color }}>{proficiency}%</span>
       </div>
 
-      {/* proficiency bar — fills on scroll-into-view */}
+      {/* proficiency bar — fills on scroll-into-view.
+          The bar is laid out at its final width and revealed by animating
+          scaleX from a left origin. Animating a percentage `width` from 0
+          silently fails on several mobile browsers (the bar just stays empty);
+          a GPU transform is reliable everywhere and cheaper to composite. */}
       <div className="mt-2 h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
         <motion.div
-          className="h-full rounded-full"
-          style={{ background: `linear-gradient(90deg, ${color}aa, ${color})`, boxShadow: `0 0 12px ${color}66` }}
-          initial={{ width: 0 }}
-          whileInView={{ width: `${proficiency}%` }}
-          viewport={{ once: true, margin: '-40px' }}
-          transition={{ duration: 1, delay: index * 0.05 + 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="h-full rounded-full origin-left"
+          style={{
+            width: `${proficiency}%`,
+            background: `linear-gradient(90deg, ${color}aa, ${color})`,
+            boxShadow: `0 0 12px ${color}66`,
+          }}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: shown ? 1 : 0 }}
+          transition={{ duration: 1, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         />
       </div>
 
@@ -81,6 +116,37 @@ function SkillRow({ name, proficiency, details, color, index }: {
           </span>
         ))}
       </div>
+    </motion.div>
+  );
+}
+
+function ToolCard({ name, proficiency, details, color, index }: {
+  name: string; proficiency: number; details?: string; color: string; index: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const shown = useRevealed(ref, 700 + index * 40);
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 12 }}
+      animate={shown ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+      transition={{ duration: 0.4 }}
+      className="min-w-0 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 sm:p-4 hover:border-white/15 transition-colors"
+    >
+      <div className="flex items-baseline justify-between gap-2 min-w-0">
+        <span className="font-display text-sm sm:text-base font-semibold text-white truncate min-w-0">{name}</span>
+        <span className="font-mono text-[11px] tabular-nums flex-shrink-0" style={{ color }}>{proficiency}%</span>
+      </div>
+      <div className="mt-2 h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
+        <motion.div
+          className="h-full rounded-full origin-left"
+          style={{ width: `${proficiency}%`, background: color }}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: shown ? 1 : 0 }}
+          transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </div>
+      {details && <p className="mt-2 text-[11px] text-text-muted truncate">{details}</p>}
     </motion.div>
   );
 }
@@ -190,30 +256,7 @@ export function Skills({ activeCategory, setActiveCategory }: SkillsProps) {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {tools.skills.map((s, i) => (
-              <motion.div
-                key={s.name}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.4, delay: i * 0.04 }}
-                className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 sm:p-4 hover:border-white/15 transition-colors"
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-display text-sm sm:text-base font-semibold text-white truncate">{s.name}</span>
-                  <span className="font-mono text-[11px] tabular-nums" style={{ color: tools.color }}>{s.proficiency}%</span>
-                </div>
-                <div className="mt-2 h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: tools.color }}
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${s.proficiency}%` }}
-                    viewport={{ once: true, margin: '-40px' }}
-                    transition={{ duration: 0.9, delay: i * 0.04 + 0.1, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                </div>
-                {s.details && <p className="mt-2 text-[11px] text-text-muted truncate">{s.details}</p>}
-              </motion.div>
+              <ToolCard key={s.name} name={s.name} proficiency={s.proficiency} details={s.details} color={tools.color} index={i} />
             ))}
           </div>
         </div>

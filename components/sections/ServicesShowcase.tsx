@@ -163,11 +163,12 @@ export function ServicesShowcase({ onPrimaryCta }: { onPrimaryCta?: () => void }
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true, amount: 0.2 }}
                                     transition={{ duration: 0.5, delay: (i % 3) * 0.06 }}
+                                    className="min-w-0"
                                 >
                                     <a
                                         href={href}
                                         {...(href ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                                        className="group block rounded-2xl overflow-hidden border border-white/10 bg-bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/40 hover:shadow-xl"
+                                        className="group block min-w-0 rounded-2xl overflow-hidden border border-white/10 bg-bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/40 hover:shadow-xl"
                                     >
                                         <div className="relative aspect-video overflow-hidden bg-bg-elevated">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -193,9 +194,11 @@ export function ServicesShowcase({ onPrimaryCta }: { onPrimaryCta?: () => void }
                                                 {p.category}{p.metric ? ` · ${p.metric}` : ''}
                                             </span>
                                         </div>
-                                        <div className="p-5">
-                                            <h4 className="font-display text-lg font-bold text-text-primary group-hover:text-cyan-400 transition-colors flex items-center gap-2">
-                                                <span className="truncate">{p.title}</span>
+                                        <div className="p-5 min-w-0">
+                                            <h4 className="font-display text-lg font-bold text-text-primary group-hover:text-cyan-400 transition-colors flex items-center gap-2 min-w-0">
+                                                {/* min-w-0 lets `truncate` actually engage: without it the
+                                                    nowrap title blows the grid track out past the viewport */}
+                                                <span className="truncate min-w-0">{p.title}</span>
                                                 {href && (
                                                     <svg className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H8M17 7V16" />

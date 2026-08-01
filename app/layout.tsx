@@ -26,6 +26,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Canonical origin for OG/Twitter cards — without this Next can't resolve the
+  // relative preview-image path, and link previews come out blank.
+  metadataBase: new URL('https://srujan-k.vercel.app'),
   title: 'K Srujan | AI/ML Engineer & Robotics Specialist',
   description:
     'Engineering Intelligence. Questioning Its Foundations. AI/ML Engineer specializing in computer vision, robotics, and consciousness research.',
@@ -47,7 +50,7 @@ export const metadata: Metadata = {
     description: 'Engineering Intelligence. Questioning Its Foundations.',
     type: 'website',
     locale: 'en_US',
-    url: 'https://srujan.dev',
+    url: 'https://srujan-k.vercel.app',
     siteName: 'K Srujan Portfolio',
     images: [
       {
