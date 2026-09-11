@@ -114,7 +114,7 @@ const storyPanels = [
     subtitle: 'Advanced GenAI & Prompt Engineering — IIIT Hyderabad × TalentSprint (Feb–Jun 2026)',
     content: `A focused 4-month advanced certification in Generative AI & Prompt Engineering from IIIT Hyderabad with TalentSprint — including an on-campus visit. Under the mentorship of Prof. Ponnurangam Kumaraguru (PK), I went deep on LLMs, RAG, multi-agent systems, and responsible AI, shipping three minor projects and one major capstone.`,
     stats: [
-      { value: 4, suffix: ' Months', label: 'IIIT-H × TalentSprint' },
+      { value: 5, suffix: ' Months', label: 'IIIT-H × TalentSprint' },
       { value: 4, suffix: ' Projects', label: '3 Minor + 1 Capstone' },
     ],
     color: '#A855F7', // Violet
