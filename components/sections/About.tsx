@@ -120,6 +120,7 @@ const storyPanels = [
     color: '#A855F7', // Violet
     image: '/images/experience/iiith-genai.png',
     gallery: [] as string[],
+    button: { text: 'Gallery', link: 'https://drive.google.com/file/d/1uYTen9OLrRATNGrlzFempr9ee6YlXybS/view?usp=sharing' }
   },
 ];
 
