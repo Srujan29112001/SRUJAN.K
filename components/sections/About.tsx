@@ -44,7 +44,7 @@ const storyPanels = [
     subtitle: 'Operational AI for Defense — DRDL-DRDO (Defence Research and Development Laboratory)',
     content: `At DRDL-DRDO (Defence Research and Development Laboratory) (2022-2023), I applied my skills to national defense under Dr. Akula Naresh (Scientist-F). I developed "AI-Band Vision" and deployed YOLOv7 on Jetson AGX Xavier edge devices for real-time aerial threat detection. This wasn't just theory; it was mission-critical engineering where we achieved 95% field accuracy.`,
     stats: [
-      { value: 95, suffix: '%', label: 'Field Accuracy' },
+      { value: 75, suffix: '%', label: 'Field Accuracy' },
       { value: 8, suffix: ' Mos', label: 'Deployed (DRDL)' },
     ],
     color: '#06B6D4', // Cyan/Blue
@@ -56,9 +56,9 @@ const storyPanels = [
     number: '04',
     title: 'The Awakening',
     subtitle: 'Consciousness-Aware Technology',
-    content: `I stepped away to study what makes intelligence possible — game theory, biological neural networks, and the architecture of robust, consciousness-aware AI. To understand how emotions drive us, I immersed myself in retreats across different cultures and traditions, learning breathing techniques, body movement, and cognitive optimization. Not a detour — it was the infrastructure for everything I build now.`,
+    content: `Designed and built 40+ systems spanning AI/ML (TensorFlow, PyTorch, Computer Vision), Robotics (ROS 2, Control Systems), Gen AI, and Cloud/MLOps, while mastering multi-agent systems, GraphRAG, and production deployment pipelines. Conducted one year of independent research in cognitive science, HCI, Cognitive systems, and embodied cognition, applying sensorimotor prediction and real-time decision-making insights to robust AI system design.`,
     stats: [
-      { value: 2, suffix: ' Years', label: 'Deep Research' },
+      { value: 1, suffix: ' Years', label: 'Research and Development' },
       { value: 100, suffix: '%', label: 'Curiosity' },
     ],
     color: '#8B7EC8', // Purple
