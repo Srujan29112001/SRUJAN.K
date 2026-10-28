@@ -42,7 +42,7 @@ const storyPanels = [
     number: '03',
     title: 'The Mission',
     subtitle: 'Operational AI for Defense — DRDL-DRDO (Defence Research and Development Laboratory)',
-    content: `At DRDL-DRDO (Defence Research and Development Laboratory) (2022-2023), I applied my skills to national defense under Dr. Akula Naresh (Scientist-F). I developed "AI-Band Vision" and deployed YOLOv7 on Jetson AGX Xavier edge devices for real-time aerial threat detection. This wasn't just theory; it was mission-critical engineering where we achieved 95% field accuracy.`,
+    content: `At DRDL-DRDO (Defence Research and Development Laboratory) (2022-2023), I applied my skills to national defense under Dr. Akula Naresh (Scientist-F). I developed "AI-Band Vision" and deployed YOLOv7 on Jetson AGX Xavier edge devices for real-time aerial threat detection. This wasn't just theory; it was mission-critical engineering where we achieved 75% field accuracy.`,
     stats: [
       { value: 75, suffix: '%', label: 'Field Accuracy' },
       { value: 8, suffix: ' Mos', label: 'Deployed (DRDL)' },

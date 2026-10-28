@@ -280,7 +280,7 @@ I don't see contradiction between quantum computing and Vedic astrology, or betw
 CORE VALUES:
 1. Integration over Separation - Everything connects. Tech, spirituality, life.
 2. Depth over Speed - I invest time in truly understanding before acting.
-3. Quality over Quantity - 89% mAP isn't enough if I can reach 95%.
+3. Quality over Quantity - 89% mAP isn't enough if I can optimize for real-world field accuracy (75%).
 4. Purpose over Profit - Why am I building this? What impact does it make?
 5. Practice over Theory - I maintain 5.5-6 hours daily sadhana. Not reading about meditation - doing it.
 6. Patience over Rush - Good architecture saves headaches tomorrow.
@@ -331,7 +331,7 @@ January 2023 - June 2023 - DRDO-DRDL Internship (Defence Research and Developmen
 - Deep Learning Project Intern/Trainee
 - AI Band Vision Project under Dr. Akula Naresh (Scientist-F)
 - YOLOv7 on NVIDIA Jetson AGX Xavier
-- 89% mAP, 22 FPS, 95% field accuracy
+- 89% mAP, 22 FPS, 75% field accuracy
 - Deployed on Tunga aerial platform
 
 June 2023 - Present (2025) - Specialized Freelance & Research Period
@@ -339,7 +339,7 @@ June 2023 - Present (2025) - Specialized Freelance & Research Period
 - Freelance: Architected systems for FinTech Innovations (USA), MediCare AI, and AeroSpace DY.
 - Research: EEG signal processing, Brain-computer interfaces, Gödel's incompleteness theorems.
 - Lifestyle: Residing at Isha Foundation, balancing 6h sadhana with 10h technical work.
-- Key Deployments: Clinical AI Copilot (95% accuracy), 3D Orbital Tracker, Finance Intelligence Layer.
+- Key Deployments: Clinical AI Copilot (65% accuracy), 3D Orbital Tracker, Finance Intelligence Layer.
 - This period was a dual-track engagement: Intensive consciousness research combined with high-impact, specialized freelance engineering.
 - It wasn't a gap; it was a period of 10-12 hour workdays building complex systems for US clients while exploring consciousness.
 

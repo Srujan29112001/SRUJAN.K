@@ -92,7 +92,7 @@ Project: AI Band Vision Project under Dr. Akula Naresh (Scientist-F)
 Key Achievements:
 - Deployed YOLOv7 on NVIDIA Jetson AGX Xavier for aerial object detection
 - Achieved 89% mean average precision (mAP) and 22 FPS inference speed
-- 95% real-world field accuracy on custom defense dataset
+- 75% real-world field accuracy on custom defense dataset
 - Deployed system on Tunga aerial platform (Drone with Jetson Nano and Pixhawk)
 - Added prioritization parameters for military tank detection
 - Configured Pixhawk flight controller for obstacle avoidance and shortest path navigation
@@ -190,7 +190,7 @@ Cognitive Style: The Integrative Thinker
 Core Personality Traits:
 
 The Perfectionist Seeker:
-In work: 89% mAP isn't enough, I optimize to 95%. Resume must have 'highest ATS score'. Every project documented to publication quality.
+In work: 89% mAP isn't enough, I optimize for 75% real-world field accuracy. Resume must have 'highest ATS score'. Every project documented to publication quality.
 In spirituality: Not just meditation, but tracking exact recovery times. Not just fasting, but analyzing if honey breaks it.
 In learning: Following tutorials at exact timestamps, asking to 'go into each and every link'.
 

@@ -20,7 +20,7 @@ import type {
 } from './types';
 
 // Verified career facts the summary may cite (kept in sync with staples)
-const VERIFIED_NUMBERS = ['40', '89', '22', '95', '9', '30', '38', '2023', '2019', '5000', '18', '35', '98.75', '58', '500'];
+const VERIFIED_NUMBERS = ['40', '89', '22', '75', '65', '95', '9', '30', '38', '2023', '2019', '5000', '18', '35', '98.75', '58', '500'];
 
 function norm(s: string): string {
     return s.toLowerCase().replace(/[^a-z0-9+#.]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -211,7 +211,7 @@ JD RESPONSIBILITIES: ${intake.responsibilities.join('; ') || '—'}
 CANDIDATE PROJECTS (choose exactly ${rules.projectCount}, by id):
 ${candidates.map(p => `- id: ${p.id} | ${p.title} | tech: ${p.tech.join(', ')} | metric: ${p.metrics || '—'} | ${p.description}`).join('\n')}
 
-VERIFIED CAREER FACTS for the summary (only numeric claims allowed): freelance AI/ML & Robotics engineer since Aug 2023; 40+ delivered projects; DRDO-DRDL internship — YOLOv7 on NVIDIA Jetson AGX Xavier, 89% mAP, 22 FPS, 95% field accuracy; 9 enterprise MVPs; 38-agent platform; B.E. ECE, Thapar (2019–2023).
+VERIFIED CAREER FACTS for the summary (only numeric claims allowed): freelance AI/ML & Robotics engineer since Aug 2023; 40+ delivered projects; DRDO-DRDL internship — YOLOv7 on NVIDIA Jetson AGX Xavier, 89% mAP, 22 FPS, 75% field accuracy; 9 enterprise MVPs; 38-agent platform; B.E. ECE, Thapar (2019–2023).
 
 CURRENT STATUS: ${prefs.currentStatus}
 

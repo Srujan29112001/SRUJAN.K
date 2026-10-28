@@ -22,7 +22,7 @@ export const experiences: Experience[] = [
     highlights: [
       'Developed "AI-Band Vision" for aerial object detection',
       'Implemented YOLOv7 on Jetson AGX Xavier with TensorRT',
-      'Achieved 95% field accuracy in real-time inference',
+      'Achieved 75% field accuracy in real-time inference',
       'Mentored by Dr. Akula Naresh (Scientist-F)',
     ],
     color: '#F59E0B',

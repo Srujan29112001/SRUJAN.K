@@ -22,8 +22,8 @@ const EMAIL_BODY_LIMIT = 3500;
 // Deliberately excludes unverified claims (no CGPA/backlog statements).
 const VERIFIED_FACTS = `
 - Freelance AI/ML engineer since Aug 2023; 40+ delivered projects
-- DRDO-DRDL internship (Jan–Aug 2023): YOLOv7 on NVIDIA Jetson AGX Xavier — 89% mAP, 22 FPS, 95% field accuracy
-- 9 enterprise MVPs incl. Clinical AI Copilot (95% accuracy) and a 38-agent Entrepreneurship Intelligence Platform
+- DRDO-DRDL internship (Jan–Aug 2023): YOLOv7 on NVIDIA Jetson AGX Xavier — 89% mAP, 22 FPS, 75% field accuracy
+- 9 enterprise MVPs incl. Clinical AI Copilot (65% accuracy) and a 38-agent Entrepreneurship Intelligence Platform
 - B.E. Electronics & Communication Engineering, Thapar Institute (2019–2023)
 - JEE Main 2019: 95 percentile
 - IIIT Hyderabad Advanced Certification in Generative AI & Prompt Engineering (Feb–Jun 2026)`;

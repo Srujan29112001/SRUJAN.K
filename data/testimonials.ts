@@ -21,7 +21,7 @@ export const testimonials: Testimonial[] = [
         name: 'Rajesh Kumar',
         role: 'Founder',
         company: 'MediCare AI',
-        content: "The Clinical AI Copilot he delivered has 95% accuracy. His understanding of HIPAA compliance along with cutting-edge GraphRAG tech is a rare combination.",
+        content: "The Clinical AI Copilot he delivered has 65% accuracy. His understanding of HIPAA compliance along with cutting-edge GraphRAG tech is a rare combination.",
         image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh',
     },
     {

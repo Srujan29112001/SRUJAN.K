@@ -36,7 +36,7 @@ export const projectGallery: GalleryImage[] = [
     src: '/images/projects/cv-detection.jpg',
     alt: 'Computer Vision Detection',
     title: 'Object Detection',
-    description: 'Real-time detection with 95%+ accuracy',
+    description: 'Real-time detection with 75%+ accuracy',
     category: 'CV',
   },
   {
